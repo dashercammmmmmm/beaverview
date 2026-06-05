@@ -1,0 +1,1409 @@
+/*
+  BeaverView — OSU Presentation Support Dashboard
+  styles.css
+
+  CONTENTS
+  ─────────────────────────────────────────────────────────────────
+  1.  DESIGN TOKENS     — colors, sizes, shadows. Change here first.
+  2.  RESET             — minimal, predictable baseline.
+  3.  LAYOUT            — page shell, header, three-column grid.
+  4.  SIDEBAR           — search, campus tabs, filters, connectors.
+  5.  MAP COLUMN        — map frame, controls, building shelf.
+  6.  DETAIL PANEL      — room header, tabs, body.
+  7.  APP.JS COMPONENTS — classes injected by app.js innerHTML.
+        overview metrics · device list · tool buttons
+        incident list · audit log · status line · callouts
+  8.  STATUS STYLES     — room pill colors, status dot, connector badges.
+  9.  HELP / TOUR       — modal overlay.
+  10. COMPACT MODE      — tighter density when .compact is on <body>.
+  11. MAPLIBRE           — style overrides for the map widget.
+  12. ACCESSIBILITY      — focus rings, skip-nav, reduced motion.
+*/
+
+
+/* ═══════════════════════════════════════════════════════════════
+   1. DESIGN TOKENS
+   ─────────────────────────────────────────────────────────────
+   Every color and size used in this file comes from a variable
+   defined here. Changing a token here changes it everywhere.
+═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* — OSU brand colors ——————————————————————————————————————— */
+  --osu-orange:        #D73F09;
+  --osu-orange-dark:   #A83205;   /* hover / pressed state        */
+  --osu-orange-faint:  #FFF0EB;   /* selected-item background     */
+
+  /* — Status colors (accessible contrast on white) —————————— */
+  --status-ok:         #15803D;   /* available — green            */
+  --status-ok-faint:   #F0FDF4;
+  --status-active:     #1D6A9F;   /* in-use — blue                */
+  --status-active-faint: #EFF6FF;
+  --status-warn:       #B45309;   /* issue — amber                */
+  --status-warn-faint: #FFFBEB;
+  --status-offline:    #6B7280;   /* offline — gray               */
+  --status-offline-faint: #F9FAFB;
+
+  /* — Neutral surface colors ————————————————————————————————— */
+  --bg-page:           #EEF2F7;   /* outer page background        */
+  --bg-panel:          #FFFFFF;   /* card / panel fill            */
+  --bg-soft:           #F8FAFC;   /* subtle inset areas           */
+
+  /* — Text ——————————————————————————————————————————————————— */
+  --text-strong:       #111827;   /* headings, important values   */
+  --text-body:         #374151;   /* regular body text            */
+  --text-muted:        #6B7280;   /* secondary labels             */
+  --text-faint:        #9CA3AF;   /* placeholders, hints          */
+  --text-on-dark:      #F3F4F6;   /* text on dark backgrounds     */
+
+  /* — Borders ———————————————————————————————————————————————— */
+  --border:            #E5E7EB;
+  --border-strong:     #D1D5DB;
+
+  /* — Shadows ———————————————————————————————————————————————— */
+  --shadow-panel:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-raised: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+
+  /* — Radii —————————————————————————————————————————————————— */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg: 12px;
+
+  /* — Layout sizes ——————————————————————————————————————————— */
+  --header-h:          52px;
+  --sidebar-w:        264px;
+  --detail-w:         368px;
+  --gutter:            14px;    /* gap between columns          */
+  --panel-pad:         16px;    /* inner padding for panels     */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   2. RESET
+═══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  min-width: 1200px;          /* dashboard needs at least this width     */
+  background: var(--bg-page);
+  color: var(--text-body);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+               "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   3. LAYOUT — page shell, header, three-column grid
+═══════════════════════════════════════════════════════════════ */
+
+/* Full-viewport column that stacks header above the dashboard */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+
+.site-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-h);
+  padding: 0 20px;
+  background: #111827;            /* dark — feels like a real tool        */
+  border-bottom: 3px solid var(--osu-orange);
+  color: var(--text-on-dark);
+}
+
+.site-header__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.site-header__name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.site-header__dept {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.01em;
+}
+
+.site-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons in the header */
+.header-btn {
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: var(--radius-sm);
+  color: var(--text-on-dark);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 120ms;
+}
+.header-btn:hover {
+  background: rgba(255,255,255,0.16);
+}
+.header-btn--icon {
+  width: 32px;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+.header-btn--admin {
+  background: rgba(220, 68, 5, 0.25);
+  border-color: rgba(220, 68, 5, 0.6);
+  text-decoration: none;
+  line-height: 30px;
+}
+.header-btn--admin:hover {
+  background: rgba(220, 68, 5, 0.45);
+}
+
+/* ── Three-column dashboard grid ─────────────────────────────── */
+
+.dashboard {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr var(--detail-w);
+  grid-template-rows: 1fr;
+  gap: var(--gutter);
+  padding: var(--gutter);
+  flex: 1;                         /* fill remaining vertical space        */
+  min-height: 0;                   /* allow grid rows to shrink            */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   4. SIDEBAR
+═══════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  overflow-y: auto;
+  padding: 0;
+
+  /* Stick to viewport top so it doesn't scroll away */
+  position: sticky;
+  top: var(--gutter);
+  max-height: calc(100vh - var(--header-h) - var(--gutter) * 2);
+  align-self: start;
+}
+
+/* Sidebar blocks are separated by a border */
+.sidebar-block {
+  padding: var(--panel-pad);
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-block:last-child {
+  border-bottom: none;
+}
+
+/* Section heading inside sidebar */
+.sidebar-heading {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Search field ────────────────────────────────────────────── */
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.search-field {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-strong);
+  font-size: 13px;
+  transition: border-color 120ms;
+}
+.search-field::placeholder {
+  color: var(--text-faint);
+}
+.search-field:focus {
+  border-color: var(--osu-orange);
+  outline: none;
+  background: #fff;
+}
+
+/* ── Campus tabs ─────────────────────────────────────────────── */
+/* app.js injects: <button role="tab" class="active" data-campus="..."> */
+
+.campus-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campus-tabs button {
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-body);
+  transition: background 100ms, color 100ms;
+}
+.campus-tabs button:hover {
+  background: var(--bg-soft);
+}
+.campus-tabs button.active {
+  background: var(--osu-orange-faint);
+  border-color: var(--osu-orange);
+  color: var(--osu-orange-dark);
+}
+
+/* Keep class names app.js uses for campus tabs (it uses .active) */
+#campusTabs button[aria-selected="true"] {
+  background: var(--osu-orange-faint);
+  border-color: var(--osu-orange);
+  color: var(--osu-orange-dark);
+}
+/* .segmented is the old class name — keep it working */
+.segmented button         { composes: .campus-tabs button; }
+.segmented button.active  { background: var(--osu-orange-faint); border-color: var(--osu-orange); color: var(--osu-orange-dark); }
+
+/* ── Quick filter chips ──────────────────────────────────────── */
+/* app.js injects: <label class="filter-chip [active]"><input ...><span> */
+
+.filter-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: border-color 100ms;
+}
+.filter-chip:hover {
+  border-color: var(--border-strong);
+}
+.filter-chip.active {
+  background: var(--osu-orange-faint);
+  border-color: var(--osu-orange);
+  color: var(--osu-orange-dark);
+}
+.filter-chip input {
+  accent-color: var(--osu-orange);
+  flex-shrink: 0;
+}
+
+/* ── Connector health ────────────────────────────────────────── */
+/* app.js injects: <div class="connector-row"><span>Name</span>
+   <strong class="connector-state [ok|degraded|mock|offline]">status</strong> */
+
+.sidebar-block--connectors .sidebar-block {
+  padding: 0;
+  border: none;
+}
+
+.connector-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.connector-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-body);
+}
+.connector-row span {
+  font-weight: 500;
+}
+
+/* Status badge on connector rows */
+.connector-state {
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.connector-state.ok       { background: var(--status-ok); }
+.connector-state.degraded { background: var(--status-warn); }
+.connector-state.mock     { background: var(--status-offline); }
+.connector-state.offline  { background: #DC2626; }
+
+/* Last-synced timestamp line */
+.connector-sync {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   5. MAP COLUMN
+═══════════════════════════════════════════════════════════════ */
+
+.map-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Map title row */
+.map-column__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.map-column__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+/* Status summary chips (buildings / rooms / active / issues) */
+.status-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.status-bar span {
+  padding: 4px 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 12px;
+  color: var(--text-body);
+}
+.status-bar span strong {
+  color: var(--text-strong);
+}
+
+/* Map frame — the bordered container that holds the MapLibre map */
+.map-frame {
+  position: relative;
+  flex: 1;                       /* fills remaining height in the column  */
+  min-height: 480px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-panel);
+
+  /* Animation origin for .fold campus transition */
+  transform-origin: left center;
+}
+
+/* Zoom / reset controls that float over the map (top-right) */
+.map-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 8;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-raised);
+}
+.map-controls button {
+  width: 32px;
+  height: 30px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1;
+  transition: border-color 100ms;
+}
+.map-controls button:hover {
+  border-color: var(--osu-orange);
+  color: var(--osu-orange);
+}
+
+/* Hint text that floats at the bottom-left of the map */
+.map-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 8;
+  padding: 5px 9px;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Map viewport — MapLibre renders into #mapCanvas inside here */
+.map-viewport {
+  position: absolute;
+  inset: 0;
+}
+
+/* MapLibre container must fill the viewport */
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Campus-switch animation (app.js adds/removes .fold) */
+.map-frame.fold {
+  animation: campus-fold 380ms ease both;
+}
+@keyframes campus-fold {
+  from { transform: perspective(800px) rotateY(-6deg); opacity: 0.5; }
+  to   { transform: perspective(800px) rotateY(0);     opacity: 1;   }
+}
+
+/* Building shelf — room pills appear here after clicking a building */
+.building-shelf {
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+/* Building detail layout (injected by app.js renderSelectedBuilding) */
+.building-detail {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+}
+.building-detail h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.building-detail h3 span {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Room pills below a selected building */
+.room-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.room-pill {
+  padding: 7px 11px;
+  min-width: 110px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-size: 12px;
+  transition: border-color 100ms, background 100ms;
+}
+.room-pill strong,
+.room-pill span {
+  display: block;
+}
+.room-pill strong {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.room-pill span {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.room-pill:hover {
+  border-color: var(--border-strong);
+}
+.room-pill.active {
+  border-color: var(--osu-orange);
+  background: var(--osu-orange-faint);
+}
+.room-pill.active strong {
+  color: var(--osu-orange-dark);
+}
+
+/* Generated placeholder rooms get a dashed border */
+.room-pill.generated {
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+/* Empty map message */
+.empty-map {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   6. DETAIL PANEL (right column)
+═══════════════════════════════════════════════════════════════ */
+
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+
+  /* Stick to viewport top like the sidebar */
+  position: sticky;
+  top: var(--gutter);
+  max-height: calc(100vh - var(--header-h) - var(--gutter) * 2);
+  align-self: start;
+}
+
+/* Room identity header */
+.detail-header {
+  padding: var(--panel-pad);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* "Selected Room" / building-name eyebrow label */
+.eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--osu-orange-dark);
+}
+
+/* app.js also injects .room-header — point it at the same styles */
+.room-header {
+  padding: var(--panel-pad);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Room status line (injected by renderRoom) */
+.room-status-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+/* Tab switcher */
+.room-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.room-tabs button {
+  flex: 1;
+  padding: 9px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 100ms, border-color 100ms;
+}
+.room-tabs button:hover {
+  color: var(--text-body);
+}
+.room-tabs button.active {
+  color: var(--osu-orange);
+  border-bottom-color: var(--osu-orange);
+}
+
+/* Tab body — scrollable */
+.detail-body,
+.room-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--panel-pad);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   7. APP.JS COMPONENTS
+   These classes are written into the DOM by app.js innerHTML.
+   They must stay here exactly as named.
+═══════════════════════════════════════════════════════════════ */
+
+/* Status dot (colored circle before the status label) */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--status-offline);
+}
+.status-dot.available { background: var(--status-ok); }
+.status-dot.in-use    { background: var(--status-active); }
+.status-dot.issue     { background: var(--status-warn); }
+.status-dot.offline   { background: var(--status-offline); }
+
+/* Metric grid — 2-column stats on the Overview tab */
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.metric-grid div {
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.metric-grid span {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.metric-grid strong {
+  font-size: 13px;
+  color: var(--text-strong);
+}
+
+/* Device list (Overview tab) */
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.device-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  padding: 9px 11px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+.device-row strong {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.device-row span,
+.device-row em {
+  color: var(--text-muted);
+  font-style: normal;
+}
+
+/* AI/Copilot placeholder callout */
+.assistant-callout {
+  padding: 11px 13px;
+  background: var(--bg-soft);
+  border-left: 3px solid var(--osu-orange);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 12px;
+}
+.assistant-callout strong {
+  display: block;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+}
+.assistant-callout span,
+.tool-action span {
+  color: var(--text-muted);
+}
+
+/* Generated-room inventory warning (amber accent) */
+.inventory-warning {
+  margin-bottom: 12px;
+  border-left-color: var(--status-warn);
+  background: var(--status-warn-faint);
+}
+
+/* Tool action buttons (Actions tab) */
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tool-action {
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  transition: border-color 100ms, background 100ms;
+}
+.tool-action:hover {
+  border-color: var(--osu-orange);
+  background: var(--osu-orange-faint);
+}
+.tool-action strong {
+  display: block;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.tool-action.danger {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: #FFF5F5;
+}
+.tool-action.danger:hover {
+  border-color: #DC2626;
+  background: #FEE2E2;
+}
+
+/* Incidents tab */
+.incident-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.incident {
+  padding: 9px 11px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 12px;
+  color: var(--text-body);
+}
+.incident.open {
+  border-left-color: #DC2626;
+  background: #FFF5F5;
+}
+.incident.closed {
+  border-left-color: var(--status-ok);
+  background: var(--status-ok-faint);
+}
+
+/* Audit / action log tab */
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.audit-row {
+  padding: 8px 11px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+.audit-row strong {
+  display: block;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.audit-row span,
+.audit-row em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-size: 11px;
+}
+
+/* Section headings inside tab body */
+.detail-body h3,
+.room-body h3 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+}
+.detail-body h3:first-child,
+.room-body h3:first-child {
+  margin-top: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   8. STATUS STYLES (room pills color-coded by status)
+═══════════════════════════════════════════════════════════════ */
+
+.room-pill.available {
+  border-left: 3px solid var(--status-ok);
+}
+.room-pill.in-use {
+  border-left: 3px solid var(--status-active);
+}
+.room-pill.issue {
+  border-left: 3px solid var(--status-warn);
+}
+.room-pill.offline {
+  border-left: 3px solid var(--status-offline);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   9. HELP / TOUR DIALOG
+═══════════════════════════════════════════════════════════════ */
+
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.45);
+}
+
+.tour-card {
+  position: relative;
+  width: min(520px, calc(100vw - 40px));
+  padding: 28px;
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.tour-card__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted);
+}
+.tour-card__close:hover {
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+.tour-card__title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-strong);
+  margin-bottom: 14px;
+}
+
+.tour-card__steps {
+  margin: 0 0 14px 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--text-body);
+  line-height: 1.7;
+}
+
+.tour-card__note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+.tour-card__note code {
+  font-family: ui-monospace, monospace;
+  background: var(--bg-soft);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
+}
+
+.btn-primary {
+  height: 38px;
+  padding: 0 20px;
+  background: var(--osu-orange);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  transition: background 120ms;
+}
+.btn-primary:hover {
+  background: var(--osu-orange-dark);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   10. COMPACT MODE
+   Toggled by app.js — adds/removes .compact on <body>.
+   Reduce padding and gap everywhere that has white space.
+═══════════════════════════════════════════════════════════════ */
+
+.compact .dashboard {
+  gap: 8px;
+  padding: 8px;
+}
+.compact .sidebar-block {
+  padding: 10px var(--panel-pad);
+}
+.compact .detail-body,
+.compact .room-body {
+  padding: 10px;
+}
+.compact .map-frame {
+  min-height: 400px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   11. MAPLIBRE OVERRIDES
+   Keep the map widget consistent with the dashboard design.
+═══════════════════════════════════════════════════════════════ */
+
+/* Remove MapLibre's default canvas focus ring (we rely on building clicks) */
+.maplibregl-canvas {
+  outline: none;
+}
+
+/* Style the compact attribution control */
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+}
+
+/* Popup style (used if building hover tooltips are added later) */
+.maplibregl-popup-content {
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  box-shadow: var(--shadow-raised);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   13. DEVICE TOOL PANELS
+   Injected into #roomBody when a tool action button is clicked.
+   Each panel has a "← Actions" back button at the top.
+═══════════════════════════════════════════════════════════════ */
+
+/* Back link at top of every tool panel */
+.tool-panel-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--osu-orange);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.tool-panel-back:hover { text-decoration: underline; }
+
+/* Dim footer note on every panel — distinguishes mock from live */
+.tool-mock-note {
+  margin-top: 14px;
+  padding: 8px 10px;
+  background: var(--bg-page);
+  border-left: 3px solid var(--status-offline);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── XPanel ── */
+.xpanel { display: flex; flex-direction: column; gap: 12px; }
+.xpanel-row > .eyebrow { margin-bottom: 6px; }
+
+.xpanel-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.xp-btn {
+  padding: 6px 13px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.xp-btn:hover  { background: var(--osu-orange-faint); border-color: var(--osu-orange); color: var(--osu-orange); }
+.xp-btn.active { background: var(--osu-orange); border-color: var(--osu-orange); color: #fff; }
+
+.xp-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.xp-volume-track {
+  flex: 1;
+  height: 6px;
+  background: var(--border-default);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.xp-volume-fill {
+  height: 100%;
+  background: var(--osu-orange);
+  border-radius: 3px;
+}
+.xp-status-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  padding: 8px 10px;
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-body);
+}
+
+/* ── ScreenConnect ── */
+.sc-panel { display: flex; flex-direction: column; gap: 10px; }
+
+.sc-machine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+}
+.sc-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--status-active);
+  border-radius: var(--radius-sm);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.sc-machine-info { flex: 1; min-width: 0; }
+.sc-machine-info strong { display: block; font-size: 13px; color: var(--text-strong); font-family: ui-monospace, monospace; }
+.sc-machine-info span   { display: block; font-size: 11px; color: var(--text-muted); }
+
+.sc-launch {
+  width: 100%;
+  padding: 10px;
+  background: var(--status-active);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s;
+}
+.sc-launch:hover { background: #155e8a; }
+.sc-sessions { font-size: 11px; color: var(--text-muted); text-align: center; }
+
+/* ── PTZ Camera ── */
+.ptz-panel { display: flex; flex-direction: column; gap: 12px; }
+
+.ptz-feed {
+  aspect-ratio: 16 / 9;
+  background: #111;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+}
+.ptz-feed-inner { padding: 12px; }
+.ptz-feed-inner svg { display: block; margin: 0 auto 6px; opacity: .4; }
+
+.ptz-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.ptz-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  grid-template-rows: repeat(3, 36px);
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ptz-zoom { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.ptz-presets { flex: 1; }
+.ptz-presets > .eyebrow { margin-bottom: 6px; }
+
+.ptz-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-panel);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .1s;
+}
+.ptz-btn:hover  { background: var(--bg-page); }
+.ptz-btn:active { background: var(--border-default); }
+.ptz-btn-home { font-size: 9px; font-weight: 700; letter-spacing: .04em; color: var(--text-muted); }
+
+.ptz-preset {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-panel);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color .1s, color .1s;
+}
+.ptz-preset:hover { border-color: var(--osu-orange); color: var(--osu-orange); }
+
+/* ── WattBox ── */
+.wb-panel { display: flex; flex-direction: column; gap: 6px; }
+
+.wb-outlet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.wb-outlet-num  { width: 18px; text-align: right; color: var(--text-muted); flex-shrink: 0; font-size: 11px; }
+.wb-outlet-name { flex: 1; min-width: 0; }
+.wb-outlet-name strong { display: block; font-size: 12px; color: var(--text-strong); }
+.wb-outlet-name span   { font-size: 11px; color: var(--text-muted); }
+
+.wb-status {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.wb-status.on  { background: #dcfce7; color: var(--status-ok); }
+.wb-status.off { background: #f3f4f6; color: var(--status-offline); }
+
+.wb-cycle {
+  padding: 3px 9px;
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-panel);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color .1s, color .1s;
+  flex-shrink: 0;
+}
+.wb-cycle:hover   { border-color: var(--status-warn); color: var(--status-warn); }
+.wb-cycle:disabled { opacity: .35; cursor: default; }
+
+/* ── Device inventory view ── */
+.dev-inventory { display: flex; flex-direction: column; gap: 6px; }
+
+.dev-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
+}
+.dev-card-type {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 72px;
+  flex-shrink: 0;
+}
+.dev-card-info          { flex: 1; min-width: 0; }
+.dev-card-info strong   { display: block; font-size: 12px; color: var(--text-strong); }
+.dev-card-info span     { font-size: 11px; color: var(--text-muted); }
+
+.dev-launch {
+  padding: 4px 10px;
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-panel);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color .1s, color .1s;
+}
+.dev-launch:hover { border-color: var(--osu-orange); color: var(--osu-orange); }
+
+/* ── ServiceNow ticket form ── */
+.sn-panel { display: flex; flex-direction: column; gap: 10px; }
+
+.sn-field { display: flex; flex-direction: column; gap: 4px; }
+.sn-field label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.sn-field input,
+.sn-field select,
+.sn-field textarea {
+  padding: 7px 10px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-strong);
+  background: var(--bg-panel);
+  transition: border-color .12s;
+}
+.sn-field input:focus,
+.sn-field select:focus,
+.sn-field textarea:focus { border-color: var(--osu-orange); outline: none; }
+.sn-field input[readonly] { background: var(--bg-page); color: var(--text-muted); }
+.sn-field textarea { resize: vertical; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.6; }
+
+.sn-submit {
+  padding: 10px;
+  background: var(--osu-orange);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s;
+}
+.sn-submit:hover { background: var(--osu-orange-dark); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   12. ACCESSIBILITY
+═══════════════════════════════════════════════════════════════ */
+
+/* Skip navigation link — hidden until focused */
+.skip-nav {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  padding: 8px 14px;
+  background: var(--text-strong);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  z-index: 100;
+  text-decoration: none;
+}
+.skip-nav:focus {
+  top: 0;
+  outline: none;
+}
+
+/* Visible focus rings for keyboard navigation */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--osu-orange);
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .map-frame.fold {
+    animation: none;
+  }
+}

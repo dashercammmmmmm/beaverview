@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Technical Build/Update Playbook: OSU Presentation Support Dashboard</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #d9e2ec;
+  --brand: #d73f09;
+  --soft: #fff5f0;
+  --code: #f5f7fa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #f7f8fa;
+  line-height: 1.55;
+}
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+  background: #fff;
+  min-height: 100vh;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+nav a {
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid #f0b49e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; color: #111827; }
+h2 { font-size: 24px; margin-top: 34px; padding-top: 10px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin-top: 26px; }
+p, li { font-size: 16px; }
+a { color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; vertical-align: top; }
+th { background: var(--soft); text-align: left; }
+code { background: var(--code); padding: 2px 5px; border-radius: 4px; }
+pre {
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+pre code { background: transparent; padding: 0; color: inherit; }
+.mermaid {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  nav { display: none; }
+  h2 { break-after: avoid; }
+  pre, table { break-inside: avoid; }
+}
+</style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</head>
+<body>
+  <main>
+    <nav><a href="leadership-dashboard-playbook.html">Leadership Dashboard Playbook</a>
+<a href="technical-dashboard-playbook.html">Technical Dashboard Playbook</a>
+<a href="leadership-ai-chatbot-playbook.html">Leadership Ai Chatbot Playbook</a>
+<a href="technical-ai-chatbot-playbook.html">Technical Ai Chatbot Playbook</a></nav>
+    <div class="meta">Living HTML version generated from Markdown source. Use Chrome Print to export PDF.</div>
+    <h1>Technical Build/Update Playbook: OSU Presentation Support Dashboard</h1>
+<h2>System Overview</h2>
+<p>The Dashboard is a desktop-first local web application for OSU Presentation Support technicians. It combines campus/building/room navigation, status summaries, device inventory, launch links, power controls, remote access, ServiceNow context, SharePoint links, and action logging.</p>
+<p>The first implementation target is a clickable mock prototype with production-shaped data. The backend should be scaffolded so real API credentials can be inserted later without redesigning the frontend.</p>
+<h2>Architecture</h2>
+<div class="mermaid">
+flowchart TB
+    subgraph Browser
+        UI[HTML/CSS/JS Dashboard]
+        Tour[First-Run Guided Tour]
+    end
+
+    subgraph UbuntuVM[Ubuntu Server VM]
+        Web[Nginx or local web server]
+        API[Backend Proxy/API]
+        Jobs[Scheduled Sync Jobs]
+        DB[(SQLite MVP or PostgreSQL)]
+        Logs[(Audit Log Store)]
+        Importer[Secure XLSX Import]
+    end
+
+    subgraph ExternalSystems[OSU and Vendor Systems]
+        Fusion[Crestron Fusion]
+        Live[25Live]
+        Screen[ScreenConnect]
+        Watt[WattBox/OvrC]
+        SN[ServiceNow]
+        SP[SharePoint]
+    end
+
+    UI --&gt; Web
+    UI --&gt; API
+    Tour --&gt; UI
+    API --&gt; DB
+    API --&gt; Logs
+    Jobs --&gt; API
+    Importer --&gt; DB
+    API --&gt; Fusion
+    API --&gt; Live
+    API --&gt; Screen
+    API --&gt; Watt
+    API --&gt; SN
+    API --&gt; SP
+</div>
+<p>Recommended stack:</p>
+<ul>
+<li>Frontend: HTML, CSS, JavaScript, JSON-shaped API responses.</li>
+<li>Backend: FastAPI or Node/Fastify. Choose one and keep all connectors modular.</li>
+<li>Database: SQLite for prototype, PostgreSQL for production hardening.</li>
+<li>Web server: Nginx reverse proxy.</li>
+<li>Host: Ubuntu Server VM.</li>
+<li>Auth: local prototype mode first, Microsoft Entra OIDC in Phase 2.</li>
+<li>Deployment: local services first; Docker Compose optional after prototype.</li>
+</ul>
+<h2>Unified Data Model</h2>
+<p>Use a stable internal model even while upstream APIs are mocked.</p>
+<pre><code>{
+  &quot;room_id&quot;: &quot;corvallis-kad-101&quot;,
+  &quot;campus&quot;: &quot;Corvallis&quot;,
+  &quot;building_acronym&quot;: &quot;KAd&quot;,
+  &quot;building_name&quot;: &quot;Kerr Administration Building&quot;,
+  &quot;room_number&quot;: &quot;101&quot;,
+  &quot;room_display_name&quot;: &quot;KAd 101&quot;,
+  &quot;priority&quot;: &quot;pilot&quot;,
+  &quot;capabilities&quot;: [&quot;presentation&quot;, &quot;screenconnect&quot;, &quot;wattbox&quot;, &quot;hybrid&quot;],
+  &quot;status&quot;: {
+    &quot;room_online&quot;: true,
+    &quot;health_score&quot;: 92,
+    &quot;stale_data&quot;: false,
+    &quot;last_synced_at&quot;: &quot;2026-05-30T16:35:00Z&quot;,
+    &quot;connector_health&quot;: {
+      &quot;fusion&quot;: &quot;ok&quot;,
+      &quot;25live&quot;: &quot;ok&quot;,
+      &quot;screenconnect&quot;: &quot;degraded&quot;,
+      &quot;wattbox&quot;: &quot;mock&quot;,
+      &quot;servicenow&quot;: &quot;ok&quot;
+    },
+    &quot;fusion_processor&quot;: &quot;online&quot;,
+    &quot;display_power&quot;: &quot;on&quot;,
+    &quot;screenconnect_available&quot;: true,
+    &quot;active_event&quot;: {
+      &quot;source&quot;: &quot;25Live&quot;,
+      &quot;title&quot;: &quot;Sample Class&quot;,
+      &quot;starts_at&quot;: &quot;2026-05-30T16:00:00Z&quot;,
+      &quot;ends_at&quot;: &quot;2026-05-30T17:20:00Z&quot;
+    },
+    &quot;source_conflict&quot;: false
+  },
+  &quot;devices&quot;: [
+    {
+      &quot;device_id&quot;: &quot;kad-101-display-1&quot;,
+      &quot;device_type&quot;: &quot;display&quot;,
+      &quot;manufacturer&quot;: &quot;NEC&quot;,
+      &quot;model&quot;: &quot;Sample Model&quot;,
+      &quot;ip_or_hostname&quot;: &quot;10.0.0.10&quot;,
+      &quot;vlan_or_zone&quot;: &quot;AV&quot;,
+      &quot;web_ui_url&quot;: &quot;https://device.example.local&quot;,
+      &quot;sharepoint_docs&quot;: [&quot;https://sharepoint.example/training/display.pdf&quot;]
+    }
+  ],
+  &quot;integrations&quot;: {
+    &quot;fusion_room_id&quot;: &quot;FUSION-KAD-101&quot;,
+    &quot;xpanel_url&quot;: &quot;https://fusion.example/xpanel/kad-101&quot;,
+    &quot;25live_location_id&quot;: &quot;25L-KAD-101&quot;,
+    &quot;screenconnect_machine_id&quot;: &quot;SC-KAD-101-PC&quot;,
+    &quot;wattbox&quot;: {
+      &quot;id&quot;: &quot;WB-KAD-101&quot;,
+      &quot;outlets&quot;: [
+        { &quot;number&quot;: 3, &quot;label&quot;: &quot;Projector&quot;, &quot;state&quot;: &quot;on&quot; }
+      ]
+    }
+  },
+  &quot;servicenow&quot;: {
+    &quot;open_incidents&quot;: [],
+    &quot;recent_closed_incidents&quot;: []
+  },
+  &quot;recent_actions&quot;: []
+}</code></pre>
+<h2>Backend Connector Design</h2>
+<p>Create one connector module per integration:</p>
+<ul>
+<li><code>fusion</code>: rooms, assets, processor status, XPanel URL, schedule cross-reference.</li>
+<li><code>25live</code>: current and upcoming events by location.</li>
+<li><code>screenconnect</code>: machine availability and launch URL.</li>
+<li><code>wattbox</code>: outlet status and power-cycle requests.</li>
+<li><code>servicenow</code>: open incidents, recent closed incidents, ticket draft handoff.</li>
+<li><code>sharepoint</code>: document links and future knowledge index.</li>
+<li><code>hardware_import</code>: local <code>.xlsx</code> parser and validation.</li>
+</ul>
+<p>Every connector should support:</p>
+<ul>
+<li>mock mode</li>
+<li>credential-loaded mode</li>
+<li>connector health endpoint</li>
+<li>sync timestamp</li>
+<li>normalized output to the room model</li>
+<li>graceful failure with cached data where appropriate</li>
+</ul>
+<h2>Secure Hardware IP XLSX Import</h2>
+<p>The real spreadsheet remains on-prem and is processed locally on the VM. The dashboard should not depend on opening the spreadsheet directly in the browser.</p>
+<p>Required input columns:</p>
+<ul>
+<li>campus</li>
+<li>building acronym</li>
+<li>building name</li>
+<li>room number</li>
+<li>device type</li>
+<li>manufacturer</li>
+<li>model</li>
+<li>IP or hostname</li>
+<li>VLAN/network zone</li>
+<li>device web UI URL</li>
+</ul>
+<p>Recommended additional local-only fields:</p>
+<ul>
+<li>Fusion room identifier</li>
+<li>25Live location identifier</li>
+<li>ScreenConnect machine/session identifier</li>
+<li>WattBox identifier</li>
+<li>WattBox outlet number and label</li>
+<li>SharePoint training document URL</li>
+</ul>
+<p>Import workflow:</p>
+<div class="mermaid">
+flowchart LR
+    XLSX[Secure Hardware IP XLSX] --&gt; Import[Local Importer]
+    Import --&gt; Validate[Validate Required Columns]
+    Validate --&gt; Normalize[Normalize Campus/Building/Room Keys]
+    Normalize --&gt; Review[Generate Import Review Report]
+    Review --&gt; DB[(Dashboard Database)]
+    DB --&gt; API[Room/Device API]
+</div>
+<p>Validation rules:</p>
+<ul>
+<li>Reject rows missing campus, building acronym, room number, device type, or IP/hostname.</li>
+<li>Flag duplicate device records.</li>
+<li>Flag unknown campuses.</li>
+<li>Normalize building acronyms consistently.</li>
+<li>Never export real IP data to public demo datasets.</li>
+</ul>
+<h2>Frontend UX Requirements</h2>
+<p>Primary views:</p>
+<ul>
+<li>campus command view</li>
+<li>building detail panel</li>
+<li>room detail view</li>
+<li>device/tools panel</li>
+<li>action log panel</li>
+<li>AI assistant placeholder</li>
+<li>ServiceNow context panel</li>
+<li>first-run training overlay</li>
+</ul>
+<p>Campus switching:</p>
+<ul>
+<li>One unified page.</li>
+<li>Campus selector always visible.</li>
+<li>Smooth fold-over or slide transition between campus views.</li>
+<li>Preserve global search, filters, and recently viewed rooms.</li>
+</ul>
+<p>Accessibility:</p>
+<ul>
+<li>Keyboard navigation for search, campus switching, building selection, and room opening.</li>
+<li>Visible focus states.</li>
+<li>High-contrast status colors with text labels/icons.</li>
+<li>No status conveyed by color alone.</li>
+<li>Large building acronyms and readable room labels.</li>
+<li>Reduced-motion mode for campus transitions.</li>
+</ul>
+<h2>Status And Filter Requirements</h2>
+<p>Required statuses:</p>
+<ul>
+<li>room online/offline</li>
+<li>Fusion processor status</li>
+<li>display/projector power</li>
+<li>ScreenConnect availability</li>
+<li>active class/event</li>
+<li>open ServiceNow incidents</li>
+<li>five recent closed ServiceNow incidents</li>
+<li>stale-data warning</li>
+<li>last sync time</li>
+<li>connector health</li>
+<li>room health score</li>
+<li>conflicting-source indicator</li>
+</ul>
+<p>Required filters:</p>
+<ul>
+<li>campus</li>
+<li>building</li>
+<li>room</li>
+<li>active class/event</li>
+<li>open incident</li>
+<li>room offline</li>
+<li>device issue</li>
+<li>WattBox-enabled</li>
+<li>ScreenConnect-enabled</li>
+<li>hybrid/Zoom/Teams-capable</li>
+<li>high-priority spaces</li>
+<li>recently accessed</li>
+<li>stale data</li>
+<li>recently power-cycled</li>
+</ul>
+<h2>Action Logging And Audit Trail</h2>
+<p>Every meaningful technician action must write an audit event.</p>
+<pre><code>{
+  &quot;event_id&quot;: &quot;audit-000001&quot;,
+  &quot;timestamp&quot;: &quot;2026-05-30T16:45:00Z&quot;,
+  &quot;user_id&quot;: &quot;tech-onid&quot;,
+  &quot;role&quot;: &quot;technician&quot;,
+  &quot;campus&quot;: &quot;Corvallis&quot;,
+  &quot;building_acronym&quot;: &quot;KAd&quot;,
+  &quot;room_number&quot;: &quot;101&quot;,
+  &quot;action_type&quot;: &quot;xpanel_launched&quot;,
+  &quot;target&quot;: &quot;FUSION-KAD-101&quot;,
+  &quot;outcome&quot;: &quot;success&quot;,
+  &quot;source&quot;: &quot;dashboard&quot;,
+  &quot;metadata&quot;: {
+    &quot;connector_mode&quot;: &quot;mock&quot;,
+    &quot;ticket_id&quot;: null
+  }
+}</code></pre>
+<p>Required logged actions:</p>
+<ul>
+<li>login/logout after Entra is added</li>
+<li>room viewed</li>
+<li>IP/device details viewed</li>
+<li>XPanel launched</li>
+<li>device web UI opened</li>
+<li>ScreenConnect launched</li>
+<li>WattBox status checked</li>
+<li>WattBox power action requested, confirmed, succeeded, or failed</li>
+<li>ServiceNow ticket draft created</li>
+<li>ServiceNow ticket submitted or updated</li>
+<li>SharePoint document opened</li>
+<li>AI chat session started</li>
+<li>AI recommendation accepted, rejected, or edited</li>
+<li>admin import/sync/configuration changes</li>
+</ul>
+<p>Retention default:</p>
+<ul>
+<li>1 year searchable hot retention.</li>
+<li>3 years archived retention if approved by OSU policy.</li>
+</ul>
+<h2>Integration Notes</h2>
+<p>Crestron Fusion:</p>
+<ul>
+<li>Use backend proxy only.</li>
+<li>Support room status, assets, appointments, signal values, and XPanel launch URL.</li>
+<li>Cache frequent status reads with short TTL.</li>
+</ul>
+<p>25Live:</p>
+<ul>
+<li>Query current and upcoming events by location.</li>
+<li>Cross-reference schedule against Fusion occupancy/status.</li>
+<li>Show conflicts rather than hiding them.</li>
+</ul>
+<p>ScreenConnect:</p>
+<ul>
+<li>Match machines by hostname or room identifier.</li>
+<li>Generate or link to launch URL through backend.</li>
+<li>Log every remote session launch.</li>
+</ul>
+<p>WattBox/OvrC:</p>
+<ul>
+<li>Prefer official/direct supported API path when available.</li>
+<li>Treat power cycle as high-risk.</li>
+<li>Require human confirmation and accurate outlet labels.</li>
+<li>Log request, confirmation, result, and error details.</li>
+</ul>
+<p>ServiceNow:</p>
+<ul>
+<li>Display open and five recent closed incidents.</li>
+<li>Expose room context for AI ticket drafting.</li>
+<li>Do not allow silent auto-submission in the prototype.</li>
+</ul>
+<p>SharePoint:</p>
+<ul>
+<li>Link relevant PDFs from room/device views.</li>
+<li>Preserve existing SharePoint organization.</li>
+<li>Later index approved content for AI retrieval.</li>
+</ul>
+<h2>Microsoft Entra SSO Phase 2</h2>
+<p>Implementation path:</p>
+<div class="mermaid">
+sequenceDiagram
+    participant User
+    participant Browser
+    participant Dashboard
+    participant Entra
+
+    User-&gt;&gt;Browser: Open dashboard
+    Browser-&gt;&gt;Dashboard: Request protected page
+    Dashboard-&gt;&gt;Entra: Redirect to OIDC sign-in
+    Entra-&gt;&gt;Browser: Authenticate user
+    Browser-&gt;&gt;Dashboard: Return auth code
+    Dashboard-&gt;&gt;Entra: Exchange code for tokens
+    Dashboard-&gt;&gt;Dashboard: Map ONID/group to role
+    Dashboard-&gt;&gt;Browser: Start secure session
+</div>
+<p>Required decisions:</p>
+<ul>
+<li>Entra app registration owner.</li>
+<li>Redirect URI.</li>
+<li>Allowed groups.</li>
+<li>Role mapping.</li>
+<li>Session timeout.</li>
+<li>Log retention for auth events.</li>
+</ul>
+<h2>Deployment On Ubuntu Server</h2>
+<p>Prototype deployment:</p>
+<ol>
+<li>Provision Ubuntu Server VM.</li>
+<li>Create service account for dashboard runtime.</li>
+<li>Install web server, backend runtime, and database.</li>
+<li>Place frontend assets behind Nginx.</li>
+<li>Run backend as a local service.</li>
+<li>Store secrets in environment or approved local secret store.</li>
+<li>Configure scheduled sync jobs.</li>
+<li>Restrict firewall access to approved networks.</li>
+<li>Enable local backups for database, configs, and logs.</li>
+<li>Document restore procedure.</li>
+</ol>
+<p>Optional Phase 2:</p>
+<ul>
+<li>Move app, worker, and database into Docker Compose if operations wants repeatable deployments.</li>
+</ul>
+<h2>Maintenance And Recreation Guide</h2>
+<p>Maintain:</p>
+<ul>
+<li>room/device import mapping</li>
+<li>connector credentials</li>
+<li>dashboard config</li>
+<li>audit log retention jobs</li>
+<li>database backups</li>
+<li>OS and dependency patching</li>
+<li>SharePoint link index</li>
+<li>mock data for demos/training</li>
+</ul>
+<p>Recreate from scratch:</p>
+<ol>
+<li>Provision clean Ubuntu Server.</li>
+<li>Restore application files.</li>
+<li>Restore database backup or re-run Hardware IP import.</li>
+<li>Restore environment/secret configuration.</li>
+<li>Start backend and web server.</li>
+<li>Run connector health checks.</li>
+<li>Validate dashboard login and room search.</li>
+<li>Confirm audit logging.</li>
+</ol>
+<h2>Acceptance Test Checklist</h2>
+<ul>
+<li>Load mock campus/building/room data.</li>
+<li>Switch campuses from one page.</li>
+<li>Search by building acronym, building name, and room number.</li>
+<li>Hover building acronym and confirm enlarged accessible display.</li>
+<li>Open building and room detail.</li>
+<li>Filter by active class/event, open incident, room offline, WattBox, ScreenConnect, stale data, and high-priority rooms.</li>
+<li>Show mock Fusion, 25Live, ScreenConnect, WattBox, ServiceNow, and SharePoint data.</li>
+<li>Import anonymized <code>.xlsx</code> into the normalized model.</li>
+<li>Reject invalid import rows and produce an import report.</li>
+<li>Log every required action.</li>
+<li>Show connector outage and stale-data states.</li>
+<li>Prepare room context for AI chat and ServiceNow draft.</li>
+<li>Export Markdown/HTML documentation to PDF cleanly.</li>
+</ul>
+<h2>Screenshot Placeholders For Future Prototype</h2>
+<p>When the mock prototype exists, add annotated screenshots for:</p>
+<ul>
+<li>Campus overview.</li>
+<li>Building acronym hover state.</li>
+<li>Room drill-down.</li>
+<li>Quick filters.</li>
+<li>Connector health/stale-data state.</li>
+<li>Action log event after launching a tool.</li>
+<li>ServiceNow context panel.</li>
+<li>AI assistant placeholder.</li>
+<li>First-run guided tour.</li>
+</ul>
+<h2>Next Steps After Playbook Approval</h2>
+<ol>
+<li>Confirm the pilot room list and anonymized Hardware IP sample.</li>
+<li>Choose the first real connector target.</li>
+<li>Define the exact mock data set for leadership review.</li>
+<li>Confirm Ubuntu Server VM ownership and access path.</li>
+<li>Build the clickable mock dashboard.</li>
+<li>Build the backend scaffold with mock connector modules.</li>
+<li>Review security assumptions with OSU cybersecurity before inserting production credentials.</li>
+</ol>
+<h2>Open Questions</h2>
+<ul>
+<li>Which connector should be real first?</li>
+<li>What is the approved OSU audit retention period?</li>
+<li>What VM resource profile will be allocated?</li>
+<li>Which Entra groups map to technician/admin roles?</li>
+<li>Which pilot rooms should be included first?</li>
+</ul>
+  </main>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Logs — BeaverView Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<nav class="admin-nav">
+  <a class="admin-nav__logo" href="/admin/">⚙ BeaverView Admin</a>
+  <div class="admin-nav__links">
+    <a href="/admin/">Dashboard</a>
+    <a href="/admin/rooms.html">Rooms</a>
+    <a href="/admin/logs.html" class="active">Logs</a>
+    <a href="/admin/connectors.html">Connectors</a>
+    <a href="/admin/users.html">Users</a>
+  </div>
+  <div class="admin-nav__spacer"></div>
+  <span class="admin-nav__user" id="nav-username"></span>
+  <a class="admin-nav__back" href="/">← Dashboard</a>
+</nav>
+
+<div class="admin-layout">
+  <main class="admin-main" id="main" style="display:none">
+
+    <div class="page-header">
+      <h1>Audit Logs</h1>
+      <button class="btn btn--secondary" id="btn-export">⬇ Export CSV</button>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Campus</label>
+        <select class="form-control" id="f-campus">
+          <option value="">All campuses</option>
+          <option value="corvallis">Corvallis</option>
+          <option value="cascades">Cascades</option>
+          <option value="hatfield">Hatfield</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Room ID</label>
+        <input class="form-control" id="f-room" placeholder="e.g. corvallis-kad-101">
+      </div>
+      <div class="form-group">
+        <label>User</label>
+        <input class="form-control" id="f-user" placeholder="username">
+      </div>
+      <div class="form-group">
+        <label>Action type</label>
+        <input class="form-control" id="f-action" placeholder="e.g. admin_room_updated">
+      </div>
+      <div class="form-group">
+        <label>From</label>
+        <input class="form-control" id="f-from" type="date">
+      </div>
+      <div class="form-group">
+        <label>To</label>
+        <input class="form-control" id="f-to" type="date">
+      </div>
+      <button class="btn btn--primary" id="btn-search">Search</button>
+      <button class="btn btn--secondary" id="btn-reset">Reset</button>
+    </div>
+
+    <!-- Results -->
+    <div class="card" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Timestamp</th><th>User</th><th>Campus</th><th>Room</th>
+            <th>Action</th><th>Target</th><th>Outcome</th>
+          </tr></thead>
+          <tbody id="log-body">
+            <tr><td colspan="7" style="text-align:center;color:#888;padding:1.5rem">Use the filters above to search the log.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <span class="pagination__info" id="page-info"></span>
+      <button class="btn btn--secondary btn--sm" id="btn-prev" disabled>‹ Prev</button>
+      <button class="btn btn--secondary btn--sm" id="btn-next" disabled>Next ›</button>
+    </div>
+
+    <!-- Archive / Purge -->
+    <div class="card" style="margin-top:1.5rem">
+      <div class="card__title">Log Maintenance</div>
+      <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-end">
+        <div>
+          <label style="display:block;font-weight:500;margin-bottom:.3rem;font-size:.85rem">
+            Archive entries older than
+          </label>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <input class="form-control" id="archive-days" type="number" value="90" min="7" style="width:90px">
+            <span style="font-size:.85rem">days</span>
+            <button class="btn btn--warning btn--sm" id="btn-archive">Archive</button>
+          </div>
+        </div>
+        <div>
+          <div class="banner banner--danger" style="margin-bottom:.5rem">
+            ⚠ Purge permanently deletes archived entries. Type <strong>CONFIRM</strong> to proceed.
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <input class="form-control" id="purge-confirm" placeholder="Type CONFIRM" style="width:150px">
+            <input class="form-control" id="purge-days" type="number" value="90" min="7" style="width:90px">
+            <span style="font-size:.85rem">days</span>
+            <button class="btn btn--danger btn--sm" id="btn-purge">Purge</button>
+          </div>
+        </div>
+      </div>
+      <p id="maintenance-msg" style="margin-top:.75rem;font-size:.85rem;color:#666"></p>
+    </div>
+
+  </main>
+</div>
+
+<script src="admin.js"></script>
+<script>
+const LIMIT = 50;
+let offset = 0, total = 0;
+
+document.addEventListener('admin-ready', () => {
+  document.getElementById('main').style.display = '';
+  loadLogs();
+});
+
+function getFilters() {
+  return {
+    campus:      document.getElementById('f-campus').value || null,
+    room_id:     document.getElementById('f-room').value.trim() || null,
+    user:        document.getElementById('f-user').value.trim() || null,
+    action_type: document.getElementById('f-action').value.trim() || null,
+    date_from:   document.getElementById('f-from').value || null,
+    date_to:     document.getElementById('f-to').value || null,
+  };
+}
+
+function buildQS(extra = {}) {
+  const f = {...getFilters(), limit: LIMIT, offset, ...extra};
+  return Object.entries(f)
+    .filter(([,v]) => v !== null && v !== undefined)
+    .map(([k,v]) => `${k}=${encodeURIComponent(v)}`)
+    .join('&');
+}
+
+async function loadLogs() {
+  try {
+    const d = await adminGet('/api/admin/logs?' + buildQS());
+    total = d.total;
+    renderTable(d.rows);
+    renderPagination();
+  } catch(e) {
+    toast('Failed to load logs: ' + e.message, 'error');
+  }
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('log-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:1.5rem">No entries match the current filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const campus = r.room_id ? r.room_id.split('-')[0] : '';
+    return `<tr>
+      <td style="white-space:nowrap">${r.ts ? r.ts.slice(0,16).replace('T',' ') : ''}</td>
+      <td>${r.user || ''}</td>
+      <td>${campus}</td>
+      <td><code style="font-size:.8rem">${r.room_id || ''}</code></td>
+      <td><code style="font-size:.8rem">${r.action_type || ''}</code></td>
+      <td style="font-size:.8rem">${r.target || ''}</td>
+      <td><span class="badge ${r.outcome === 'success' ? 'badge--live' : 'badge--degraded'}">${r.outcome || ''}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPagination() {
+  document.getElementById('page-info').textContent =
+    total ? `${offset+1}–${Math.min(offset+LIMIT, total)} of ${total}` : 'No results';
+  document.getElementById('btn-prev').disabled = offset === 0;
+  document.getElementById('btn-next').disabled = offset + LIMIT >= total;
+}
+
+document.getElementById('btn-search').addEventListener('click', () => { offset = 0; loadLogs(); });
+document.getElementById('btn-reset').addEventListener('click', () => {
+  ['f-campus','f-room','f-user','f-action','f-from','f-to'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.value = '';
+    else el.value = '';
+  });
+  offset = 0; loadLogs();
+});
+document.getElementById('btn-prev').addEventListener('click', () => { offset = Math.max(0, offset-LIMIT); loadLogs(); });
+document.getElementById('btn-next').addEventListener('click', () => { offset += LIMIT; loadLogs(); });
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const qs = buildQS({limit: undefined, offset: undefined});
+  window.location = '/api/admin/logs/export?' + qs;
+});
+
+document.getElementById('btn-archive').addEventListener('click', async () => {
+  const days = +document.getElementById('archive-days').value;
+  if (!confirm(`Archive log entries older than ${days} days?`)) return;
+  try {
+    const r = await adminPost(`/api/admin/logs/archive?older_than_days=${days}`, {});
+    document.getElementById('maintenance-msg').textContent =
+      `Archived ${r.archived} entries (older than ${days} days). Cutoff: ${r.cutoff}`;
+    toast(`Archived ${r.archived} entries`, 'success');
+    loadLogs();
+  } catch(e) {
+    toast('Archive failed: ' + e.message, 'error');
+  }
+});
+
+document.getElementById('btn-purge').addEventListener('click', async () => {
+  const confirm_text = document.getElementById('purge-confirm').value.trim();
+  if (confirm_text !== 'CONFIRM') {
+    toast('Type CONFIRM in the box to enable purge', 'error'); return;
+  }
+  const days = +document.getElementById('purge-days').value;
+  try {
+    // Get a one-time token first
+    const t = await adminGet('/api/admin/logs/purge-token');
+    const r = await adminDelete(`/api/admin/logs/purge?token=${t.token}&older_than_days=${days}`);
+    document.getElementById('maintenance-msg').textContent =
+      `Purged ${r.purged} archived entries older than ${days} days.`;
+    toast(`Purged ${r.purged} archived entries`, 'warning');
+    document.getElementById('purge-confirm').value = '';
+  } catch(e) {
+    toast('Purge failed: ' + e.message, 'error');
+  }
+});
+</script>
+</body>
+</html>

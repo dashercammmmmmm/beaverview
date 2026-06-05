@@ -1,0 +1,1216 @@
+const data = window.dashboardData;
+
+const state = {
+  campusId: data.campuses[0].id,
+  selectedBuildingCode: null,
+  selectedRoomId: null,
+  activeTab: "overview",
+  search: "",
+  filters: new Set(),
+  log: [],
+  history: [],   // last 5 building+room combos visited
+  compact: false,
+  backendOnline: false,
+  connectorOverrides: {},  // campus_id -> connector health object from /api
+  lastSynced: null          // ISO timestamp of last successful connector fetch
+};
+
+const els = {
+  campusTabs: document.querySelector("#campusTabs"),
+  filters: document.querySelector("#filters"),
+  connectorList: document.querySelector("#connectorList"),
+  mapHeading: document.querySelector("#mapHeading"),
+  campusFrame: document.querySelector("#campusFrame"),
+  campusGrid: document.querySelector("#campusGrid"),
+  selectedBuilding: document.querySelector("#selectedBuilding"),
+  roomHeader: document.querySelector("#roomHeader"),
+  roomTabs: document.querySelector("#roomTabs"),
+  roomBody: document.querySelector("#roomBody"),
+  statusSummary: document.querySelector("#statusSummary"),
+  search: document.querySelector("#globalSearch"),
+  tourButton: document.querySelector("#tourButton"),
+  tourOverlay: document.querySelector("#tourOverlay"),
+  closeTour: document.querySelector("#closeTour"),
+  closeTourX: document.querySelector("#closeTourX"),
+  densityToggle: document.querySelector("#densityToggle"),
+  zoomIn: document.querySelector("#zoomIn"),
+  zoomOut: document.querySelector("#zoomOut"),
+  resetMap: document.querySelector("#resetMap"),
+  adminLink: document.querySelector("#adminLink")
+};
+
+function currentCampus() {
+  return data.campuses.find((campus) => campus.id === state.campusId);
+}
+
+function campusBuildings(campus = currentCampus()) {
+  return (window.osuMapBuildings || []).filter((building) => building.campus === campus.id);
+}
+
+function supportBuildingFor(realBuilding, campus = currentCampus()) {
+  const code = (realBuilding.code || "").toLowerCase();
+  return campus.buildings.find((building) => {
+    const mockCode = (building.code || "").toLowerCase();
+    return mockCode && code && mockCode === code;
+  });
+}
+
+function supportRoomsForBuilding(realBuilding, campus = currentCampus()) {
+  const supportBuilding = supportBuildingFor(realBuilding, campus);
+  return supportBuilding ? supportBuilding.rooms : generatedRoomsForBuilding(realBuilding);
+}
+
+function generatedRoomsForBuilding(building) {
+  const seed = Number(building.id) || 1;
+  const roomCount = seed % 4 + 2;
+  const statusCycle = ["available", "available", "in-use", "issue"];
+  return Array.from({ length: roomCount }, (_, index) => {
+    const floor = Math.floor(index / 3) + 1;
+    const number = `${floor}${String((index % 3) * 10 + 10).padStart(2, "0")}`;
+    const status = statusCycle[(seed + index) % statusCycle.length];
+    const hasOpenIncident = status === "issue";
+    return {
+      number,
+      type: "Inventory placeholder",
+      generated: true,
+      status,
+      health: status === "issue" ? 74 : status === "in-use" ? 88 : 96,
+      activeEvent: status === "in-use" ? "Mock class/event in progress" : "Available",
+      processor: "mock",
+      display: status === "issue" ? "needs review" : "mock",
+      screenconnect: seed % 2 === 0,
+      wattbox: seed % 3 === 0,
+      hybrid: seed % 5 === 0,
+      stale: false,
+      incidents: {
+        open: hasOpenIncident ? [`MOCK-${building.id}-${number} - Placeholder issue`] : [],
+        closed: []
+      },
+      devices: [
+        ["Room inventory", "Pending import", "Hardware IP List", "No real device data loaded"],
+        ["Display/control", "Mock", "Placeholder", "Will be replaced by secure .xlsx import"]
+      ]
+    };
+  });
+}
+
+function allRooms(campus = currentCampus()) {
+  return campusBuildings(campus).flatMap((building) =>
+    supportRoomsForBuilding(building, campus).map((room) => ({
+      ...room,
+      id: `${campus.id}-${building.code}-${room.number}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      building
+    }))
+  );
+}
+
+function selectedRoom() {
+  return allRooms().find((room) => room.id === state.selectedRoomId) || null;
+}
+
+function statusLabel(status) {
+  return {
+    available: "Available",
+    "in-use": "In use",
+    issue: "Issue",
+    offline: "Offline"
+  }[status] || status;
+}
+
+function roomMatchesFilters(room) {
+  if (state.filters.has("active") && room.activeEvent === "Available") return false;
+  if (state.filters.has("openIncident") && room.incidents.open.length === 0) return false;
+  if (state.filters.has("offline") && room.status !== "offline") return false;
+  if (state.filters.has("issue") && !["issue", "offline"].includes(room.status)) return false;
+  if (state.filters.has("wattbox") && !room.wattbox) return false;
+  if (state.filters.has("screenconnect") && !room.screenconnect) return false;
+  if (state.filters.has("hybrid") && !room.hybrid) return false;
+  if (state.filters.has("stale") && !room.stale) return false;
+  return true;
+}
+
+function buildingMatches(building) {
+  const term = state.search.trim().toLowerCase();
+  const rooms = allRooms().filter((room) => room.building.id === building.id);
+  const hasFilters = state.filters.size > 0;
+  const passesFilter = hasFilters ? rooms.some(roomMatchesFilters) : true;
+  if (!passesFilter) return false;
+  if (!term) return true;
+  return (
+    (building.code || "").toLowerCase().includes(term) ||
+    building.name.toLowerCase().includes(term) ||
+    rooms.some((room) => `${building.code || building.name} ${room.number}`.toLowerCase().includes(term))
+  );
+}
+
+function buildingSummary(building) {
+  const rooms = allRooms().filter((room) => room.building.id === building.id);
+  const issues = rooms.filter((room) => ["issue", "offline"].includes(room.status)).length;
+  const inUse = rooms.filter((room) => room.status === "in-use").length;
+  const available = rooms.filter((room) => room.status === "available").length;
+  const status = !rooms.length ? "map-only" : issues ? "issue" : inUse ? "in-use" : "available";
+  return { rooms, issues, inUse, available, status };
+}
+
+const campusViewDefaults = {
+  corvallis: { center: [-123.27977726027, 44.563696347448], zoom: 15.25 },
+  cascades: { center: [-121.334198, 44.043224], zoom: 16 },
+  hatfield: { center: [-124.0453, 44.6222], zoom: 16 }
+};
+
+let map = null;
+let mapReady = false;
+
+function buildingDisplayName(building) {
+  return building.sourceName === "Building" || building.name.startsWith("Building ")
+    ? `Unnamed OSU map building ${building.id}`
+    : building.name;
+}
+
+function buildingLabel(building) {
+  return building.code || "";
+}
+
+function buildingGeoJSON(buildings) {
+  return {
+    type: "FeatureCollection",
+    features: buildings.map((building) => {
+      const summary = buildingSummary(building);
+      return {
+        type: "Feature",
+        id: building.id,
+        geometry: building.polygon && building.polygon.length
+          ? { type: "Polygon", coordinates: [building.polygon] }
+          : { type: "Point", coordinates: [building.lng, building.lat] },
+        properties: {
+          id: building.id,
+          campus: building.campus,
+          name: buildingDisplayName(building),
+          officialName: building.name,
+          code: buildingLabel(building),
+          sourceName: building.sourceName,
+          status: summary.status,
+          supportRooms: summary.rooms.length,
+          issues: summary.issues,
+          selected: state.selectedBuildingCode === building.id
+        }
+      };
+    })
+  };
+}
+
+function campusBoundsLngLat(buildings) {
+  const coords = buildings.flatMap((building) => (
+    building.polygon && building.polygon.length ? building.polygon : [[building.lng, building.lat]]
+  ));
+  const lngs = coords.map((coord) => coord[0]);
+  const lats = coords.map((coord) => coord[1]);
+  return [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]];
+}
+
+function buildingCenter(building) {
+  // Returns [lng, lat] centroid of a building (from polygon average or point)
+  if (building.polygon && building.polygon.length) {
+    let sumLng = 0, sumLat = 0;
+    for (const [lng, lat] of building.polygon) { sumLng += lng; sumLat += lat; }
+    return [sumLng / building.polygon.length, sumLat / building.polygon.length];
+  }
+  if (building.lng && building.lat) return [building.lng, building.lat];
+  return null;
+}
+
+function ensureMap() {
+  if (map || !window.maplibregl) return;
+
+  map = new maplibregl.Map({
+    container: "mapCanvas",
+    style: {
+      version: 8,
+      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      sources: {
+        osm: {
+          type: "raster",
+          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          attribution: "© OpenStreetMap contributors"
+        }
+      },
+      layers: [
+        { id: "osm", type: "raster", source: "osm" }
+      ]
+    },
+    center: campusViewDefaults[state.campusId].center,
+    zoom: campusViewDefaults[state.campusId].zoom,
+    minZoom: 13,
+    maxZoom: 20,
+    pitch: 0,
+    bearing: 0,
+    attributionControl: false
+  });
+
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
+
+  map.on("load", () => {
+    mapReady = true;
+    map.addSource("osu-buildings", {
+      type: "geojson",
+      data: buildingGeoJSON(campusBuildings())
+    });
+
+    map.addLayer({
+      id: "building-fill",
+      type: "fill",
+      source: "osu-buildings",
+      paint: {
+        "fill-color": [
+          "case",
+          ["==", ["get", "selected"], true], "#d73f09",
+          ["==", ["get", "status"], "issue"], "#7a2f26",
+          ["==", ["get", "status"], "offline"], "#7a2f26",
+          ["==", ["get", "status"], "in-use"], "#24485d",
+          ["==", ["get", "status"], "available"], "#274536",
+          "#2e2b2a"
+        ],
+        "fill-opacity": [
+          "case",
+          ["==", ["get", "selected"], true], 0.78,
+          [">", ["get", "supportRooms"], 0], 0.74,
+          0.58
+        ]
+      }
+    });
+
+    map.addLayer({
+      id: "building-outline",
+      type: "line",
+      source: "osu-buildings",
+      paint: {
+        "line-color": ["case", ["==", ["get", "selected"], true], "#80220a", "#ffffff"],
+        "line-width": ["case", ["==", ["get", "selected"], true], 2.5, 0.8],
+        "line-opacity": 0.88
+      }
+    });
+
+    map.addLayer({
+      id: "building-labels",
+      type: "symbol",
+      source: "osu-buildings",
+      minzoom: 15,
+      filter: ["!=", ["get", "code"], ""],
+      layout: {
+        "text-field": ["get", "code"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 15, 10, 17, 13, 19, 16],
+        "text-font": ["Noto Sans Regular"],
+        "text-allow-overlap": false,
+        "text-ignore-placement": false
+      },
+      paint: {
+        "text-color": "#1b1d21",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1.5
+      }
+    });
+
+    map.on("click", "building-fill", (event) => {
+      const feature = event.features && event.features[0];
+      if (!feature) return;
+      selectBuilding(feature.properties.id);
+    });
+
+    map.on("mouseenter", "building-fill", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "building-fill", () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    updateMapData();
+  });
+}
+
+function updateMapData(options = {}) {
+  ensureMap();
+  if (!mapReady) return;
+  const buildings = campusBuildings().filter(buildingMatches);
+  const source = map.getSource("osu-buildings");
+  if (source) source.setData(buildingGeoJSON(buildings));
+  if (options.fit && buildings.length) {
+    map.fitBounds(campusBoundsLngLat(buildings), { padding: 42, duration: 0, maxZoom: campusViewDefaults[state.campusId].zoom });
+  }
+}
+
+function resetMapView() {
+  ensureMap();
+  if (!mapReady) return;
+  const buildings = campusBuildings().filter(buildingMatches);
+  if ((state.search || state.filters.size > 0) && buildings.length) {
+    map.fitBounds(campusBoundsLngLat(buildings), { padding: 42, duration: 350, maxZoom: campusViewDefaults[state.campusId].zoom });
+  } else {
+    map.easeTo({ center: campusViewDefaults[state.campusId].center, zoom: campusViewDefaults[state.campusId].zoom, duration: 350 });
+  }
+}
+
+function selectBuilding(buildingId) {
+  state.selectedBuildingCode = buildingId;
+  const firstRoom = allRooms().find((room) => room.building.id === state.selectedBuildingCode && roomMatchesFilters(room));
+  state.selectedRoomId = firstRoom ? firstRoom.id : null;
+  state.activeTab = "overview";
+  if (firstRoom) addToHistory(firstRoom);  // track the auto-selected first room
+  renderSelectedBuilding();
+  renderRoom();
+  updateMapData();
+}
+
+function renderCampusTabs() {
+  els.campusTabs.innerHTML = data.campuses.map((campus) => `
+    <button
+      type="button"
+      role="tab"
+      aria-selected="${campus.id === state.campusId}"
+      class="${campus.id === state.campusId ? "active" : ""}"
+      data-campus="${campus.id}">
+      ${campus.name}
+    </button>
+  `).join("");
+}
+
+function renderFilters() {
+  els.filters.innerHTML = data.filters.map((filter) => `
+    <label class="filter-chip ${state.filters.has(filter.id) ? "active" : ""}">
+      <input type="checkbox" value="${filter.id}" ${state.filters.has(filter.id) ? "checked" : ""}>
+      <span>${filter.label}</span>
+    </label>
+  `).join("");
+}
+
+function renderConnectorList() {
+  const campus = currentCampus();
+  const overrides = state.connectorOverrides[campus.id];
+  const labels = {
+    crestron: "Crestron (Direct)",
+    live25: "25Live",
+    screenconnect: "ScreenConnect",
+    wattbox: "WattBox/OvrC",
+    servicenow: "ServiceNow"
+  };
+  // Use live data from API if available, otherwise fall back to mock data
+  const connectors = overrides
+    ? Object.fromEntries(Object.entries(overrides).map(([k, v]) => [k, v.status || v]))
+    : campus.connectors;
+  const syncNote = state.backendOnline
+    ? (state.lastSynced ? `Synced ${new Date(state.lastSynced).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "Backend connected")
+    : "Showing mock data";
+  els.connectorList.innerHTML = Object.entries(connectors).map(([key, value]) => `
+    <div class="connector-row">
+      <span>${labels[key] || key}</span>
+      <strong class="connector-state ${value}">${value}</strong>
+    </div>
+  `).join("") + `<p class="connector-sync">${syncNote}</p>`;
+}
+
+function renderMap() {
+  const campus = currentCampus();
+  const buildings = campusBuildings(campus);
+  els.mapHeading.textContent = `${campus.name} Campus`;
+  els.campusFrame.dataset.campus = campus.id;
+
+  const rooms = allRooms(campus);
+  const visibleBuildings = buildings.filter(buildingMatches);
+  const summary = {
+    buildings: visibleBuildings.length,
+    rooms: rooms.length,
+    issues: rooms.filter((room) => ["issue", "offline"].includes(room.status)).length,
+    active: rooms.filter((room) => room.activeEvent !== "Available").length
+  };
+  els.statusSummary.innerHTML = `
+    <span><strong>${summary.buildings}</strong> buildings</span>
+    <span><strong>${summary.rooms}</strong> mock rooms</span>
+    <span><strong>${summary.active}</strong> active</span>
+    <span><strong>${summary.issues}</strong> needs attention</span>
+  `;
+
+  if (!window.maplibregl) {
+    els.campusGrid.innerHTML = `<div class="empty-map">Map engine did not load. Confirm local MapLibre files exist in dashboard/vendor/maplibre.</div>`;
+    return;
+  }
+
+  ensureMap();
+  updateMapData({ fit: Boolean(state.search || state.filters.size > 0) });
+  if (mapReady && !state.search && state.filters.size === 0) {
+    map.easeTo({ center: campusViewDefaults[state.campusId].center, zoom: campusViewDefaults[state.campusId].zoom, duration: 250 });
+  }
+}
+
+function renderSelectedBuilding() {
+  const campus = currentCampus();
+  const building = campusBuildings(campus).find((item) => item.id === state.selectedBuildingCode);
+  if (!building) {
+    els.selectedBuilding.innerHTML = `<p>Select a building footprint on the map to see room inventory and support actions.</p>`;
+    return;
+  }
+  state.selectedBuildingCode = building.id;
+  const rooms = allRooms().filter((room) => room.building.id === building.id && roomMatchesFilters(room));
+  els.selectedBuilding.innerHTML = `
+    <div class="building-detail">
+      <div>
+        <p class="eyebrow">Building</p>
+        <h3>${building.code || "Map record"} <span>${buildingDisplayName(building)}</span></h3>
+      </div>
+      <div class="room-list">
+        ${rooms.map((room) => `
+          <button type="button" class="room-pill ${room.status} ${room.generated ? "generated" : ""} ${room.id === state.selectedRoomId ? "active" : ""}" data-room="${room.id}">
+            <strong>${building.code || building.name} ${room.number}</strong>
+            <span>${room.generated ? "Placeholder" : statusLabel(room.status)} · ${room.health}%</span>
+          </button>
+        `).join("") || "<p>This building is from the public OSU map. Presentation Support room inventory is pending for this mock.</p>"}
+      </div>
+    </div>
+  `;
+}
+
+function renderRoom() {
+  const room = selectedRoom();
+  if (!room) {
+    els.roomTabs.hidden = true;
+    els.roomHeader.innerHTML = `
+      <p class="eyebrow">Selected Room</p>
+      <h2>No room selected</h2>
+      <p>Choose a building and room to load the support toolkit.</p>
+    `;
+    els.roomBody.innerHTML = "";
+    return;
+  }
+
+  els.roomTabs.hidden = false;
+  els.roomHeader.innerHTML = `
+    <p class="eyebrow">${room.building.name}</p>
+    <h2>${room.building.code || room.building.name} ${room.number}</h2>
+    <p>${room.type}${room.generated ? " - generated until real inventory import" : ""}</p>
+    <div class="room-status-line">
+      <span class="status-dot ${room.status}"></span>
+      <strong>${statusLabel(room.status)}</strong>
+      <span>${room.health}% health</span>
+    </div>
+    ${room.generated ? `<div class="assistant-callout inventory-warning"><strong>Placeholder room</strong><span>This room was generated so every mapped building is clickable. Replace it with the secure Hardware IP List / room inventory import before production review.</span></div>` : ""}
+  `;
+
+  els.roomTabs.querySelectorAll("button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === state.activeTab);
+  });
+
+  const renderers = {
+    overview: renderOverview,
+    tools: renderTools,
+    incidents: renderIncidents,
+    log: renderLog
+  };
+  els.roomBody.innerHTML = renderers[state.activeTab](room);
+}
+
+function renderOverview(room) {
+  return `
+    <div class="metric-grid">
+      <div><span>Processor</span><strong>${room.processor}</strong></div>
+      <div><span>Display</span><strong>${room.display}</strong></div>
+      <div><span>Remote</span><strong>${room.screenconnect ? "available" : "not listed"}</strong></div>
+      <div><span>Schedule</span><strong>${room.activeEvent}</strong></div>
+    </div>
+    <h3>Devices</h3>
+    <div class="device-list">
+      ${room.devices.map((device) => `
+        <div class="device-row">
+          <strong>${device[0]}</strong>
+          <span>${device[1]} ${device[2]}</span>
+          <em>${device[3]}</em>
+        </div>
+      `).join("")}
+    </div>
+    <div class="assistant-callout">
+      <strong>AI assistant placeholder</strong>
+      <span>Future phase: load this room context, guide verification steps, and draft ServiceNow documentation.</span>
+    </div>
+  `;
+}
+
+function renderTools(room) {
+  const hasCP    = (room.devices || []).some(d => d[0] === "Control Processor" || d[0] === "Processor");
+  const hasPTZ   = (room.devices || []).some(d => d[0] === "Camera");
+  const openCount = (room.incidents?.open || []).length;
+
+  // Build the list dynamically — only show tools that apply to this room's equipment
+  const tools = [
+    // XPanel: shown whenever a control processor is present or reporting online
+    (hasCP || room.processor === "online") && {
+      label: "Launch XPanel",
+      action: "xpanel_launched",
+      tool: "xpanel",
+      desc: "Source select · display · volume control"
+    },
+    // ScreenConnect: only when this room has an agent registered
+    room.screenconnect && {
+      label: "Start ScreenConnect",
+      action: "screenconnect_launched",
+      tool: "screenconnect",
+      desc: (room.devices || []).find(d => d[0] === "Lectern PC")
+        ? "Lectern PC — remote session available"
+        : "Remote access — machine lookup required"
+    },
+    // PTZ camera: only when a camera is in the device list
+    hasPTZ && {
+      label: "Control PTZ Camera",
+      action: "ptz_accessed",
+      tool: "ptz",
+      desc: (() => { const cam = (room.devices || []).find(d => d[0] === "Camera"); return cam ? `${cam[1]} ${cam[2]}` : "Pan · tilt · zoom · presets"; })()
+    },
+    // WattBox tools: only when room has one mapped
+    room.wattbox && {
+      label: "Check WattBox",
+      action: "wattbox_status_checked",
+      tool: "wattbox",
+      desc: `${(room.devices || []).length} outlet${(room.devices || []).length !== 1 ? "s" : ""} mapped`
+    },
+    room.wattbox && {
+      label: "Power cycle device",
+      action: "wattbox_power_cycle_requested",
+      tool: "wattbox",
+      danger: true,
+      desc: "Last-resort — logged and requires confirmation"
+    },
+    // Device web UI: always available (shows whatever's in the device list)
+    {
+      label: "Device web UIs",
+      action: "device_web_ui_opened",
+      tool: "device_web",
+      desc: `${(room.devices || []).length} device${(room.devices || []).length !== 1 ? "s" : ""} in inventory`
+    },
+    // Documentation
+    {
+      label: "SharePoint guide",
+      action: "sharepoint_document_opened",
+      tool: "sharepoint",
+      desc: `${room.type} documentation`
+    },
+    // ServiceNow: pre-filled from room context
+    {
+      label: "Draft ServiceNow ticket",
+      action: "servicenow_ticket_draft_created",
+      tool: "servicenow",
+      desc: openCount ? `${openCount} open incident — pre-filled` : "Pre-fill from room context"
+    }
+  ].filter(Boolean);  // drop the falsy entries from conditional includes
+
+  return `
+    <div class="tool-list">
+      ${tools.map(t => `
+        <button type="button" class="tool-action${t.danger ? " danger" : ""}"
+                data-action="${t.action}" data-tool="${t.tool}">
+          <strong>${t.label}</strong>
+          <span>${t.desc}</span>
+        </button>
+      `).join("")}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Device tool panel renderers
+// Each returns an HTML string injected into els.roomBody.
+// A "← Back to Actions" button at the top restores the tools tab.
+// ---------------------------------------------------------------------------
+
+function toolPanelWrap(content, note) {
+  return `
+    <button class="tool-panel-back" type="button" data-back="tools">← Actions</button>
+    ${content}
+    <p class="tool-mock-note">${note}</p>
+  `;
+}
+
+// XPanel — Crestron-style room control mockup
+function renderXPanelTool(room) {
+  const cp  = (room.devices || []).find(d => d[0] === "Control Processor" || d[0] === "Processor");
+  const hasPC  = (room.devices || []).some(d => d[0] === "Lectern PC");
+  const hasCam = (room.devices || []).some(d => d[0] === "Camera");
+  const sources = ["HDMI 1", "HDMI 2", hasPC && "Lectern PC", "USB-C / Laptop", hasCam && "Camera"].filter(Boolean);
+  const disp = room.display;
+
+  return toolPanelWrap(`
+    <div class="xpanel">
+      <div class="xpanel-row">
+        <p class="eyebrow">Source Select</p>
+        <div class="xpanel-btns">
+          ${sources.map((s, i) => `<button class="xp-btn${i === 0 ? " active" : ""}" type="button">${s}</button>`).join("")}
+        </div>
+      </div>
+      <div class="xpanel-row">
+        <p class="eyebrow">Display</p>
+        <div class="xpanel-btns">
+          <button class="xp-btn${disp === "on"      ? " active" : ""}" type="button">On</button>
+          <button class="xp-btn${disp === "standby" ? " active" : ""}" type="button">Standby</button>
+          <button class="xp-btn${disp === "off"     ? " active" : ""}" type="button">Off</button>
+        </div>
+      </div>
+      <div class="xpanel-row">
+        <p class="eyebrow">Volume</p>
+        <div class="xp-volume">
+          <button class="xp-btn" type="button">−</button>
+          <div class="xp-volume-track"><div class="xp-volume-fill" id="xpVol" style="width:62%"></div></div>
+          <button class="xp-btn" type="button">+</button>
+          <button class="xp-btn" type="button">Mute</button>
+        </div>
+      </div>
+      <div class="xpanel-row">
+        <div class="xp-status-row">
+          <span class="status-dot ${room.processor}"></span>
+          <strong>Processor:</strong>&nbsp;${room.processor}&nbsp;&nbsp;
+          <strong>Display:</strong>&nbsp;${room.display}
+          ${cp ? `&nbsp;&nbsp;<strong>CP:</strong>&nbsp;${cp[1]} ${cp[2]}` : ""}
+        </div>
+      </div>
+    </div>
+  `, `Mock UI — in production this connects via the backend proxy to the ${cp ? `${cp[1]} ${cp[2]}` : "control processor"} in ${room.building.code} ${room.number}`);
+}
+
+// ScreenConnect — remote session launcher
+function renderScreenConnectTool(room) {
+  const machineName = `${(room.building.code || room.building.name).toUpperCase()}-${room.number}-PC`;
+  const pc = (room.devices || []).find(d => d[0] === "Lectern PC");
+  const online = room.screenconnect && room.status !== "offline";
+
+  return toolPanelWrap(`
+    <div class="sc-panel">
+      <div class="sc-machine">
+        <div class="sc-icon">🖥</div>
+        <div class="sc-machine-info">
+          <strong>${machineName}</strong>
+          <span>${pc ? `${pc[1]} ${pc[2]}` : "Lectern PC"}</span>
+          <span>Last seen: ${online ? "Just now" : "—"}</span>
+        </div>
+        <span class="connector-state ${online ? "ok" : "offline"}">${online ? "Online" : "Offline"}</span>
+      </div>
+      ${online
+        ? `<button class="sc-launch" type="button">Launch Remote Session →</button>
+           <p class="sc-sessions">Session proxied through ScreenConnect · filtered by room tag</p>`
+        : `<p class="sc-sessions" style="color:var(--status-offline);padding:8px 0">
+             No active connection — machine offline or SC agent not responding
+           </p>`}
+      <div class="dev-inventory">
+        ${(room.devices || []).map(d => `
+          <div class="dev-card">
+            <span class="dev-card-type">${d[0]}</span>
+            <div class="dev-card-info">
+              <strong>${d[1]} ${d[2]}</strong>
+              <span>${d[3]}</span>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `, `Mock UI — in production opens a ScreenConnect session for ${machineName} via the OSU proxy`);
+}
+
+// PTZ Camera — pan/tilt/zoom controls + preset recall
+function renderPTZTool(room) {
+  const cam = (room.devices || []).find(d => d[0] === "Camera");
+  const presets = ["1 — Instructor Wide", "2 — Instructor Close", "3 — Whiteboard", "4 — Full Screen"];
+
+  return toolPanelWrap(`
+    <div class="ptz-panel">
+      <div class="ptz-feed">
+        <div class="ptz-feed-inner">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+          </svg>
+          Live feed — available when connected to ${cam ? `${cam[1]} ${cam[2]}` : "camera"}
+        </div>
+      </div>
+      <div class="ptz-controls">
+        <div class="ptz-dpad">
+          <span></span>
+          <button class="ptz-btn" type="button" title="Tilt up">▲</button>
+          <span></span>
+          <button class="ptz-btn" type="button" title="Pan left">◄</button>
+          <button class="ptz-btn ptz-btn-home" type="button" title="Go to home">HOME</button>
+          <button class="ptz-btn" type="button" title="Pan right">►</button>
+          <span></span>
+          <button class="ptz-btn" type="button" title="Tilt down">▼</button>
+          <span></span>
+        </div>
+        <div class="ptz-zoom">
+          <button class="ptz-btn" type="button" title="Zoom in"  style="width:48px">Z +</button>
+          <button class="ptz-btn" type="button" title="Zoom out" style="width:48px">Z −</button>
+        </div>
+        <div class="ptz-presets">
+          <p class="eyebrow">Presets</p>
+          ${presets.map(p => `<button class="ptz-preset" type="button">${p}</button>`).join("")}
+        </div>
+      </div>
+    </div>
+  `, `Mock UI — in production controls the ${cam ? `${cam[1]} ${cam[2]}` : "PTZ camera"} via its HTTP API`);
+}
+
+// WattBox — outlet status + per-outlet cycle button
+function renderWattBoxTool(room) {
+  const outlets = (room.devices || []).map((d, i) => ({
+    num: i + 1,
+    label: `${d[1]} ${d[2]}`,
+    type: d[0],
+    on: room.status !== "offline"
+  }));
+  outlets.push({ num: outlets.length + 1, label: "(spare)", type: "—", on: false });
+
+  return toolPanelWrap(`
+    <div class="wb-panel">
+      <p class="eyebrow" style="margin-bottom:6px">
+        ${room.building.code} ${room.number} — ${outlets.length - 1} device outlet${outlets.length - 1 !== 1 ? "s" : ""}
+      </p>
+      ${outlets.map(o => `
+        <div class="wb-outlet">
+          <span class="wb-outlet-num">${o.num}</span>
+          <div class="wb-outlet-name">
+            <strong>${o.label}</strong>
+            <span>${o.type}</span>
+          </div>
+          <span class="wb-status ${o.on ? "on" : "off"}">${o.on ? "On" : "Off"}</span>
+          <button class="wb-cycle" type="button" ${!o.on && o.label === "(spare)" ? "disabled" : ""}>Cycle</button>
+        </div>
+      `).join("")}
+    </div>
+  `, "Mock UI — in production cycles specific outlets via the WattBox REST API. Each cycle is logged in the audit trail.");
+}
+
+// Device Web UI — inventory list with per-device launch buttons
+function renderDeviceWebTool(room) {
+  const devices = room.devices || [];
+  return toolPanelWrap(`
+    <div class="dev-inventory">
+      ${devices.length
+        ? devices.map(d => `
+            <div class="dev-card">
+              <span class="dev-card-type">${d[0]}</span>
+              <div class="dev-card-info">
+                <strong>${d[1]} ${d[2]}</strong>
+                <span>${d[3]}</span>
+              </div>
+              <button class="dev-launch" type="button">Open UI →</button>
+            </div>
+          `).join("")
+        : `<p style="color:var(--text-muted);font-size:13px;padding:8px 0">No device inventory recorded for this room.</p>`
+      }
+    </div>
+  `, "Mock UI — in production each button opens the device's built-in web interface. IPs are resolved by the backend proxy; the browser never receives a raw IP address.");
+}
+
+// SharePoint — room-type documentation links
+function renderSharePointTool(room) {
+  const guides = {
+    "Presentation Classroom": { title: "Classroom AV Quick Guide",   pages: "8 pp",  updated: "Mar 2025" },
+    "Conference Room":        { title: "Conference Room Setup",       pages: "5 pp",  updated: "Jan 2025" },
+    "Lecture Hall":           { title: "Lecture Hall Operations",     pages: "12 pp", updated: "Feb 2025" },
+    "Active Learning Room":   { title: "Active Learning AV Guide",    pages: "10 pp", updated: "Apr 2025" },
+    "Event Space":            { title: "Event AV Setup Checklist",    pages: "6 pp",  updated: "Dec 2024" }
+  };
+  const g = guides[room.type] || { title: `${room.type} AV Guide`, pages: "—", updated: "—" };
+
+  return toolPanelWrap(`
+    <div class="dev-inventory">
+      <div class="dev-card">
+        <span class="dev-card-type" style="font-size:22px;width:36px">📄</span>
+        <div class="dev-card-info">
+          <strong>${g.title}</strong>
+          <span>${g.pages} · Updated ${g.updated}</span>
+        </div>
+        <button class="dev-launch" type="button">Open PDF →</button>
+      </div>
+      <div class="dev-card">
+        <span class="dev-card-type" style="font-size:22px;width:36px">🔧</span>
+        <div class="dev-card-info">
+          <strong>Troubleshooting Runbook</strong>
+          <span>Common issues · Escalation paths</span>
+        </div>
+        <button class="dev-launch" type="button">Open →</button>
+      </div>
+      <div class="dev-card">
+        <span class="dev-card-type" style="font-size:22px;width:36px">📋</span>
+        <div class="dev-card-info">
+          <strong>Room Inventory Record</strong>
+          <span>Hardware list · warranty · install date</span>
+        </div>
+        <button class="dev-launch" type="button">Open →</button>
+      </div>
+    </div>
+  `, "Mock UI — in production opens the SharePoint document library filtered to this room type");
+}
+
+// ServiceNow — pre-filled incident draft form
+function renderServiceNowTool(room) {
+  const roomLabel  = `${room.building.code || room.building.name} ${room.number}`;
+  const openInc    = (room.incidents?.open || []);
+  const shortDesc  = openInc[0] || `AV issue in ${roomLabel}`;
+  const priority   = room.status === "offline" ? "2" : room.status === "issue" ? "3" : "4";
+  const bodyText   = [
+    `Building: ${room.building.name}`,
+    `Room: ${roomLabel}  (${room.type})`,
+    `Health: ${room.health}%   Processor: ${room.processor}   Display: ${room.display}`,
+    openInc.length ? `\nOpen incidents:\n${openInc.map(i => "  • " + i).join("\n")}` : "",
+    "\n\nAdditional detail:"
+  ].filter(Boolean).join("\n");
+
+  return toolPanelWrap(`
+    <div class="sn-panel">
+      <div class="sn-field">
+        <label>Room (auto-filled)</label>
+        <input type="text" readonly value="${roomLabel}">
+      </div>
+      <div class="sn-field">
+        <label>Short Description</label>
+        <input type="text" value="${shortDesc}">
+      </div>
+      <div class="sn-field">
+        <label>Category</label>
+        <select>
+          <option selected>AV Equipment</option>
+          <option>Network Connectivity</option>
+          <option>Software / Control System</option>
+          <option>Physical / Facilities</option>
+        </select>
+      </div>
+      <div class="sn-field">
+        <label>Priority</label>
+        <select>
+          <option value="2" ${priority === "2" ? "selected" : ""}>2 — High (room down)</option>
+          <option value="3" ${priority === "3" ? "selected" : ""}>3 — Moderate (partial issue)</option>
+          <option value="4" ${priority === "4" ? "selected" : ""}>4 — Low (cosmetic / informational)</option>
+        </select>
+      </div>
+      <div class="sn-field">
+        <label>Description</label>
+        <textarea rows="5">${bodyText}</textarea>
+      </div>
+      <button class="sn-submit" type="button" data-action="servicenow_ticket_submitted" data-tool="sn_submit">
+        Create Draft Ticket
+      </button>
+    </div>
+  `, "Mock UI — in production this opens a pre-filled ServiceNow incident for your review before submission");
+}
+
+function renderIncidents(room) {
+  const closed = room.incidents.closed.slice(0, 5);
+  return `
+    <h3>Open Incidents</h3>
+    <div class="incident-list">
+      ${room.incidents.open.map((incident) => `<div class="incident open">${incident}</div>`).join("") || `<div class="incident">No open incidents in mock data.</div>`}
+    </div>
+    <h3>Recent Closed</h3>
+    <div class="incident-list">
+      ${closed.map((incident) => `<div class="incident closed">${incident}</div>`).join("") || `<div class="incident">No recent closed incidents in mock data.</div>`}
+    </div>
+  `;
+}
+
+function renderLog() {
+  // Shows the last 5 building + room combinations visited (browsing history).
+  // Individual tool actions are logged to the admin audit log only.
+  if (!state.history.length) {
+    return `
+      <div class="audit-list">
+        <div class="audit-row">
+          <strong>No rooms visited yet</strong>
+          <span>Select a building on the map, then click a room — your last 5 visits appear here.</span>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="audit-list">
+      <div class="audit-row" style="opacity:.55;font-size:.8em;border-bottom:none;padding-bottom:0">
+        <strong>Recently visited</strong>
+        <span>Click any row to return</span>
+      </div>
+      ${state.history.map((entry, i) => `
+        <div class="audit-row history-row" data-history-idx="${i}"
+             style="cursor:pointer" title="Return to ${entry.buildingCode} ${entry.roomNumber}">
+          <strong>${entry.buildingCode} · ${entry.roomNumber}</strong>
+          <span>${entry.buildingName}${entry.typeLabel ? " · " + entry.typeLabel : ""}</span>
+          <em>${entry.ts}</em>
+        </div>
+      `).join("")}
+    </div>`;
+}
+
+function addToHistory(room) {
+  // Track a room visit in state.history (max 5, deduplicated by roomId).
+  if (!room) return;
+  const entry = {
+    buildingCode: room.building.code || room.building.name,
+    buildingName: room.building.name,
+    roomId:       room.id,
+    roomNumber:   room.number,
+    typeLabel:    room.type || "",
+    ts:           new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+  };
+  state.history = state.history.filter((h) => h.roomId !== room.id); // dedup
+  state.history.unshift(entry);
+  if (state.history.length > 5) state.history = state.history.slice(0, 5);
+}
+
+function addAudit(action, outcome = "success") {
+  const room = selectedRoom();
+  if (!room) return;
+  state.log.unshift({
+    roomId: room.id,
+    action,
+    outcome,
+    time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+  });
+  // Persist to backend admin audit log when API is reachable
+  if (state.backendOnline) {
+    fetch(`/api/rooms/${room.id}/action`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action_type: action, outcome })
+    }).catch(() => {});
+  }
+}
+
+function renderAll() {
+  renderCampusTabs();
+  renderFilters();
+  renderConnectorList();
+  renderMap();
+  renderSelectedBuilding();
+  renderRoom();
+}
+
+els.campusTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-campus]");
+  if (!button) return;
+  state.campusId = button.dataset.campus;
+  state.selectedBuildingCode = null;
+  state.selectedRoomId = null;
+  resetMapView();
+  els.campusFrame.classList.remove("fold");
+  void els.campusFrame.offsetWidth;
+  els.campusFrame.classList.add("fold");
+  renderAll();
+  refreshConnectors();
+});
+
+els.filters.addEventListener("change", (event) => {
+  const input = event.target.closest("input");
+  if (!input) return;
+  if (input.checked) state.filters.add(input.value);
+  else state.filters.delete(input.value);
+  renderAll();
+});
+
+els.search.addEventListener("input", (event) => {
+  state.search = event.target.value;
+  renderAll();  // updates map source + fitBounds via updateMapData({fit:true})
+
+  if (!mapReady || !map) return;
+  const term = state.search.trim();
+  if (!term) return;
+
+  const matches = campusBuildings().filter(buildingMatches);
+
+  if (matches.length === 1) {
+    // Single match → auto-select building (highlights it orange, loads right panel)
+    selectBuilding(matches[0].id);
+    // Fly in tight — overrides the campus-level fitBounds from renderAll()
+    const center = buildingCenter(matches[0]);
+    if (center) {
+      requestAnimationFrame(() => {
+        map.flyTo({ center, zoom: 18.5, duration: 500, essential: true });
+      });
+    }
+  } else if (matches.length >= 2 && matches.length <= 6) {
+    // A few matches → zoom closer than campus default
+    map.fitBounds(campusBoundsLngLat(matches), { padding: 80, duration: 400, maxZoom: 17.5 });
+  }
+});
+
+els.zoomIn.addEventListener("click", () => {
+  if (map) map.zoomIn({ duration: 180 });
+});
+
+els.zoomOut.addEventListener("click", () => {
+  if (map) map.zoomOut({ duration: 180 });
+});
+
+els.resetMap.addEventListener("click", resetMapView);
+
+els.selectedBuilding.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-room]");
+  if (!button) return;
+  state.selectedRoomId = button.dataset.room;
+  state.activeTab = "overview";
+  addToHistory(selectedRoom());  // track visit in history (not admin log)
+  renderAll();
+});
+
+els.roomTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-tab]");
+  if (!button) return;
+  state.activeTab = button.dataset.tab;
+  renderRoom();
+});
+
+els.roomBody.addEventListener("click", (event) => {
+  // History row — click to return to that building + room
+  const historyRow = event.target.closest("[data-history-idx]");
+  if (historyRow) {
+    const idx = +historyRow.dataset.historyIdx;
+    const entry = state.history[idx];
+    if (entry) {
+      // Find the building by code (case-insensitive)
+      const building = campusBuildings().find((b) =>
+        (b.code || "").toLowerCase() === entry.buildingCode.toLowerCase()
+      );
+      if (building) {
+        state.selectedBuildingCode = building.id;
+        renderSelectedBuilding();
+        updateMapData();
+        // Fly map to the building
+        const center = buildingCenter(building);
+        if (center && mapReady) map.flyTo({ center, zoom: 18.5, duration: 400 });
+      }
+      state.selectedRoomId = entry.roomId;
+      state.activeTab = "overview";
+      renderRoom();
+    }
+    return;
+  }
+
+  // "← Actions" back button inside any tool panel
+  if (event.target.closest("[data-back='tools']")) {
+    state.activeTab = "tools";
+    renderRoom();
+    return;
+  }
+
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const action = button.dataset.action;
+  const tool   = button.dataset.tool || "";
+
+  // Power cycle needs an explicit confirmation before proceeding
+  if (action.includes("power") && !confirm("Power cycling is a last-resort action. Confirm? This will be logged.")) return;
+
+  // Log the action
+  addAudit(action, action.includes("power") ? "confirmation logged" : "success");
+
+  // ServiceNow submit inside the draft form → go to log
+  if (action === "servicenow_ticket_submitted") {
+    state.activeTab = "log";
+    renderRoom();
+    return;
+  }
+
+  // Map tool key → renderer function
+  const PANELS = {
+    xpanel:       renderXPanelTool,
+    screenconnect: renderScreenConnectTool,
+    ptz:          renderPTZTool,
+    wattbox:      renderWattBoxTool,
+    device_web:   renderDeviceWebTool,
+    sharepoint:   renderSharePointTool,
+    servicenow:   renderServiceNowTool
+  };
+
+  const room = selectedRoom();
+  if (PANELS[tool] && room) {
+    // Replace room body with the tool panel (back button is inside the panel)
+    els.roomBody.innerHTML = PANELS[tool](room);
+  } else {
+    // Fallback: go to log tab
+    state.activeTab = "log";
+    renderRoom();
+  }
+});
+
+els.tourButton.addEventListener("click", () => {
+  els.tourOverlay.hidden = false;
+  els.closeTour.focus();
+});
+
+function closeTour() {
+  els.tourOverlay.hidden = true;
+  els.tourButton.focus();
+}
+
+els.closeTour.addEventListener("click", closeTour);
+els.closeTourX.addEventListener("click", closeTour);
+
+els.tourOverlay.addEventListener("click", (event) => {
+  if (event.target === els.tourOverlay) {
+    closeTour();
+  }
+});
+
+els.densityToggle.addEventListener("click", () => {
+  state.compact = !state.compact;
+  document.body.classList.toggle("compact", state.compact);
+  els.densityToggle.textContent = state.compact ? "Comfortable" : "Compact";
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !els.tourOverlay.hidden) {
+    closeTour();
+  }
+});
+
+
+// ---------------------------------------------------------------------------
+// Backend API integration (Phase 4)
+// ---------------------------------------------------------------------------
+
+async function checkBackend() {
+  try {
+    const res = await fetch("/api/health", { signal: AbortSignal.timeout(2000) });
+    state.backendOnline = res.ok;
+  } catch {
+    state.backendOnline = false;
+  }
+  if (state.backendOnline) {
+    await refreshConnectors();
+  } else {
+    renderConnectorList();
+  }
+}
+
+async function refreshConnectors() {
+  try {
+    const res = await fetch(`/api/campus/${state.campusId}/connectors`, {
+      signal: AbortSignal.timeout(3000)
+    });
+    if (!res.ok) return;
+    const body = await res.json();
+    state.connectorOverrides[state.campusId] = body.connectors;
+    state.lastSynced = body.ts;
+    renderConnectorList();
+  } catch {
+    // backend unreachable; keep showing mock data
+  }
+}
+
+async function checkRole() {
+  try {
+    const res = await fetch("/api/me", { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return;
+    const { role } = await res.json();
+    if (role === "admin") {
+      els.adminLink.hidden = false;
+    }
+  } catch {
+    // backend unreachable or no session — leave link hidden
+  }
+}
+
+renderAll();
+checkBackend();
+checkRole();
+
+// Dev helper — exposes selectBuilding() to the browser console for testing
+// Usage: _dev.selectBuilding("1027537")  (building ID from osuMapBuildings)
+window._dev = { selectBuilding };

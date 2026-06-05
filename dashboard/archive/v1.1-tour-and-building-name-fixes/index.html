@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSU Presentation Support Platform</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to dashboard</a>
+
+  <div class="app-shell">
+    <header class="topbar" aria-label="Dashboard header">
+      <div>
+        <p class="eyebrow">OSU Presentation Support Platform</p>
+        <h1>Room Support Command Center</h1>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-button" id="tourButton" type="button" aria-label="Start guided tour" title="Start guided tour">
+          <span aria-hidden="true">?</span>
+        </button>
+        <button class="mode-toggle" id="densityToggle" type="button">Compact</button>
+      </div>
+    </header>
+
+    <main id="main" class="dashboard-layout">
+      <aside class="left-panel" aria-label="Campus and filters">
+        <section class="panel-section">
+          <label class="search-label" for="globalSearch">Search building, acronym, or room</label>
+          <input id="globalSearch" class="search-input" type="search" autocomplete="off" placeholder="Try KAd, LINC, 101">
+        </section>
+
+        <section class="panel-section" aria-labelledby="campusHeading">
+          <h2 id="campusHeading">Campus</h2>
+          <div class="segmented" id="campusTabs" role="tablist" aria-label="Campus selector"></div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="filterHeading">
+          <h2 id="filterHeading">Quick Filters</h2>
+          <div class="filter-grid" id="filters"></div>
+        </section>
+
+        <section class="panel-section" aria-labelledby="syncHeading">
+          <h2 id="syncHeading">Connector Health</h2>
+          <div class="connector-list" id="connectorList"></div>
+        </section>
+      </aside>
+
+      <section class="map-stage" aria-labelledby="mapHeading">
+        <div class="stage-header">
+          <div>
+            <p class="eyebrow">Interactive Mock</p>
+            <h2 id="mapHeading">Corvallis Campus</h2>
+          </div>
+          <div class="status-summary" id="statusSummary" aria-label="Campus status summary"></div>
+        </div>
+
+        <div class="campus-frame" id="campusFrame">
+          <div class="campus-grid" id="campusGrid" aria-label="Campus building map"></div>
+        </div>
+
+        <div class="selected-building" id="selectedBuilding" aria-live="polite"></div>
+      </section>
+
+      <aside class="right-panel" aria-label="Selected room details">
+        <section class="room-header" id="roomHeader">
+          <p class="eyebrow">Selected Room</p>
+          <h2>No room selected</h2>
+          <p>Choose a building and room to load the support toolkit.</p>
+        </section>
+
+        <section class="room-tabs" id="roomTabs" aria-label="Room support tabs" hidden>
+          <button type="button" data-tab="overview" class="active">Overview</button>
+          <button type="button" data-tab="tools">Tools</button>
+          <button type="button" data-tab="incidents">Tickets</button>
+          <button type="button" data-tab="log">Log</button>
+        </section>
+
+        <section class="room-body" id="roomBody"></section>
+      </aside>
+    </main>
+  </div>
+
+  <div class="tour-overlay" id="tourOverlay" hidden>
+    <div class="tour-panel" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+      <button class="tour-close-x" type="button" id="closeTourX" aria-label="Close guided tour">×</button>
+      <p class="eyebrow">First-run guide</p>
+      <h2 id="tourTitle">How technicians use this dashboard</h2>
+      <ol>
+        <li>Search or pick a campus to find a building fast.</li>
+        <li>Hover or focus a building acronym to see status at a glance.</li>
+        <li>Open a room to see schedule, incidents, devices, and tools.</li>
+        <li>Use mock actions now; real connectors come in later phases.</li>
+      </ol>
+      <button class="tour-primary" type="button" id="closeTour">Got it</button>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

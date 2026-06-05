@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users — BeaverView Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<nav class="admin-nav">
+  <a class="admin-nav__logo" href="/admin/">⚙ BeaverView Admin</a>
+  <div class="admin-nav__links">
+    <a href="/admin/">Dashboard</a>
+    <a href="/admin/rooms.html">Rooms</a>
+    <a href="/admin/logs.html">Logs</a>
+    <a href="/admin/connectors.html">Connectors</a>
+    <a href="/admin/users.html" class="active">Users</a>
+  </div>
+  <div class="admin-nav__spacer"></div>
+  <span class="admin-nav__user" id="nav-username"></span>
+  <a class="admin-nav__back" href="/">← Dashboard</a>
+</nav>
+
+<div class="admin-layout">
+  <main class="admin-main" id="main" style="display:none">
+
+    <div class="page-header">
+      <h1>User Roles</h1>
+      <button class="btn btn--secondary btn--sm" id="btn-refresh">↺ Refresh</button>
+    </div>
+
+    <div class="banner banner--info">
+      <span>ℹ</span>
+      <span>Primary roles come from Azure AD group membership. Overrides set here take precedence.
+      Remove an override to revert to AD group. Users appear here only after they have logged in.</span>
+    </div>
+
+    <div class="card" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Name</th><th>Email</th><th>Role</th><th>Source</th>
+            <th>Last Updated</th><th>Notes</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="users-body">
+            <tr><td colspan="7" style="text-align:center;color:#888;padding:1.5rem">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Edit role dialog (simple drawer) -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="role-drawer" style="width:380px">
+  <div class="drawer__header">
+    <span id="drawer-user-name">Edit Role</span>
+    <button class="drawer__close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer__body">
+    <input type="hidden" id="f-entra-id">
+    <div class="form-group">
+      <label>Role</label>
+      <select class="form-control" id="f-role">
+        <option value="technician">Technician</option>
+        <option value="admin">Admin</option>
+        <option value="readonly">Read-only</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea class="form-control" id="f-notes" rows="2" maxlength="500" placeholder="Reason for override…"></textarea>
+    </div>
+  </div>
+  <div class="drawer__footer">
+    <button class="btn btn--secondary" id="btn-remove-override" style="margin-right:auto">Remove Override</button>
+    <button class="btn btn--secondary" id="btn-cancel">Cancel</button>
+    <button class="btn btn--primary" id="btn-save">Save Override</button>
+  </div>
+</aside>
+
+<script src="admin.js"></script>
+<script>
+document.addEventListener('admin-ready', () => {
+  document.getElementById('main').style.display = '';
+  loadUsers();
+});
+document.getElementById('btn-refresh').addEventListener('click', loadUsers);
+
+async function loadUsers() {
+  try {
+    const rows = await adminGet('/api/admin/users');
+    renderTable(rows);
+  } catch(e) {
+    toast('Failed to load users: ' + e.message, 'error');
+  }
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('users-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:1.5rem">No manual role overrides. Users with AD-group roles do not appear here.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.display_name || '—'}</td>
+      <td>${r.email || r.entra_id}</td>
+      <td><span class="badge badge--${r.role}">${r.role}</span></td>
+      <td>Manual override</td>
+      <td style="font-size:.8rem;color:#888">${r.updated_at ? r.updated_at.slice(0,16).replace('T',' ') : ''}</td>
+      <td style="font-size:.8rem">${r.notes || ''}</td>
+      <td>
+        <button class="btn btn--secondary btn--sm"
+          onclick='openEdit(${JSON.stringify(JSON.stringify(r))})'>Edit</button>
+      </td>
+    </tr>`).join('');
+}
+
+function openDrawer() {
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('role-drawer').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('role-drawer').classList.remove('open');
+}
+document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+document.getElementById('btn-cancel').addEventListener('click', closeDrawer);
+
+window.openEdit = function(jsonStr) {
+  const r = JSON.parse(jsonStr);
+  document.getElementById('f-entra-id').value = r.entra_id;
+  document.getElementById('f-role').value    = r.role || 'technician';
+  document.getElementById('f-notes').value   = r.notes || '';
+  document.getElementById('drawer-user-name').textContent =
+    r.display_name || r.email || r.entra_id;
+  openDrawer();
+};
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const id = document.getElementById('f-entra-id').value;
+  const body = {
+    role:  document.getElementById('f-role').value,
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+  try {
+    await adminPut(`/api/admin/users/${id}`, body);
+    toast('Role override saved');
+    closeDrawer();
+    loadUsers();
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+});
+
+document.getElementById('btn-remove-override').addEventListener('click', async () => {
+  const id = document.getElementById('f-entra-id').value;
+  if (!confirm('Remove override? This user will fall back to their Azure AD group role.')) return;
+  try {
+    await adminDelete(`/api/admin/users/${id}`);
+    toast('Override removed', 'warning');
+    closeDrawer();
+    loadUsers();
+  } catch(e) {
+    toast('Remove failed: ' + e.message, 'error');
+  }
+});
+</script>
+</body>
+</html>

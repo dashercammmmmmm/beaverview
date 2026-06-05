@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<!--
+  BeaverView — OSU Presentation Support Dashboard
+  ================================================
+  Layout: three columns
+    sidebar (264 px) | map (flex fill) | detail panel (360 px)
+
+  JavaScript: app.js reads these IDs to find elements and inject content.
+  Do not rename IDs. Class names on structural elements are safe to change;
+  class names that app.js injects via innerHTML must stay in styles.css.
+
+  Map tiles: OpenStreetMap (public). Building footprints: osu-map-buildings.js
+  Room inventory: data.js  (mock until the Hardware IP import runs)
+  Backend API:    ../api/main.py  (FastAPI, port 8000)
+-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BeaverView — OSU AV Support</title>
+
+  <!-- MapLibre GL — local vendor copy, no CDN dependency -->
+  <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
+
+  <!-- Dashboard styles — edit this file to change the look -->
+  <link rel="stylesheet" href="styles.css?v=2">
+</head>
+
+<body>
+
+<!-- Skip link for keyboard users -->
+<a href="#main" class="skip-nav">Skip to main content</a>
+
+<div class="page">
+
+  <!-- ────────────────────────────────────────────────────────────
+       HEADER
+       Brand + quick-access buttons.
+       Keep this narrow — the map needs the vertical space.
+  ─────────────────────────────────────────────────────────────── -->
+  <header class="site-header" role="banner" aria-label="BeaverView">
+
+    <div class="site-header__brand">
+      <span class="site-header__name">BeaverView</span>
+      <span class="site-header__dept">OSU Presentation Support</span>
+    </div>
+
+    <div class="site-header__controls">
+      <!-- Admin panel link — shown only when role === 'admin' (set by app.js) -->
+      <a class="header-btn header-btn--admin" id="adminLink"
+         href="/admin/" aria-label="Open admin panel" hidden>Admin</a>
+      <!-- Compact/comfortable density toggle -->
+      <button class="header-btn" id="densityToggle" type="button">
+        Compact
+      </button>
+      <!-- Help / first-run guide -->
+      <button class="header-btn header-btn--icon" id="tourButton" type="button"
+              aria-label="Open help guide" title="Help">
+        <span aria-hidden="true">?</span>
+      </button>
+    </div>
+
+  </header>
+
+  <!-- ────────────────────────────────────────────────────────────
+       MAIN — three-column grid (sidebar | map | detail)
+  ─────────────────────────────────────────────────────────────── -->
+  <main id="main" class="dashboard" aria-label="AV room dashboard">
+
+    <!-- ── Column 1: Sidebar ──────────────────────────────────── -->
+    <aside class="sidebar" aria-label="Filters and campus selection">
+
+      <!-- Search -->
+      <div class="sidebar-block">
+        <label class="field-label" for="globalSearch">Search rooms</label>
+        <input id="globalSearch" class="search-field"
+               type="search" autocomplete="off" spellcheck="false"
+               placeholder="Building code, name, or room — try KAd or 101">
+      </div>
+
+      <!-- Campus selector -->
+      <div class="sidebar-block" aria-labelledby="lbl-campus">
+        <span class="sidebar-heading" id="lbl-campus">Campus</span>
+        <!-- app.js fills this with <button role="tab"> elements -->
+        <div class="campus-tabs" id="campusTabs" role="tablist"
+             aria-label="Select campus"></div>
+      </div>
+
+      <!-- Quick filters -->
+      <div class="sidebar-block" aria-labelledby="lbl-filters">
+        <span class="sidebar-heading" id="lbl-filters">Show only</span>
+        <!-- app.js fills this with <label class="filter-chip"> elements -->
+        <div class="filter-grid" id="filters"></div>
+      </div>
+
+      <!-- Connector health — data source status -->
+      <div class="sidebar-block sidebar-block--connectors"
+           aria-labelledby="lbl-connectors">
+        <span class="sidebar-heading" id="lbl-connectors">Connector Health</span>
+        <!-- app.js fills this with .connector-row elements -->
+        <div class="connector-list" id="connectorList"></div>
+      </div>
+
+    </aside>
+
+    <!-- ── Column 2: Map ──────────────────────────────────────── -->
+    <section class="map-column" aria-labelledby="map-heading">
+
+      <!-- Map header: campus name + summary counts -->
+      <div class="map-column__head">
+        <h2 id="mapHeading" class="map-column__title">Corvallis Campus</h2>
+        <!-- app.js fills this with count chips -->
+        <div class="status-bar" id="statusSummary"
+             aria-label="Campus status summary"></div>
+      </div>
+
+      <!-- Map viewport
+           #campusFrame: receives the .fold CSS transition on campus switch
+           #campusGrid:  MapLibre renders into a child div of this
+           #mapCanvas:   MapLibre GL container (must have explicit size from CSS) -->
+      <div class="map-frame" id="campusFrame">
+
+        <!-- Zoom / reset buttons float over the map -->
+        <div class="map-controls" aria-label="Map zoom controls">
+          <button type="button" id="zoomIn"  aria-label="Zoom in">+</button>
+          <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+          <button type="button" id="resetMap" aria-label="Reset map view">⊙</button>
+        </div>
+
+        <p class="map-hint" aria-hidden="true">
+          Drag to pan · scroll or use buttons to zoom · click a building
+        </p>
+
+        <div class="map-viewport" id="campusGrid"
+             aria-label="Campus building map">
+          <div id="mapCanvas" class="map-canvas"></div>
+        </div>
+
+      </div>
+
+      <!-- Building drill-down shelf
+           Appears below the map after clicking a building.
+           app.js fills this with the building name + room pill buttons. -->
+      <div class="building-shelf" id="selectedBuilding" aria-live="polite"></div>
+
+    </section>
+
+    <!-- ── Column 3: Room detail panel ───────────────────────── -->
+    <aside class="detail-panel" aria-label="Room detail and support tools">
+
+      <!-- Room identity + status
+           app.js replaces the contents of #roomHeader on room selection. -->
+      <div class="detail-header" id="roomHeader">
+        <p class="eyebrow">Selected Room</p>
+        <h2>No room selected</h2>
+        <p>Select a building on the map, then pick a room below it.</p>
+      </div>
+
+      <!-- Tab switcher: Overview | Actions | Tickets | Log
+           app.js hides this when no room is selected. -->
+      <nav class="room-tabs" id="roomTabs"
+           aria-label="Room support tabs" hidden>
+        <button type="button" data-tab="overview"   class="active">Overview</button>
+        <button type="button" data-tab="tools">Actions</button>
+        <button type="button" data-tab="incidents">Tickets</button>
+        <button type="button" data-tab="log">History</button>
+      </nav>
+
+      <!-- Tab body — app.js replaces this on tab switch -->
+      <div class="detail-body room-body" id="roomBody"></div>
+
+    </aside>
+
+  </main>
+
+</div><!-- .page -->
+
+<!-- ────────────────────────────────────────────────────────────────
+     HELP / TOUR DIALOG
+     Shown on first load or when the ? button is clicked.
+     Dismissed by: Got it button, × button, Escape key, backdrop click.
+─────────────────────────────────────────────────────────────────── -->
+<div class="tour-backdrop" id="tourOverlay" hidden
+     role="dialog" aria-modal="true" aria-labelledby="tour-title">
+  <div class="tour-card">
+    <button class="tour-card__close" type="button"
+            id="closeTourX" aria-label="Close help guide">×</button>
+    <p class="eyebrow" style="margin-bottom: 4px">Help guide</p>
+    <h2 class="tour-card__title" id="tour-title">Using BeaverView</h2>
+    <ol class="tour-card__steps">
+      <li>Use the <strong>Campus</strong> tabs to switch between
+          Corvallis, OSU-Cascades, and Hatfield Marine Science.</li>
+      <li>Click any colored building on the map to open its room list.</li>
+      <li>Click a room to load its status, devices, and support tools.</li>
+      <li>The <strong>Actions</strong> tab has tool shortcuts
+          (XPanel, ScreenConnect, WattBox, ServiceNow).</li>
+    </ol>
+    <p class="tour-card__note">
+      All data is mock until production connectors are wired up.
+      See <code>api/.env.example</code> for credential placeholders.
+    </p>
+    <button class="btn-primary" type="button" id="closeTour">Got it</button>
+  </div>
+</div>
+
+<!-- Scripts — order matters: MapLibre → building data → room data → app -->
+<script src="vendor/maplibre/maplibre-gl.js"></script>
+<script src="osu-map-buildings.js?v=2"></script>
+<script src="data.js?v=2"></script>
+<script src="app.js?v=2"></script>
+
+<!-- Live reload — only active on localhost.
+     Polls app.js and styles.css Last-Modified headers every 1.5 s;
+     reloads the page when either file changes after a save.
+     Remove this block (or it auto-silences) in production. -->
+<script>
+(function () {
+  if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+  var stamps = {};
+  var FILES  = ['/app.js', '/styles.css', '/data.js', '/index.html'];
+  function check() {
+    FILES.forEach(function (f) {
+      fetch(f, { method: 'HEAD', cache: 'no-store' })
+        .then(function (r) {
+          var m = r.headers.get('last-modified');
+          if (stamps[f] && m && m !== stamps[f]) { location.reload(); }
+          if (m) stamps[f] = m;
+        }).catch(function () {});
+    });
+  }
+  setInterval(check, 1500);
+  check();
+})();
+</script>
+
+</body>
+</html>

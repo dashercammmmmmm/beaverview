@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leadership Playbook: OSU Presentation Support Dashboard</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #d9e2ec;
+  --brand: #d73f09;
+  --soft: #fff5f0;
+  --code: #f5f7fa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #f7f8fa;
+  line-height: 1.55;
+}
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+  background: #fff;
+  min-height: 100vh;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+nav a {
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid #f0b49e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; color: #111827; }
+h2 { font-size: 24px; margin-top: 34px; padding-top: 10px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin-top: 26px; }
+p, li { font-size: 16px; }
+a { color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; vertical-align: top; }
+th { background: var(--soft); text-align: left; }
+code { background: var(--code); padding: 2px 5px; border-radius: 4px; }
+pre {
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+pre code { background: transparent; padding: 0; color: inherit; }
+.mermaid {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  nav { display: none; }
+  h2 { break-after: avoid; }
+  pre, table { break-inside: avoid; }
+}
+</style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</head>
+<body>
+  <main>
+    <nav><a href="leadership-dashboard-playbook.html">Leadership Dashboard Playbook</a>
+<a href="technical-dashboard-playbook.html">Technical Dashboard Playbook</a>
+<a href="leadership-ai-chatbot-playbook.html">Leadership Ai Chatbot Playbook</a>
+<a href="technical-ai-chatbot-playbook.html">Technical Ai Chatbot Playbook</a>
+<a href="dashboard-build-phased-playbook.html">Dashboard Build Phased Playbook</a>
+<a href="nvidia-dgx-spark-vs-jetson-agx-orin.html">Nvidia Dgx Spark Vs Jetson Agx Orin</a></nav>
+    <div class="meta">Living HTML version generated from Markdown source. Use Chrome Print to export PDF.</div>
+    <h1>Leadership Playbook: OSU Presentation Support Dashboard</h1>
+<h2>Executive Summary</h2>
+<p>The <strong>OSU Presentation Support Dashboard</strong> is the visual command center for Presentation Support technicians. It gives the team one desktop-friendly place to browse supported campuses, find buildings by acronym, open a room, and immediately see the tools and context needed to resolve classroom issues.</p>
+<p>The first milestone is a clickable mock dashboard that can be shown to leadership and technicians before real API credentials are inserted. The mock should demonstrate campus switching, map-style building browsing, enlarged building acronyms on hover, room drill-down, status rollups, action logging, ServiceNow placeholders, and AI assistant placeholders.</p>
+<p>The long-term goal is a secure local web app hosted on an Ubuntu Server VM. It will aggregate Crestron Fusion, 25Live, ScreenConnect, WattBox/OvrC, ServiceNow, SharePoint, and the secure Hardware IP List into a single support workflow.</p>
+<h2>Value Proposition</h2>
+<p>This project reduces the time and mental effort required to support roughly 500 rooms across Corvallis, OSU-Cascades, and Hatfield Marine Sciences Center.</p>
+<p>Primary value:</p>
+<ul>
+<li>Faster room lookup by campus, building acronym, building name, and room number.</li>
+<li>Less tool switching during live support calls.</li>
+<li>Clearer visibility into whether a room is offline, scheduled, occupied, or affected by an open incident.</li>
+<li>Safer access to sensitive hardware inventory through local import and controlled display.</li>
+<li>Better auditability for support actions, remote sessions, device access, and power events.</li>
+<li>Easier onboarding for student workers and new technicians.</li>
+<li>Stronger ticket documentation through future AI-assisted ServiceNow draft generation.</li>
+</ul>
+<h2>What Technicians Will Experience</h2>
+<p>Technicians open one dashboard in Chrome on a Windows desktop. The first page shows a campus-aware command map with prominent building acronyms. Corvallis is the primary view, while OSU-Cascades and Hatfield are accessible from the same page through a smooth page-fold campus transition.</p>
+<p>The intended workflow:</p>
+<ol>
+<li>Search or visually browse by campus, building, or room.</li>
+<li>Hover over a building to enlarge the acronym and show summary status.</li>
+<li>Select a building to see supported rooms and current issues.</li>
+<li>Open a room to view live status, schedule context, connected devices, remote access, power controls, relevant SharePoint documents, recent tickets, and the action log.</li>
+<li>Use the AI assistant placeholder for guided troubleshooting and ServiceNow ticket drafting once the companion AI project is active.</li>
+</ol>
+<p>The experience should feel like a support cockpit, not a generic campus map. It should be fast, legible, keyboard-accessible, and useful under pressure.</p>
+<h2>Architecture At A Glance</h2>
+<div class="mermaid">
+flowchart LR
+    Tech[Technician in Chrome] --&gt; Web[Dashboard Frontend]
+    Web --&gt; API[Local Backend Proxy]
+    API --&gt; DB[(Local Database)]
+    API --&gt; Fusion[Crestron Fusion]
+    API --&gt; Live[25Live]
+    API --&gt; SC[ScreenConnect]
+    API --&gt; Watt[WattBox/OvrC]
+    API --&gt; SN[ServiceNow]
+    API --&gt; SP[SharePoint]
+    Import[Secure Hardware IP XLSX Import] --&gt; DB
+    API --&gt; Logs[(Audit Logs)]
+</div>
+<p>Recommended baseline:</p>
+<ul>
+<li>Ubuntu Server VM.</li>
+<li>Local web hosting.</li>
+<li>HTML/JSON-oriented frontend.</li>
+<li>Lightweight backend proxy.</li>
+<li>Local database for rooms, status cache, connector health, and action logs.</li>
+<li>Mock connectors first, then real APIs as credentials become available.</li>
+<li>Microsoft Entra SSO in Phase 2 after prototype validation.</li>
+</ul>
+<h2>Security, Compliance, And Risk Posture</h2>
+<p>Security is central because the dashboard exposes sensitive operational context, device links, remote access tools, and hardware IP information.</p>
+<p>Required controls:</p>
+<ul>
+<li>Keep API credentials on the backend only.</li>
+<li>Never expose API keys or service credentials in browser JavaScript.</li>
+<li>Keep the real Hardware IP List on-prem.</li>
+<li>Import the real <code>.xlsx</code> locally into a normalized database or sanitized JSON cache.</li>
+<li>Use anonymized samples in documentation, demos, and AI-assisted planning.</li>
+<li>Log sensitive actions, including device UI access, XPanel launch, ScreenConnect launch, WattBox actions, ServiceNow drafts, and admin imports.</li>
+<li>Add Microsoft Entra SSO as a required Phase 2 item.</li>
+<li>Review retention, prompt logging, data classification, FERPA, and cybersecurity requirements with OSU policy owners.</li>
+</ul>
+<p>Recommended audit retention for planning:</p>
+<ul>
+<li>1 year searchable operational audit retention.</li>
+<li>3 years archived retention if OSU policy allows or requires it.</li>
+<li>Final retention policy to be approved by cybersecurity/compliance.</li>
+</ul>
+<h2>Multi-Campus Strategy</h2>
+<p>The dashboard should support all campuses from day one, even if most rooms are on the Corvallis campus.</p>
+<p>Campuses:</p>
+<ul>
+<li>Corvallis - primary operational map.</li>
+<li>OSU-Cascades - same data model, smaller campus view.</li>
+<li>Hatfield Marine Sciences Center - same data model, campus-specific view.</li>
+</ul>
+<p>The user experience should remain one page, not separate tools. A campus selector changes the main map panel with a smooth fold-over or slide transition while preserving global search, filters, and recent rooms.</p>
+<h2>Recommended MVP Scope</h2>
+<p>The first leadership-ready mock prototype should demonstrate:</p>
+<ul>
+<li>Campus selector with Corvallis, OSU-Cascades, and Hatfield.</li>
+<li>Map-style building view with large acronyms.</li>
+<li>Hover enlargement and status summary.</li>
+<li>Room list and room detail view.</li>
+<li>Mock statuses for Fusion, display/projector power, ScreenConnect, 25Live, and ServiceNow.</li>
+<li>Action log panel.</li>
+<li>Placeholder buttons for XPanel, ScreenConnect, device web UI, WattBox, SharePoint, and AI assistant.</li>
+<li>Clear stale-data and connector-health indicators.</li>
+<li>First-run guided tour concept.</li>
+</ul>
+<p>The prototype should not require real production credentials.</p>
+<h2>Screenshot Placeholders For Future Prototype</h2>
+<p>Add screenshots to the HTML/PDF version after the clickable mock exists:</p>
+<ul>
+<li>Campus overview with Corvallis selected.</li>
+<li>Campus fold-over transition to OSU-Cascades or Hatfield.</li>
+<li>Building hover with enlarged acronym and status summary.</li>
+<li>Building detail panel with supported rooms.</li>
+<li>Room detail view with tools and live status.</li>
+<li>Action log panel.</li>
+<li>AI assistant placeholder.</li>
+<li>ServiceNow incident/draft placeholder.</li>
+<li>First-run training overlay.</li>
+</ul>
+<h2>Timeline And Staffing Recommendation</h2>
+<p>Realistic phased timeline:</p>
+<table><thead><tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Outcome</th>
+</tr></thead><tbody>
+<tr>
+<td>1. Discovery and data shaping</td>
+<td>1-2 weeks</td>
+<td>Confirm room inventory fields, campus/building list, anonymized sample, and mock data.</td>
+</tr>
+<tr>
+<td>2. Clickable leadership mock</td>
+<td>2-3 weeks</td>
+<td>Demonstrable dashboard with campus map flow, room views, mock integrations, and logs.</td>
+</tr>
+<tr>
+<td>3. Backend scaffold</td>
+<td>2-3 weeks</td>
+<td>Local VM backend, database, mock connector modules, secure import process.</td>
+</tr>
+<tr>
+<td>4. First real connector</td>
+<td>2-4 weeks</td>
+<td>One production API connected end-to-end, likely Fusion or Hardware IP import.</td>
+</tr>
+<tr>
+<td>5. Phase 2 security</td>
+<td>2-4 weeks</td>
+<td>Entra SSO, role mapping, retention policy, admin controls.</td>
+</tr>
+<tr>
+<td>6. Incremental integrations</td>
+<td>ongoing</td>
+<td>25Live, ScreenConnect, WattBox/OvrC, ServiceNow, SharePoint.</td>
+</tr>
+</tbody></table>
+<p>Recommended staffing:</p>
+<ul>
+<li>Project owner/product lead.</li>
+<li>AV systems subject matter expert.</li>
+<li>Backend/frontend developer or full-stack developer.</li>
+<li>ServiceNow administrator.</li>
+<li>Microsoft Entra administrator.</li>
+<li>Cybersecurity reviewer.</li>
+<li>Student/technician pilot group.</li>
+</ul>
+<h2>Success Metrics</h2>
+<p>Leadership should evaluate success through:</p>
+<ul>
+<li>Reduced average time to identify the affected room and relevant systems.</li>
+<li>Reduced tool switching during live calls.</li>
+<li>Faster first response and resolution for classroom incidents.</li>
+<li>Improved ServiceNow documentation quality.</li>
+<li>Reduced escalation burden for student workers.</li>
+<li>Technician adoption and satisfaction.</li>
+<li>Fewer avoidable dispatches due to remote verification and power controls.</li>
+<li>Better audit traceability for sensitive support actions.</li>
+</ul>
+<h2>Risks And Mitigations</h2>
+<table><thead><tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr></thead><tbody>
+<tr>
+<td>Sensitive IP/device data exposure</td>
+<td>Local-only import, backend-only credentials, role controls, audit logs.</td>
+</tr>
+<tr>
+<td>API access delays</td>
+<td>Build mock connector scaffolding first and swap in credentials later.</td>
+</tr>
+<tr>
+<td>Technicians reject the tool</td>
+<td>Prioritize speed, search, accessibility, and pilot feedback.</td>
+</tr>
+<tr>
+<td>Incorrect room/device mapping</td>
+<td>Use Hardware IP List import validation and room-owner review.</td>
+</tr>
+<tr>
+<td>Unsafe power cycling</td>
+<td>Human confirmation, clear outlet labels, last-resort guidance, full audit trail.</td>
+</tr>
+<tr>
+<td>Vendor API limitations</td>
+<td>Support fallback links/manual launch patterns where APIs are limited.</td>
+</tr>
+<tr>
+<td>Scope creep</td>
+<td>Keep the first prototype focused on dashboard flow, mock status, and audit foundation.</td>
+</tr>
+</tbody></table>
+<h2>Approval Decisions Needed</h2>
+<p>Leadership should approve:</p>
+<ul>
+<li>The neutral project direction and preferred final name.</li>
+<li>Use of a local Ubuntu Server VM.</li>
+<li>Phase 1 mock prototype before production API insertion.</li>
+<li>Phase 2 Microsoft Entra SSO requirement.</li>
+<li>Secure handling model for Hardware IP List.</li>
+<li>Staffing support for AV, ServiceNow, Entra, and cybersecurity review.</li>
+<li>Pilot group of technicians/student workers.</li>
+</ul>
+<h2>Next Steps After Playbook Approval</h2>
+<ol>
+<li>Confirm final project name or continue with neutral placeholder.</li>
+<li>Gather anonymized Hardware IP sample.</li>
+<li>Confirm VM availability and owner.</li>
+<li>Confirm the first production connector target.</li>
+<li>Build the clickable leadership mock dashboard.</li>
+<li>Review the mock with technicians and leadership.</li>
+<li>Start backend scaffold and secure import design.</li>
+</ol>
+<h2>Open Questions</h2>
+<ul>
+<li>Which production connector should be first: Hardware IP import, Crestron Fusion, or ServiceNow?</li>
+<li>What is OSU&#x27;s required audit retention for this class of tool?</li>
+<li>Which rooms are considered high-priority for the pilot?</li>
+<li>Who will approve Entra app registration and role mapping?</li>
+</ul>
+  </main>
+</body>
+</html>

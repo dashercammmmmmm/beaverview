@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phased Build Playbook: OSU Presentation Support Dashboard</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #d9e2ec;
+  --brand: #d73f09;
+  --soft: #fff5f0;
+  --code: #f5f7fa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #f7f8fa;
+  line-height: 1.55;
+}
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+  background: #fff;
+  min-height: 100vh;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+nav a {
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid #f0b49e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; color: #111827; }
+h2 { font-size: 24px; margin-top: 34px; padding-top: 10px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin-top: 26px; }
+p, li { font-size: 16px; }
+a { color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; vertical-align: top; }
+th { background: var(--soft); text-align: left; }
+code { background: var(--code); padding: 2px 5px; border-radius: 4px; }
+pre {
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+pre code { background: transparent; padding: 0; color: inherit; }
+.mermaid {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  nav { display: none; }
+  h2 { break-after: avoid; }
+  pre, table { break-inside: avoid; }
+}
+</style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</head>
+<body>
+  <main>
+    <nav><a href="leadership-dashboard-playbook.html">Leadership Dashboard Playbook</a>
+<a href="technical-dashboard-playbook.html">Technical Dashboard Playbook</a>
+<a href="leadership-ai-chatbot-playbook.html">Leadership Ai Chatbot Playbook</a>
+<a href="technical-ai-chatbot-playbook.html">Technical Ai Chatbot Playbook</a>
+<a href="dashboard-build-phased-playbook.html">Dashboard Build Phased Playbook</a>
+<a href="nvidia-dgx-spark-vs-jetson-agx-orin.html">Nvidia Dgx Spark Vs Jetson Agx Orin</a></nav>
+    <div class="meta">Living HTML version generated from Markdown source. Use Chrome Print to export PDF.</div>
+    <h1>Phased Build Playbook: OSU Presentation Support Dashboard</h1>
+<h2>Purpose</h2>
+<p>This playbook defines how to build the Dashboard collaboratively in phases. The goal is to avoid a one-shot build and instead create useful, reviewable increments that can be tested with technicians, adjusted, and then expanded.</p>
+<p>This document is separate from the leadership and technical architecture playbooks. It is the working build plan.</p>
+<h2>Build Philosophy</h2>
+<ul>
+<li>Build in small reviewable phases.</li>
+<li>Start with a clickable mock dashboard using realistic anonymized data.</li>
+<li>Keep API connectors mocked until the team is ready to insert credentials.</li>
+<li>Preserve technician feedback after each phase.</li>
+<li>Do not add real Hardware IP data to public demos or external tools.</li>
+<li>Treat accessibility, speed, and clarity as acceptance requirements, not polish.</li>
+</ul>
+<h2>Phase Overview</h2>
+<table><thead><tr>
+<th>Phase</th>
+<th>Name</th>
+<th>Primary Outcome</th>
+</tr></thead><tbody>
+<tr>
+<td>0</td>
+<td>Project setup and source docs</td>
+<td>Living docs, version archive, build decisions, and source structure.</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Static clickable dashboard mock</td>
+<td>Leadership-friendly UI with mock campus/building/room flow.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Data model and mock JSON</td>
+<td>Realistic room/device/status data shape for roughly 500 rooms.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Room detail and action logging mock</td>
+<td>Tool panels, mock actions, and local audit trail behavior.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Backend scaffold</td>
+<td>Local API shell with mock connectors and connector health.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Secure Hardware IP import</td>
+<td>Local <code>.xlsx</code> import process with validation and sanitized outputs.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>First real connector</td>
+<td>One production integration connected end-to-end.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Entra SSO and security hardening</td>
+<td>Required Phase 2 auth, roles, and audit controls.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Technician pilot and training</td>
+<td>First-run tour, feedback, training flow, and pilot readiness.</td>
+</tr>
+</tbody></table>
+<h2>Phase 0: Project Setup And Source Docs</h2>
+<p>Goal: establish the working project structure and living documentation.</p>
+<p>Deliverables:</p>
+<ul>
+<li>Markdown source playbooks.</li>
+<li>HTML versions generated from Markdown.</li>
+<li>Version archive folder.</li>
+<li>Dashboard build playbook.</li>
+<li>Decision log for project name, stack, hosting, and security assumptions.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>All current docs are in the project folder.</li>
+<li>HTML versions open locally.</li>
+<li>Previous versions are archived before major updates.</li>
+<li>The team agrees that future work proceeds phase by phase.</li>
+</ul>
+<p>Current status: complete for initial documentation package.</p>
+<h2>Phase 1: Static Clickable Dashboard Mock</h2>
+<p>Goal: create the first leadership- and technician-reviewable dashboard experience without real APIs.</p>
+<p>User-facing scope:</p>
+<ul>
+<li>One desktop page.</li>
+<li>Campus selector for Corvallis, OSU-Cascades, and Hatfield.</li>
+<li>Smooth campus fold-over or slide transition.</li>
+<li>Prominent building acronym markers.</li>
+<li>Hover state that enlarges building acronym and shows status summary.</li>
+<li>Building detail panel with supported rooms.</li>
+<li>Room detail view with tabs or sections for overview, schedule, tools, devices, incidents, action log, and AI placeholder.</li>
+<li>Quick filters visible but powered by mock data.</li>
+<li>First-run guided tour placeholder.</li>
+</ul>
+<p>Data scope:</p>
+<ul>
+<li>Small curated mock set first, not all 500 rooms.</li>
+<li>Include at least:</li>
+<li>8-12 Corvallis buildings.</li>
+<li>2-4 OSU-Cascades buildings.</li>
+<li>2-4 Hatfield locations.</li>
+<li>15-30 sample rooms.</li>
+<li>Mixed statuses, incidents, schedules, and device types.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>A technician can find a mock room by search.</li>
+<li>A technician can switch campuses without losing search/filter context.</li>
+<li>Hover and focus states are accessible.</li>
+<li>Room view clearly shows all future tool placeholders.</li>
+<li>No production credentials or real IP addresses are used.</li>
+</ul>
+<p>Current status: first static clickable mock created in <code>dashboard/</code>.</p>
+<p>Included in this build:</p>
+<ul>
+<li>Desktop-first static HTML/CSS/JavaScript app.</li>
+<li>Corvallis, OSU-Cascades, and Hatfield campus selector.</li>
+<li>Mock building map with large building acronyms.</li>
+<li>Hover/focus enlargement for building nodes.</li>
+<li>Room drill-down and room support tabs.</li>
+<li>Quick filters and connector health.</li>
+<li>Mock tool actions and audit log.</li>
+<li>First-run tour.</li>
+</ul>
+<p>Latest fixes:</p>
+<ul>
+<li>Guided tour can be dismissed with Got it, X, Escape, or clicking outside the panel.</li>
+<li>Building names/codes corrected in the mock data where sources were available.</li>
+<li>Schematic building grid replaced with public OSU building footprint data from <code>map.oregonstate.edu</code>.</li>
+<li>Current public map data includes 303 building/location records: 278 Corvallis, 8 OSU-Cascades, and 17 Hatfield/Newport-area records.</li>
+<li>Building polygons use OSU map-style dark footprints with orange hover emphasis.</li>
+<li>Current mock uses sanitized room/device data and should still be treated as non-authoritative until internal room inventory is imported.</li>
+</ul>
+<p>Known limitations:</p>
+<ul>
+<li>Uses mock data only.</li>
+<li>Public OSU map data provides building/location records, not Presentation Support room inventory.</li>
+<li>Does not yet include backend API endpoints.</li>
+<li>Does not yet import <code>.xlsx</code> inventory.</li>
+<li>Does not yet include real API connectors or Entra SSO.</li>
+</ul>
+<h2>Phase 2: Data Model And Mock JSON</h2>
+<p>Goal: make the prototype data-shaped like the production system.</p>
+<p>Deliverables:</p>
+<ul>
+<li>Campus JSON.</li>
+<li>Building JSON.</li>
+<li>Room JSON.</li>
+<li>Device JSON.</li>
+<li>Mock status JSON.</li>
+<li>Mock ServiceNow incident JSON.</li>
+<li>Mock action log JSON.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Data model supports roughly 500 rooms without redesign.</li>
+<li>Every room has stable IDs.</li>
+<li>Building acronyms and room numbers are searchable.</li>
+<li>Device records support manufacturer, model, IP/hostname placeholder, VLAN/network zone, and web UI URL placeholder.</li>
+<li>Mock data can represent stale data, connector outages, and conflicting source status.</li>
+</ul>
+<h2>Phase 3: Room Detail And Action Logging Mock</h2>
+<p>Goal: demonstrate the &quot;dial into room&quot; workflow and required audit behavior.</p>
+<p>Deliverables:</p>
+<ul>
+<li>Room overview.</li>
+<li>XPanel launch placeholder.</li>
+<li>Device web UI placeholder.</li>
+<li>ScreenConnect launch placeholder.</li>
+<li>WattBox status/power action placeholder.</li>
+<li>SharePoint training link placeholder.</li>
+<li>ServiceNow incident list placeholder.</li>
+<li>Action log that records mock user actions.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Every placeholder action writes a mock audit event.</li>
+<li>Power-cycle placeholder requires confirmation.</li>
+<li>Action log includes timestamp, user, room, action type, target, and outcome.</li>
+<li>The UI differentiates safe view actions from disruptive actions.</li>
+</ul>
+<h2>Phase 4: Backend Scaffold</h2>
+<p>Goal: add the local backend foundation while keeping connectors in mock mode.</p>
+<p>Deliverables:</p>
+<ul>
+<li>Local API service.</li>
+<li>Room/status endpoints.</li>
+<li>Mock connector modules.</li>
+<li>Connector health endpoint.</li>
+<li>Audit log endpoint.</li>
+<li>Config file for mock vs real connector mode.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Frontend can load data from backend instead of static files.</li>
+<li>Each connector has a mock response and health status.</li>
+<li>Backend never exposes secrets to the browser.</li>
+<li>Connector failure states can be simulated.</li>
+</ul>
+<h2>Phase 5: Secure Hardware IP Import</h2>
+<p>Goal: safely ingest the real <code>.xlsx</code> inventory locally without exposing it to external systems.</p>
+<p>Deliverables:</p>
+<ul>
+<li>Local import workflow.</li>
+<li>Required column validation.</li>
+<li>Duplicate and missing-field report.</li>
+<li>Normalized room/device output.</li>
+<li>Sanitized demo export option.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Real <code>.xlsx</code> remains on-prem.</li>
+<li>Invalid rows are flagged before import.</li>
+<li>Import can update existing rooms/devices without destroying unrelated records.</li>
+<li>Sanitized export contains no real IP addresses or sensitive network details.</li>
+</ul>
+<h2>Phase 6: First Real Connector</h2>
+<p>Goal: connect one production integration end-to-end.</p>
+<p>Recommended first connector options:</p>
+<ol>
+<li>Hardware IP import - best if inventory quality is the biggest risk.</li>
+<li>Crestron Fusion - best if live room status is the biggest demo value.</li>
+<li>ServiceNow read-only incidents - best if leadership wants support-process value first.</li>
+</ol>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Connector credentials stay server-side.</li>
+<li>API results normalize into the internal room model.</li>
+<li>Connector health and last sync time are visible.</li>
+<li>Failures show cached/stale states instead of breaking the dashboard.</li>
+<li>All user actions are audited.</li>
+</ul>
+<h2>Phase 7: Entra SSO And Security Hardening</h2>
+<p>Goal: move from prototype access to OSU-ready authenticated access.</p>
+<p>Deliverables:</p>
+<ul>
+<li>Microsoft Entra OIDC app registration.</li>
+<li>Technician/admin role mapping.</li>
+<li>Session timeout and logout behavior.</li>
+<li>Auth audit events.</li>
+<li>Security review checklist.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Only approved users can access the dashboard.</li>
+<li>All users can access all campuses and rooms unless policy changes.</li>
+<li>Admin-only functions are separated from technician use.</li>
+<li>Audit logs identify the authenticated user.</li>
+</ul>
+<h2>Phase 8: Technician Pilot And Training</h2>
+<p>Goal: validate the dashboard with real support workflows.</p>
+<p>Deliverables:</p>
+<ul>
+<li>First-run tour.</li>
+<li>Quick-start training page.</li>
+<li>Pilot feedback form or feedback capture.</li>
+<li>Common workflow examples.</li>
+<li>Updated screenshots in leadership and technical docs.</li>
+</ul>
+<p>Acceptance criteria:</p>
+<ul>
+<li>Student workers can complete guided room lookup and ticket-context tasks.</li>
+<li>Technicians can identify missing or confusing fields.</li>
+<li>Feedback is reviewed and prioritized.</li>
+<li>Leadership receives updated screenshots and pilot findings.</li>
+</ul>
+<h2>Versioning And Archive Practice</h2>
+<p>For each major documentation or prototype milestone:</p>
+<ol>
+<li>Archive the current Markdown and HTML files.</li>
+<li>Update Markdown source.</li>
+<li>Regenerate HTML.</li>
+<li>Create a versioned archive folder with the updated files.</li>
+<li>Record what changed in the README or decision log.</li>
+</ol>
+<p>Current archives:</p>
+<ul>
+<li><code>v1-initial-package</code></li>
+<li><code>v2-dgx-spark-orin-and-dashboard-build-plan</code></li>
+</ul>
+<h2>Immediate Next Build Step</h2>
+<p>The next implementation phase should be <strong>Phase 2: Data Model And Mock JSON</strong>.</p>
+<p>Before building Phase 2, confirm:</p>
+<ul>
+<li>Whether the current mock building list is acceptable for early review.</li>
+<li>Whether mock room numbers should remain realistic or become fully anonymized.</li>
+<li>Which fields from the future Hardware IP <code>.xlsx</code> sample should appear in the first import-shaped JSON.</li>
+<li>Whether the mock data should remain in JavaScript for file-based review or move into separate JSON files.</li>
+</ul>
+<p>Recommended default if no further input is available:</p>
+<ul>
+<li>Keep the current Phase 1 mock as-is for quick review.</li>
+<li>Move the mock data into separate JSON-shaped files in Phase 2.</li>
+<li>Preserve the current anonymized/sanitized device host labels.</li>
+<li>Add validation notes that map each mock field to the future secure <code>.xlsx</code> import.</li>
+</ul>
+<h2>Open Questions</h2>
+<ul>
+<li>Which pilot buildings should be included in Phase 1?</li>
+<li>Should the first mock be pure HTML/CSS/JS or a lightweight app structure?</li>
+<li>Should the dashboard run from static files first or start with the backend scaffold immediately?</li>
+<li>What is the preferred visual tone: darker command center, light OSU-branded interface, or both with a toggle?</li>
+</ul>
+  </main>
+</body>
+</html>

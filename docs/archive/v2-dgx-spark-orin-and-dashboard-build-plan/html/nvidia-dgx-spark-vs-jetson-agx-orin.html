@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research Brief: NVIDIA DGX Spark Vs Jetson AGX Orin</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #d9e2ec;
+  --brand: #d73f09;
+  --soft: #fff5f0;
+  --code: #f5f7fa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #f7f8fa;
+  line-height: 1.55;
+}
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+  background: #fff;
+  min-height: 100vh;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+nav a {
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid #f0b49e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; color: #111827; }
+h2 { font-size: 24px; margin-top: 34px; padding-top: 10px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin-top: 26px; }
+p, li { font-size: 16px; }
+a { color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; vertical-align: top; }
+th { background: var(--soft); text-align: left; }
+code { background: var(--code); padding: 2px 5px; border-radius: 4px; }
+pre {
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+pre code { background: transparent; padding: 0; color: inherit; }
+.mermaid {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  nav { display: none; }
+  h2 { break-after: avoid; }
+  pre, table { break-inside: avoid; }
+}
+</style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</head>
+<body>
+  <main>
+    <nav><a href="leadership-dashboard-playbook.html">Leadership Dashboard Playbook</a>
+<a href="technical-dashboard-playbook.html">Technical Dashboard Playbook</a>
+<a href="leadership-ai-chatbot-playbook.html">Leadership Ai Chatbot Playbook</a>
+<a href="technical-ai-chatbot-playbook.html">Technical Ai Chatbot Playbook</a>
+<a href="dashboard-build-phased-playbook.html">Dashboard Build Phased Playbook</a>
+<a href="nvidia-dgx-spark-vs-jetson-agx-orin.html">Nvidia Dgx Spark Vs Jetson Agx Orin</a></nav>
+    <div class="meta">Living HTML version generated from Markdown source. Use Chrome Print to export PDF.</div>
+    <h1>Research Brief: NVIDIA DGX Spark Vs Jetson AGX Orin</h1>
+<h2>Recommendation</h2>
+<p>For the OSU Presentation Support AI Chat Bot, choose <strong>NVIDIA DGX Spark</strong> as the local model host.</p>
+<p>The earlier &quot;Orion&quot; reference has been corrected to <strong>NVIDIA Jetson AGX Orin</strong>. Jetson AGX Orin is strong hardware, but it is designed primarily for embedded edge AI, robotics, sensors, and computer vision. This project needs a local assistant platform for chat, retrieval, ticket drafting, and future dashboard-aware guidance. DGX Spark is the better fit.</p>
+<h2>Why DGX Spark Fits Better</h2>
+<p>DGX Spark is positioned by NVIDIA as a compact desktop AI computer for AI development, deployment, fine-tuning, and inference. NVIDIA lists 128 GB unified memory, 20-core Arm CPU, Blackwell GPU architecture, 1 PFLOP FP4-class AI performance, and support for AI models up to 200B parameters depending on configuration.</p>
+<p>Those traits matter for this use case because the AI Chat Bot needs:</p>
+<ul>
+<li>Local LLM inference.</li>
+<li>Room-context prompt assembly.</li>
+<li>ServiceNow ticket drafting.</li>
+<li>SharePoint knowledge retrieval.</li>
+<li>Multi-turn troubleshooting conversations.</li>
+<li>Enough memory headroom to test useful assistant models without immediately outgrowing the device.</li>
+</ul>
+<h2>Where Jetson AGX Orin Fits</h2>
+<p>Jetson AGX Orin is positioned by NVIDIA for edge AI, robotics, autonomous machines, generative AI at the edge, and computer vision. The AGX Orin technical brief lists 32 GB and 64 GB module options, up to 275 TOPS INT8 AI performance, integrated camera/sensor I/O, and low power envelopes.</p>
+<p>That makes Orin a good future option for:</p>
+<ul>
+<li>Room-local sensors.</li>
+<li>Camera-based status detection.</li>
+<li>Local edge appliances.</li>
+<li>Computer vision experiments.</li>
+<li>Embedded AV monitoring devices.</li>
+</ul>
+<p>It should not be treated as the next step up from DGX Spark for the dashboard AI assistant. If DGX Spark is not enough, the next evaluation should be a larger NVIDIA workstation or server-class system.</p>
+<h2>Comparison</h2>
+<table><thead><tr>
+<th>Criterion</th>
+<th>DGX Spark</th>
+<th>Jetson AGX Orin</th>
+<th>Better Fit</th>
+</tr></thead><tbody>
+<tr>
+<td>Primary purpose</td>
+<td>Desktop AI computer for model development, deployment, fine-tuning, and inference.</td>
+<td>Edge AI module/developer kit for robotics, autonomous machines, and vision.</td>
+<td>DGX Spark</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>128 GB LPDDR5x unified memory.</td>
+<td>32 GB or 64 GB LPDDR5.</td>
+<td>DGX Spark</td>
+</tr>
+<tr>
+<td>AI performance</td>
+<td>Up to 1 PFLOP FP4 / 1,000 TOPS-class AI compute.</td>
+<td>Up to 275 TOPS INT8.</td>
+<td>DGX Spark</td>
+</tr>
+<tr>
+<td>Model support</td>
+<td>NVIDIA states support for AI models up to 200B parameters.</td>
+<td>Optimized edge inference and sensor workloads.</td>
+<td>DGX Spark</td>
+</tr>
+<tr>
+<td>Deployment role</td>
+<td>Local AI service host for chat, RAG, and ticket drafting.</td>
+<td>Embedded device or edge appliance.</td>
+<td>DGX Spark</td>
+</tr>
+<tr>
+<td>Future use</td>
+<td>Primary AI Chat Bot pilot host.</td>
+<td>Optional future room-edge device.</td>
+<td>Both, but for different jobs</td>
+</tr>
+</tbody></table>
+<h2>Decision</h2>
+<p>Use this wording in leadership and technical materials:</p>
+<p>&gt; The AI Chat Bot should use DGX Spark as the first local model host. Jetson AGX Orin is not recommended as the primary host for this use case; it is better suited to future edge AI or room-local sensing projects. If DGX Spark does not meet concurrency or model-size needs, evaluate larger NVIDIA workstation or server-class hardware.</p>
+<h2>Sources</h2>
+<ul>
+<li>NVIDIA DGX Spark product/specification page: https://www.nvidia.com/en-us/products/workstations/dgx-spark/</li>
+<li>NVIDIA DGX Spark User Guide hardware overview: https://docs.nvidia.com/dgx/dgx-spark/hardware.html</li>
+<li>NVIDIA Jetson AGX Orin product page: https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/</li>
+<li>NVIDIA Jetson AGX Orin Series Technical Brief: https://www.nvidia.com/content/dam/en-zz/Solutions/gtcf21/jetson-orin/nvidia-jetson-agx-orin-technical-brief.pdf</li>
+</ul>
+  </main>
+</body>
+</html>

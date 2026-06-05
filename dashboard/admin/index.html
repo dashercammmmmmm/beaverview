@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeaverView Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<nav class="admin-nav">
+  <a class="admin-nav__logo" href="/admin/">⚙ BeaverView Admin</a>
+  <div class="admin-nav__links">
+    <a href="/admin/" class="active">Dashboard</a>
+    <a href="/admin/rooms.html">Rooms</a>
+    <a href="/admin/logs.html">Logs</a>
+    <a href="/admin/connectors.html">Connectors</a>
+    <a href="/admin/users.html">Users</a>
+  </div>
+  <div class="admin-nav__spacer"></div>
+  <span class="admin-nav__user" id="nav-username"></span>
+  <a class="admin-nav__back" href="/">← Dashboard</a>
+</nav>
+
+<div class="admin-layout">
+  <main class="admin-main" id="main" style="display:none">
+
+    <div class="page-header">
+      <h1>Summary Dashboard</h1>
+      <span id="last-refresh" style="font-size:.8rem;color:#888"></span>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-card__value" id="stat-rooms">—</div><div class="stat-card__label">Total Rooms</div></div>
+      <div class="stat-card"><div class="stat-card__value" id="stat-active">—</div><div class="stat-card__label">Active Now</div></div>
+      <div class="stat-card"><div class="stat-card__value" id="stat-incidents">—</div><div class="stat-card__label">Open Incidents</div></div>
+      <div class="stat-card"><div class="stat-card__value" id="stat-actions7">—</div><div class="stat-card__label">Actions (7 days)</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+
+      <!-- Top rooms -->
+      <div class="card">
+        <div class="card__title">Busiest Rooms (7 days)</div>
+        <table><thead><tr><th>Room</th><th>Actions</th></tr></thead>
+        <tbody id="top-rooms"></tbody></table>
+      </div>
+
+      <!-- Top actions -->
+      <div class="card">
+        <div class="card__title">Most-Used Actions (7 days)</div>
+        <table><thead><tr><th>Action</th><th>Count</th></tr></thead>
+        <tbody id="top-actions"></tbody></table>
+      </div>
+
+    </div>
+
+    <!-- Recent activity feed -->
+    <div class="card">
+      <div class="card__title">Recent Activity <small style="font-weight:400;text-transform:none;letter-spacing:0">(auto-refreshes every 60 s)</small></div>
+      <ul class="feed" id="activity-feed"></ul>
+    </div>
+
+    <!-- Connector health grid -->
+    <div class="card">
+      <div class="card__title">Connector Health</div>
+      <div id="connector-health" class="connector-grid"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="admin.js"></script>
+<script>
+document.addEventListener('admin-ready', async () => {
+  document.getElementById('main').style.display = '';
+  await loadAll();
+  setInterval(loadFeed, 60000);
+});
+
+async function loadAll() {
+  await Promise.all([loadSummary(), loadFeed(), loadConnectors()]);
+  document.getElementById('last-refresh').textContent =
+    'Last refreshed: ' + new Date().toLocaleTimeString();
+}
+
+async function loadSummary() {
+  try {
+    const d = await adminGet('/api/admin/logs/summary?days=7');
+    document.getElementById('stat-rooms').textContent     = d.stats.total_rooms;
+    document.getElementById('stat-active').textContent    = d.stats.active_rooms;
+    document.getElementById('stat-incidents').textContent = d.stats.open_incidents;
+    const total7 = d.daily.reduce((s, r) => s + r.n, 0);
+    document.getElementById('stat-actions7').textContent  = total7;
+
+    document.getElementById('top-rooms').innerHTML = d.top_rooms.length
+      ? d.top_rooms.map(r => `<tr><td>${r.room_id}</td><td>${r.n}</td></tr>`).join('')
+      : '<tr><td colspan="2" style="color:#888">No data yet</td></tr>';
+
+    document.getElementById('top-actions').innerHTML = d.top_actions.length
+      ? d.top_actions.map(r => `<tr><td><code>${r.action}</code></td><td>${r.n}</td></tr>`).join('')
+      : '<tr><td colspan="2" style="color:#888">No data yet</td></tr>';
+  } catch(e) {
+    console.warn('Summary load failed:', e);
+  }
+}
+
+async function loadFeed() {
+  try {
+    const d = await adminGet('/api/admin/logs?limit=20');
+    const feed = document.getElementById('activity-feed');
+    if (!d.rows.length) {
+      feed.innerHTML = '<li style="color:#888;padding:.5rem 0">No activity recorded yet.</li>';
+      return;
+    }
+    feed.innerHTML = d.rows.map(r => `
+      <li class="feed__item">
+        <span class="feed__ts">${r.ts ? r.ts.slice(0,16).replace('T',' ') : ''}</span>
+        <span class="feed__user">${r.user || ''}</span>
+        <span class="feed__action"><code>${r.action_type}</code>${r.room_id ? ' · ' + r.room_id : ''}${r.outcome === 'failure' ? ' <span style="color:#c62828">✗</span>' : ''}</span>
+      </li>`).join('');
+  } catch(e) {
+    console.warn('Feed load failed:', e);
+  }
+}
+
+async function loadConnectors() {
+  try {
+    const rows = await adminGet('/api/admin/connectors');
+    const el = document.getElementById('connector-health');
+    if (!rows.length) {
+      el.innerHTML = '<p style="color:#888">No connector data. Run the data migration first.</p>';
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <div class="connector-row">
+        <span class="connector-row__name">${r.connector_name}</span>
+        <span class="connector-row__campus">${r.campus_id}</span>
+        <span class="badge badge--${r.mode}">${r.mode}</span>
+        <span class="connector-row__cred ${r.credentials_present ? 'connector-row__cred--ok' : 'connector-row__cred--miss'}">
+          credentials: ${r.credentials_present ? '✓' : '✗ missing'}
+        </span>
+        ${r.last_synced ? `<span style="font-size:.78rem;color:#999">synced ${r.last_synced.slice(0,16).replace('T',' ')}</span>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    console.warn('Connector health load failed:', e);
+  }
+}
+</script>
+</body>
+</html>

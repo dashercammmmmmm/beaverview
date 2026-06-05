@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rooms — BeaverView Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<nav class="admin-nav">
+  <a class="admin-nav__logo" href="/admin/">⚙ BeaverView Admin</a>
+  <div class="admin-nav__links">
+    <a href="/admin/">Dashboard</a>
+    <a href="/admin/rooms.html" class="active">Rooms</a>
+    <a href="/admin/logs.html">Logs</a>
+    <a href="/admin/connectors.html">Connectors</a>
+    <a href="/admin/users.html">Users</a>
+  </div>
+  <div class="admin-nav__spacer"></div>
+  <span class="admin-nav__user" id="nav-username"></span>
+  <a class="admin-nav__back" href="/">← Dashboard</a>
+</nav>
+
+<div class="admin-layout">
+
+  <!-- Sidebar: campus + building list -->
+  <aside class="admin-sidebar" id="sidebar">
+    <div style="padding:.5rem 1rem .75rem;font-weight:700;font-size:.85rem;border-bottom:1px solid var(--border);margin-bottom:.5rem">
+      Buildings
+    </div>
+    <ul class="sidebar-list" id="building-list"><li style="padding:.75rem 1.25rem;color:#888">Loading…</li></ul>
+    <div style="padding:.75rem 1rem">
+      <button class="btn btn--secondary btn--sm" id="btn-add-building" style="width:100%">+ Add Building</button>
+    </div>
+  </aside>
+
+  <main class="admin-main" id="main" style="display:none">
+
+    <div class="page-header">
+      <h1 id="room-list-title">Select a building</h1>
+      <button class="btn btn--primary btn--sm" id="btn-add-room" style="display:none">+ Add Room</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="rooms-table" style="display:none">
+        <thead><tr>
+          <th>Room #</th><th>Type</th><th>Status</th><th>Health</th>
+          <th>Processor</th><th>Devices</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="rooms-body"></tbody>
+      </table>
+      <p id="rooms-empty" style="color:#888;padding:1rem 0;display:none">No rooms in this building.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- Room edit drawer -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="room-drawer">
+  <div class="drawer__header">
+    <span id="drawer-title">Edit Room</span>
+    <button class="drawer__close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer__body">
+    <form id="room-form">
+      <input type="hidden" id="f-room-id">
+      <input type="hidden" id="f-building-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Room Number *</label>
+          <input class="form-control" id="f-number" required maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <input class="form-control" id="f-type" maxlength="80" placeholder="e.g. Classroom">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" id="f-status">
+            <option value="offline">Offline</option>
+            <option value="available">Available</option>
+            <option value="in-use">In Use</option>
+            <option value="issue">Issue</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Health (0–100)</label>
+          <input class="form-control" id="f-health" type="number" min="0" max="100" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Processor</label>
+          <select class="form-control" id="f-processor">
+            <option value="mock">Mock</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Display</label>
+          <select class="form-control" id="f-display">
+            <option value="unknown">Unknown</option>
+            <option value="on">On</option>
+            <option value="off">Off</option>
+            <option value="standby">Standby</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Active Event</label>
+        <input class="form-control" id="f-active-event" maxlength="200">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea class="form-control" id="f-notes" rows="2" maxlength="500"></textarea>
+      </div>
+      <div style="display:flex;gap:1.5rem;margin-bottom:.9rem">
+        <label class="form-check"><input type="checkbox" id="f-screenconnect"> ScreenConnect</label>
+        <label class="form-check"><input type="checkbox" id="f-wattbox"> WattBox</label>
+        <label class="form-check"><input type="checkbox" id="f-hybrid"> Hybrid</label>
+        <label class="form-check"><input type="checkbox" id="f-stale"> Stale</label>
+      </div>
+
+      <!-- Devices -->
+      <div class="card__title" style="margin-bottom:.5rem">Devices</div>
+      <table class="devices-table">
+        <thead><tr><th>Type</th><th>Manufacturer</th><th>Model</th><th>Connection</th><th></th></tr></thead>
+        <tbody id="devices-body"></tbody>
+      </table>
+      <button type="button" class="btn btn--secondary btn--sm" id="btn-add-device" style="margin-top:.5rem">+ Add Device</button>
+    </form>
+  </div>
+  <div class="drawer__footer">
+    <button class="btn btn--danger btn--sm" id="btn-delete-room" style="margin-right:auto;display:none">Delete Room</button>
+    <button class="btn btn--secondary" id="btn-cancel">Cancel</button>
+    <button class="btn btn--primary" id="btn-save">Save</button>
+  </div>
+</aside>
+
+<!-- Building dialog -->
+<div class="drawer-overlay" id="bldg-overlay"></div>
+<aside class="drawer" id="bldg-drawer" style="width:360px">
+  <div class="drawer__header">
+    <span id="bldg-drawer-title">Add Building</span>
+    <button class="drawer__close" id="bldg-close">✕</button>
+  </div>
+  <div class="drawer__body">
+    <input type="hidden" id="b-id">
+    <div class="form-group">
+      <label>Campus *</label>
+      <select class="form-control" id="b-campus"></select>
+    </div>
+    <div class="form-group">
+      <label>Building Code * <small>(e.g. KAd, LINC)</small></label>
+      <input class="form-control" id="b-code" maxlength="20" required>
+    </div>
+    <div class="form-group">
+      <label>Building Name *</label>
+      <input class="form-control" id="b-name" maxlength="200" required>
+    </div>
+  </div>
+  <div class="drawer__footer">
+    <button class="btn btn--danger btn--sm" id="btn-delete-building" style="margin-right:auto;display:none">Delete Building</button>
+    <button class="btn btn--secondary" id="btn-bldg-cancel">Cancel</button>
+    <button class="btn btn--primary" id="btn-bldg-save">Save</button>
+  </div>
+</aside>
+
+<script src="admin.js"></script>
+<script>
+let campuses = [], buildings = [], currentBldg = null, deviceRows = [];
+
+document.addEventListener('admin-ready', async () => {
+  document.getElementById('main').style.display = '';
+  await loadCampuses();
+});
+
+// ── Load campuses + buildings ───────────────────────────────────────────────
+async function loadCampuses() {
+  try {
+    campuses  = await adminGet('/api/admin/campuses');
+    buildings = await adminGet('/api/admin/buildings');
+    renderSidebar();
+    // Pre-populate campus select in building dialog
+    const sel = document.getElementById('b-campus');
+    sel.innerHTML = campuses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  } catch(e) {
+    toast('Could not load building list: ' + e.message, 'error');
+  }
+}
+
+function renderSidebar() {
+  const ul = document.getElementById('building-list');
+  if (!buildings.length) {
+    ul.innerHTML = '<li style="padding:.75rem 1.25rem;color:#888">No buildings yet.</li>';
+    return;
+  }
+  // Group by campus
+  const byCampus = {};
+  for (const b of buildings) {
+    (byCampus[b.campus_id] = byCampus[b.campus_id] || []).push(b);
+  }
+  ul.innerHTML = Object.entries(byCampus).map(([cid, bldgs]) => `
+    <li class="sidebar-list__section">${cid}</li>
+    ${bldgs.map(b => `
+      <li class="sidebar-list__item">
+        <a href="#" data-bldg="${b.id}" data-bldg-name="${b.name}"
+           class="${currentBldg === b.id ? 'active' : ''}">
+          ${b.code} — ${b.name}
+          <small style="color:#999;font-weight:400">(${b.room_count ?? 0})</small>
+        </a>
+      </li>`).join('')}
+  `).join('');
+  ul.querySelectorAll('[data-bldg]').forEach(a => {
+    a.addEventListener('click', e => { e.preventDefault(); selectBuilding(+a.dataset.bldg, a.dataset.bldgName); });
+  });
+}
+
+// ── Select building → load rooms ────────────────────────────────────────────
+async function selectBuilding(id, name) {
+  currentBldg = id;
+  renderSidebar();
+  document.getElementById('room-list-title').textContent = name;
+  document.getElementById('btn-add-room').style.display = '';
+  try {
+    const rooms = await adminGet(`/api/admin/rooms?building_id=${id}`);
+    renderRoomsTable(rooms);
+  } catch(e) {
+    toast('Could not load rooms: ' + e.message, 'error');
+  }
+}
+
+function renderRoomsTable(rooms) {
+  const tbody = document.getElementById('rooms-body');
+  const table = document.getElementById('rooms-table');
+  const empty = document.getElementById('rooms-empty');
+  if (!rooms.length) { table.style.display = 'none'; empty.style.display = ''; return; }
+  empty.style.display = 'none'; table.style.display = '';
+  tbody.innerHTML = rooms.map(r => `
+    <tr>
+      <td><strong>${r.number}</strong></td>
+      <td>${r.type || '—'}</td>
+      <td><span class="badge badge--${r.status}">${r.status}</span></td>
+      <td>${r.health ?? 0}%</td>
+      <td>${r.processor || 'mock'}</td>
+      <td>${(r.devices || []).length}</td>
+      <td>
+        <button class="btn btn--secondary btn--sm" onclick="openEditRoom(${JSON.stringify(JSON.stringify(r))})">Edit</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── Room drawer ──────────────────────────────────────────────────────────────
+function openDrawer(isNew) {
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('room-drawer').classList.add('open');
+  document.getElementById('drawer-title').textContent = isNew ? 'Add Room' : 'Edit Room';
+  document.getElementById('btn-delete-room').style.display = isNew ? 'none' : '';
+}
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('room-drawer').classList.remove('open');
+}
+
+document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+document.getElementById('btn-cancel').addEventListener('click', closeDrawer);
+
+document.getElementById('btn-add-room').addEventListener('click', () => {
+  document.getElementById('room-form').reset();
+  document.getElementById('f-room-id').value = '';
+  document.getElementById('f-building-id').value = currentBldg;
+  deviceRows = [];
+  renderDevicesTable();
+  openDrawer(true);
+});
+
+window.openEditRoom = function(jsonStr) {
+  const r = JSON.parse(jsonStr);
+  document.getElementById('f-room-id').value       = r.id || '';
+  document.getElementById('f-building-id').value   = r.building_id || currentBldg;
+  document.getElementById('f-number').value         = r.number || '';
+  document.getElementById('f-type').value           = r.type || '';
+  document.getElementById('f-status').value         = r.status || 'offline';
+  document.getElementById('f-health').value         = r.health ?? 0;
+  document.getElementById('f-active-event').value  = r.active_event || '';
+  document.getElementById('f-processor').value     = r.processor || 'mock';
+  document.getElementById('f-display').value       = r.display || 'unknown';
+  document.getElementById('f-notes').value          = r.notes || '';
+  document.getElementById('f-screenconnect').checked = !!r.screenconnect;
+  document.getElementById('f-wattbox').checked      = !!r.wattbox;
+  document.getElementById('f-hybrid').checked       = !!r.hybrid;
+  document.getElementById('f-stale').checked        = !!r.stale;
+  deviceRows = (r.devices || []).map(d => ({...d}));
+  renderDevicesTable();
+  openDrawer(false);
+};
+
+// ── Devices sub-table ────────────────────────────────────────────────────────
+function renderDevicesTable() {
+  const tbody = document.getElementById('devices-body');
+  tbody.innerHTML = deviceRows.map((d, i) => `
+    <tr>
+      <td><input class="form-control" style="min-width:90px" value="${d.device_type||''}" oninput="deviceRows[${i}].device_type=this.value"></td>
+      <td><input class="form-control" style="min-width:90px" value="${d.manufacturer||''}" oninput="deviceRows[${i}].manufacturer=this.value"></td>
+      <td><input class="form-control" style="min-width:90px" value="${d.model||''}" oninput="deviceRows[${i}].model=this.value"></td>
+      <td><input class="form-control" style="min-width:80px" value="${d.connection||''}" oninput="deviceRows[${i}].connection=this.value"></td>
+      <td><button type="button" class="btn btn--danger btn--sm" onclick="removeDevice(${i})">✕</button></td>
+    </tr>`).join('');
+}
+window.removeDevice = i => { deviceRows.splice(i,1); renderDevicesTable(); };
+document.getElementById('btn-add-device').addEventListener('click', () => {
+  deviceRows.push({device_type:'',manufacturer:'',model:'',connection:''});
+  renderDevicesTable();
+});
+
+// ── Save room ────────────────────────────────────────────────────────────────
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const rid  = document.getElementById('f-room-id').value;
+  const bldg = document.getElementById('f-building-id').value;
+  const body = {
+    number:        document.getElementById('f-number').value.trim(),
+    type:          document.getElementById('f-type').value.trim(),
+    status:        document.getElementById('f-status').value,
+    health:        +document.getElementById('f-health').value,
+    active_event:  document.getElementById('f-active-event').value.trim(),
+    processor:     document.getElementById('f-processor').value,
+    display:       document.getElementById('f-display').value,
+    notes:         document.getElementById('f-notes').value.trim(),
+    screenconnect: document.getElementById('f-screenconnect').checked,
+    wattbox:       document.getElementById('f-wattbox').checked,
+    hybrid:        document.getElementById('f-hybrid').checked,
+    stale:         document.getElementById('f-stale').checked,
+    devices:       deviceRows.filter(d => d.device_type),
+  };
+  if (!body.number) { toast('Room number is required', 'error'); return; }
+  try {
+    if (rid) {
+      await adminPut(`/api/admin/rooms/${rid}`, body);
+      toast('Room updated');
+    } else {
+      await adminPost(`/api/admin/rooms?building_id=${bldg}`, body);
+      toast('Room created');
+    }
+    closeDrawer();
+    await selectBuilding(currentBldg, document.getElementById('room-list-title').textContent);
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+});
+
+// ── Delete room ──────────────────────────────────────────────────────────────
+document.getElementById('btn-delete-room').addEventListener('click', async () => {
+  const rid = document.getElementById('f-room-id').value;
+  if (!rid || !confirm(`Delete room ${rid}? This cannot be undone.`)) return;
+  try {
+    await adminDelete(`/api/admin/rooms/${rid}`);
+    toast('Room deleted', 'warning');
+    closeDrawer();
+    await selectBuilding(currentBldg, document.getElementById('room-list-title').textContent);
+  } catch(e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
+});
+
+// ── Building drawer ──────────────────────────────────────────────────────────
+function openBldgDrawer(isNew) {
+  document.getElementById('bldg-overlay').classList.add('open');
+  document.getElementById('bldg-drawer').classList.add('open');
+  document.getElementById('bldg-drawer-title').textContent = isNew ? 'Add Building' : 'Edit Building';
+  document.getElementById('btn-delete-building').style.display = isNew ? 'none' : '';
+}
+function closeBldgDrawer() {
+  document.getElementById('bldg-overlay').classList.remove('open');
+  document.getElementById('bldg-drawer').classList.remove('open');
+}
+document.getElementById('bldg-close').addEventListener('click', closeBldgDrawer);
+document.getElementById('bldg-overlay').addEventListener('click', closeBldgDrawer);
+document.getElementById('btn-bldg-cancel').addEventListener('click', closeBldgDrawer);
+document.getElementById('btn-add-building').addEventListener('click', () => {
+  document.getElementById('b-id').value   = '';
+  document.getElementById('b-code').value = '';
+  document.getElementById('b-name').value = '';
+  openBldgDrawer(true);
+});
+document.getElementById('btn-bldg-save').addEventListener('click', async () => {
+  const bid  = document.getElementById('b-id').value;
+  const body = {
+    campus_id: document.getElementById('b-campus').value,
+    code:      document.getElementById('b-code').value.trim(),
+    name:      document.getElementById('b-name').value.trim(),
+  };
+  if (!body.code || !body.name) { toast('Code and name are required', 'error'); return; }
+  try {
+    if (bid) {
+      await adminPut(`/api/admin/buildings/${bid}`, body);
+      toast('Building updated');
+    } else {
+      await adminPost('/api/admin/buildings', body);
+      toast('Building created');
+    }
+    closeBldgDrawer();
+    await loadCampuses();
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+});
+document.getElementById('btn-delete-building').addEventListener('click', async () => {
+  const bid = document.getElementById('b-id').value;
+  if (!bid || !confirm('Delete this building and ALL its rooms? This cannot be undone.')) return;
+  try {
+    await adminDelete(`/api/admin/buildings/${bid}`);
+    toast('Building deleted', 'warning');
+    closeBldgDrawer();
+    currentBldg = null;
+    await loadCampuses();
+    document.getElementById('room-list-title').textContent = 'Select a building';
+    document.getElementById('btn-add-room').style.display = 'none';
+    document.getElementById('rooms-table').style.display = 'none';
+    document.getElementById('rooms-empty').style.display = 'none';
+  } catch(e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
+});
+</script>
+</body>
+</html>

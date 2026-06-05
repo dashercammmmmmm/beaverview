@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leadership Playbook: AI Chat Bot For Support And ServiceNow Integration</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #d9e2ec;
+  --brand: #d73f09;
+  --soft: #fff5f0;
+  --code: #f5f7fa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #f7f8fa;
+  line-height: 1.55;
+}
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+  background: #fff;
+  min-height: 100vh;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+nav a {
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid #f0b49e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; color: #111827; }
+h2 { font-size: 24px; margin-top: 34px; padding-top: 10px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin-top: 26px; }
+p, li { font-size: 16px; }
+a { color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; vertical-align: top; }
+th { background: var(--soft); text-align: left; }
+code { background: var(--code); padding: 2px 5px; border-radius: 4px; }
+pre {
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+pre code { background: transparent; padding: 0; color: inherit; }
+.mermaid {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  nav { display: none; }
+  h2 { break-after: avoid; }
+  pre, table { break-inside: avoid; }
+}
+</style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</head>
+<body>
+  <main>
+    <nav><a href="leadership-dashboard-playbook.html">Leadership Dashboard Playbook</a>
+<a href="technical-dashboard-playbook.html">Technical Dashboard Playbook</a>
+<a href="leadership-ai-chatbot-playbook.html">Leadership Ai Chatbot Playbook</a>
+<a href="technical-ai-chatbot-playbook.html">Technical Ai Chatbot Playbook</a></nav>
+    <div class="meta">Living HTML version generated from Markdown source. Use Chrome Print to export PDF.</div>
+    <h1>Leadership Playbook: AI Chat Bot For Support And ServiceNow Integration</h1>
+<h2>Executive Summary</h2>
+<p>The <strong>AI Chat Bot</strong> is a separate project that complements the OSU Presentation Support Dashboard. The Dashboard gives technicians visual command of rooms and tools; the AI Chat Bot gives them guided troubleshooting, context-aware support, and high-quality ServiceNow ticket drafts.</p>
+<p>The AI should feel like part of the same ecosystem. When a technician opens a room, the bot should already understand the room, current status, recent dashboard actions, schedule context, known devices, SharePoint training references, and relevant ServiceNow history.</p>
+<p>The recommended deployment path uses local models on <strong>DGX Spark first</strong>, with Orion documented as a scale-up option for larger models or heavier multi-user demand.</p>
+<h2>Value Proposition</h2>
+<p>The AI Chat Bot improves support quality without replacing human judgment.</p>
+<p>Primary value:</p>
+<ul>
+<li>Helps student workers follow consistent troubleshooting workflows.</li>
+<li>Provides real-time support during calls.</li>
+<li>Turns room status, recent actions, and call notes into structured ServiceNow drafts.</li>
+<li>Reduces incomplete or inconsistent ticket documentation.</li>
+<li>Surfaces relevant SharePoint training materials.</li>
+<li>Preserves human approval for disruptive or sensitive actions.</li>
+<li>Creates a training layer for new technicians through guided onboarding and contextual help.</li>
+</ul>
+<h2>How It Complements The Dashboard</h2>
+<div class="mermaid">
+flowchart LR
+    Dashboard[Presentation Support Dashboard] --&gt; Context[Room Context API]
+    Context --&gt; AI[AI Chat Bot]
+    SharePoint[SharePoint Training Docs] --&gt; AI
+    Logs[Recent Actions] --&gt; AI
+    SN[ServiceNow] &lt;--&gt; Draft[Ticket Draft Workflow]
+    AI --&gt; Draft
+    AI --&gt; Tech[Technician Review]
+</div>
+<p>The Dashboard remains the source of operational truth. The AI consumes approved dashboard context rather than independently scraping tools or exposing credentials.</p>
+<p>Example technician workflow:</p>
+<ol>
+<li>Technician opens KAd 101 in the Dashboard.</li>
+<li>AI receives room status, device inventory, active class/event, recent incidents, and recent actions.</li>
+<li>Technician describes the caller&#x27;s issue.</li>
+<li>AI guides verification steps.</li>
+<li>AI recommends next actions, with power cycling treated as a last-resort step.</li>
+<li>AI drafts ServiceNow documentation using Call Documentation templates.</li>
+<li>Technician reviews, edits, and submits the ticket.</li>
+</ol>
+<h2>Local AI Direction</h2>
+<p>Recommended baseline:</p>
+<ul>
+<li><strong>DGX Spark first</strong> for local model hosting.</li>
+<li>Orion as a scale-up option if the team needs larger models, more concurrent users, or heavier retrieval workloads.</li>
+<li>Keep sensitive operational context local where practical.</li>
+<li>Avoid sending hardware IP data or sensitive incident details to external AI systems unless explicitly approved.</li>
+</ul>
+<p>This approach aligns with cybersecurity expectations and gives OSU more control over model behavior, logs, and data flow.</p>
+<h2>ServiceNow Ticket Draft Workflow</h2>
+<p>The bot should draft tickets, not silently submit them.</p>
+<p>Draft fields:</p>
+<ul>
+<li>caller ONID</li>
+<li>building</li>
+<li>room</li>
+<li>category</li>
+<li>assignment group</li>
+<li>short description</li>
+<li>troubleshooting notes</li>
+<li>affected device</li>
+<li>Call Documentation template fields</li>
+<li>current room status snapshot</li>
+<li>recent dashboard actions</li>
+<li>relevant 25Live/Fusion schedule context</li>
+<li>related open incidents and five recent closed incidents</li>
+</ul>
+<p>Human review is required before submission. The technician should be able to edit the draft and decide whether it becomes a ServiceNow ticket.</p>
+<h2>Security, Compliance, And Risk Posture</h2>
+<p>Required controls:</p>
+<ul>
+<li>Use dashboard APIs as the approved data source.</li>
+<li>Keep service credentials out of the browser and out of prompts.</li>
+<li>Redact unnecessary personal data.</li>
+<li>Log AI usage according to approved OSU policy.</li>
+<li>Require human confirmation before disruptive recommendations such as power cycling.</li>
+<li>Keep prompt/response retention limited and policy-aligned.</li>
+<li>Review FERPA, cybersecurity, data classification, and ServiceNow data handling requirements.</li>
+</ul>
+<p>The AI should learn from structured technician feedback, not uncontrolled self-modification. Feedback can be stored as ratings, comments, accepted/rejected recommendations, and corrected ticket drafts.</p>
+<h2>Training And Adoption</h2>
+<p>The AI Chat Bot should support both live troubleshooting and onboarding.</p>
+<p>Recommended training features:</p>
+<ul>
+<li>First-time user tour.</li>
+<li>Contextual explanations of Dashboard sections.</li>
+<li>Guided call-handling mode for student workers.</li>
+<li>Common issue workflows.</li>
+<li>&quot;Why am I recommending this?&quot; explanations.</li>
+<li>Feedback buttons for helpful/not helpful recommendations.</li>
+<li>Links to relevant SharePoint training PDFs.</li>
+</ul>
+<p>This makes the tool feel supportive rather than supervisory.</p>
+<h2>Screenshot Placeholders For Future Prototype</h2>
+<p>Add screenshots to the HTML/PDF version after the AI mock exists:</p>
+<ul>
+<li>AI assistant opened from a room.</li>
+<li>Guided troubleshooting flow.</li>
+<li>Verification-first recommendation.</li>
+<li>SharePoint training document suggestion.</li>
+<li>ServiceNow draft before technician review.</li>
+<li>Technician edit/review screen.</li>
+<li>Feedback capture after a recommendation.</li>
+</ul>
+<h2>Timeline And Staffing Recommendation</h2>
+<table><thead><tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Outcome</th>
+</tr></thead><tbody>
+<tr>
+<td>1. AI workflow design</td>
+<td>1-2 weeks</td>
+<td>Define supported scenarios, ticket templates, safety rules, and required context.</td>
+</tr>
+<tr>
+<td>2. Local model baseline</td>
+<td>2-4 weeks</td>
+<td>DGX Spark model serving, basic chat UI, and test prompts.</td>
+</tr>
+<tr>
+<td>3. Dashboard context integration</td>
+<td>2-3 weeks</td>
+<td>AI consumes room/status/action context from Dashboard APIs.</td>
+</tr>
+<tr>
+<td>4. ServiceNow draft workflow</td>
+<td>2-4 weeks</td>
+<td>Draft tickets from guided troubleshooting and templates.</td>
+</tr>
+<tr>
+<td>5. SharePoint knowledge connection</td>
+<td>2-4 weeks</td>
+<td>Link or retrieve approved training materials.</td>
+</tr>
+<tr>
+<td>6. Pilot and tuning</td>
+<td>ongoing</td>
+<td>Improve prompts, workflows, and documentation quality from technician feedback.</td>
+</tr>
+</tbody></table>
+<p>Recommended staffing:</p>
+<ul>
+<li>Product owner.</li>
+<li>AV support subject matter expert.</li>
+<li>AI/application developer.</li>
+<li>ServiceNow administrator.</li>
+<li>SharePoint/knowledge owner.</li>
+<li>Cybersecurity reviewer.</li>
+<li>Technician/student pilot group.</li>
+</ul>
+<h2>Success Metrics</h2>
+<ul>
+<li>More complete ServiceNow tickets.</li>
+<li>Less time spent writing ticket notes.</li>
+<li>Reduced escalation from student workers for common issues.</li>
+<li>Faster troubleshooting during live calls.</li>
+<li>Higher consistency in verification steps.</li>
+<li>Technician trust and voluntary usage.</li>
+<li>Reduced repeated mistakes in support documentation.</li>
+</ul>
+<h2>Risks And Mitigations</h2>
+<table><thead><tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr></thead><tbody>
+<tr>
+<td>AI gives unsafe recommendation</td>
+<td>Verification-first prompts, human confirmation, power cycle as last resort.</td>
+</tr>
+<tr>
+<td>Sensitive data in prompts/logs</td>
+<td>Local model hosting, redaction, retention policy, approved context API.</td>
+</tr>
+<tr>
+<td>Poor ticket quality</td>
+<td>Use templates, technician review, feedback loops, scenario testing.</td>
+</tr>
+<tr>
+<td>Over-trust by student workers</td>
+<td>Explain reasoning, require review, provide escalation guidance.</td>
+</tr>
+<tr>
+<td>Hardware capacity limits</td>
+<td>DGX Spark baseline, Orion scale-up option, monitor concurrency and latency.</td>
+</tr>
+<tr>
+<td>Knowledge drift</td>
+<td>Use approved SharePoint sources and regular content review.</td>
+</tr>
+</tbody></table>
+<h2>Approval Decisions Needed</h2>
+<p>Leadership should approve:</p>
+<ul>
+<li>DGX Spark as first local model target.</li>
+<li>Human-reviewed ServiceNow drafts as the default workflow.</li>
+<li>Data retention and logging standards for AI prompts/responses.</li>
+<li>Initial support scenarios for pilot.</li>
+<li>SharePoint knowledge sources approved for AI use.</li>
+<li>Cybersecurity review path before production use.</li>
+</ul>
+<h2>Next Steps After Playbook Approval</h2>
+<ol>
+<li>Select pilot troubleshooting scenarios.</li>
+<li>Gather Call Documentation templates.</li>
+<li>Confirm DGX Spark availability and model-serving approach.</li>
+<li>Define Dashboard context API contract.</li>
+<li>Build AI chat mock flow after Dashboard mock is approved.</li>
+<li>Pilot ServiceNow ticket draft workflow with technicians and student workers.</li>
+</ol>
+<h2>Open Questions</h2>
+<ul>
+<li>Which local model family should be tested first on DGX Spark?</li>
+<li>What prompt/response retention is allowed by OSU policy?</li>
+<li>Which ServiceNow assignment groups and categories should be defaulted?</li>
+<li>Which SharePoint folders are approved for AI retrieval?</li>
+</ul>
+  </main>
+</body>
+</html>

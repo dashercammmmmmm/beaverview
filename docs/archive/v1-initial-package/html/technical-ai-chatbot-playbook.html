@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Technical Build/Update Playbook: AI Chat Bot For Support And ServiceNow Integration</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #d9e2ec;
+  --brand: #d73f09;
+  --soft: #fff5f0;
+  --code: #f5f7fa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #f7f8fa;
+  line-height: 1.55;
+}
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+  background: #fff;
+  min-height: 100vh;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+nav a {
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid #f0b49e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; color: #111827; }
+h2 { font-size: 24px; margin-top: 34px; padding-top: 10px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin-top: 26px; }
+p, li { font-size: 16px; }
+a { color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; vertical-align: top; }
+th { background: var(--soft); text-align: left; }
+code { background: var(--code); padding: 2px 5px; border-radius: 4px; }
+pre {
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+}
+pre code { background: transparent; padding: 0; color: inherit; }
+.mermaid {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 18px 0;
+}
+.meta {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+@media print {
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  nav { display: none; }
+  h2 { break-after: avoid; }
+  pre, table { break-inside: avoid; }
+}
+</style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</head>
+<body>
+  <main>
+    <nav><a href="leadership-dashboard-playbook.html">Leadership Dashboard Playbook</a>
+<a href="technical-dashboard-playbook.html">Technical Dashboard Playbook</a>
+<a href="leadership-ai-chatbot-playbook.html">Leadership Ai Chatbot Playbook</a>
+<a href="technical-ai-chatbot-playbook.html">Technical Ai Chatbot Playbook</a></nav>
+    <div class="meta">Living HTML version generated from Markdown source. Use Chrome Print to export PDF.</div>
+    <h1>Technical Build/Update Playbook: AI Chat Bot For Support And ServiceNow Integration</h1>
+<h2>System Overview</h2>
+<p>The AI Chat Bot is a separate local application that integrates tightly with the Dashboard. It consumes approved room context, recent actions, ServiceNow context, and SharePoint knowledge references to guide troubleshooting and draft ServiceNow ticket documentation.</p>
+<p>The bot must not become an uncontrolled automation layer. It recommends, explains, drafts, and learns from structured feedback. Technicians remain in control.</p>
+<h2>Architecture</h2>
+<div class="mermaid">
+flowchart TB
+    Tech[Technician] --&gt; ChatUI[AI Chat UI]
+    ChatUI --&gt; ChatAPI[AI Chat Backend]
+    ChatAPI --&gt; Model[Local Model Server on DGX Spark]
+    ChatAPI --&gt; Context[Dashboard Context API]
+    ChatAPI --&gt; Templates[Call Documentation Templates]
+    ChatAPI --&gt; Knowledge[SharePoint Knowledge Index]
+    ChatAPI --&gt; SN[ServiceNow Draft API]
+    ChatAPI --&gt; Feedback[(Feedback Store)]
+    Context --&gt; Room[(Room/Status Data)]
+    Context --&gt; Audit[(Recent Dashboard Actions)]
+</div>
+<p>Recommended baseline:</p>
+<ul>
+<li>Local model host: DGX Spark.</li>
+<li>Scale option: Orion for heavier concurrency or larger models.</li>
+<li>Chat frontend: embedded Dashboard panel or separate local page with room deep-link support.</li>
+<li>Chat backend: local service with prompt assembly, policy checks, context retrieval, and ServiceNow draft generation.</li>
+<li>Retrieval: start with SharePoint links and curated templates; add vector search only after content approval.</li>
+</ul>
+<h2>Data Flow</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Tech
+    participant Chat
+    participant Dashboard
+    participant Model
+    participant SN
+
+    Tech-&gt;&gt;Chat: Ask for help with room issue
+    Chat-&gt;&gt;Dashboard: Request room context and recent actions
+    Dashboard--&gt;&gt;Chat: Return approved context JSON
+    Chat-&gt;&gt;Model: Send system prompt, context, and user message
+    Model--&gt;&gt;Chat: Return troubleshooting guidance
+    Tech-&gt;&gt;Chat: Provide results and caller details
+    Chat-&gt;&gt;Model: Generate ticket draft
+    Chat-&gt;&gt;SN: Prepare draft payload
+    Chat--&gt;&gt;Tech: Show editable draft for review
+</div>
+<h2>Dashboard Context Contract</h2>
+<p>The AI should consume a purpose-built context endpoint rather than raw database access.</p>
+<p>Example response:</p>
+<pre><code>{
+  &quot;room&quot;: {
+    &quot;room_id&quot;: &quot;corvallis-kad-101&quot;,
+    &quot;campus&quot;: &quot;Corvallis&quot;,
+    &quot;building_acronym&quot;: &quot;KAd&quot;,
+    &quot;building_name&quot;: &quot;Kerr Administration Building&quot;,
+    &quot;room_number&quot;: &quot;101&quot;,
+    &quot;display_name&quot;: &quot;KAd 101&quot;
+  },
+  &quot;status&quot;: {
+    &quot;room_online&quot;: true,
+    &quot;fusion_processor&quot;: &quot;online&quot;,
+    &quot;display_power&quot;: &quot;on&quot;,
+    &quot;screenconnect_available&quot;: true,
+    &quot;active_event&quot;: &quot;Sample Class until 17:20&quot;,
+    &quot;open_incidents_count&quot;: 1,
+    &quot;stale_data&quot;: false,
+    &quot;source_conflict&quot;: false
+  },
+  &quot;devices&quot;: [
+    {
+      &quot;device_type&quot;: &quot;display&quot;,
+      &quot;manufacturer&quot;: &quot;NEC&quot;,
+      &quot;model&quot;: &quot;Sample Model&quot;,
+      &quot;safe_label&quot;: &quot;Front Display&quot;,
+      &quot;web_ui_available&quot;: true
+    }
+  ],
+  &quot;recent_actions&quot;: [
+    {
+      &quot;timestamp&quot;: &quot;2026-05-30T16:40:00Z&quot;,
+      &quot;action_type&quot;: &quot;xpanel_launched&quot;,
+      &quot;outcome&quot;: &quot;success&quot;
+    }
+  ],
+  &quot;knowledge_links&quot;: [
+    {
+      &quot;title&quot;: &quot;Display Troubleshooting Guide&quot;,
+      &quot;url&quot;: &quot;https://sharepoint.example/display-guide.pdf&quot;
+    }
+  ]
+}</code></pre>
+<p>Important: do not include raw secrets. Include raw IP addresses only if approved for the current user and use case.</p>
+<h2>Prompt And Context Strategy</h2>
+<p>System behavior:</p>
+<ul>
+<li>Act as an OSU Presentation Support assistant.</li>
+<li>Use the provided room context as trusted operational context.</li>
+<li>Ask for missing caller details when needed.</li>
+<li>Prefer verification steps before invasive actions.</li>
+<li>Treat power cycling as a last-resort recommendation.</li>
+<li>Require technician confirmation for disruptive steps.</li>
+<li>Draft ServiceNow documentation in a clear, professional format.</li>
+<li>Say when data is stale, missing, or conflicting.</li>
+<li>Provide escalation guidance when confidence is low.</li>
+</ul>
+<p>Prompt layers:</p>
+<ol>
+<li>Global system prompt.</li>
+<li>OSU support policy and safety rules.</li>
+<li>Current room context.</li>
+<li>Relevant Call Documentation template.</li>
+<li>Approved SharePoint knowledge snippets or links.</li>
+<li>Conversation history.</li>
+<li>Technician&#x27;s latest message.</li>
+</ol>
+<h2>ServiceNow Draft Workflow</h2>
+<p>The bot creates editable ticket drafts by default.</p>
+<p>Draft schema:</p>
+<pre><code>{
+  &quot;caller_onid&quot;: &quot;student-or-staff-onid&quot;,
+  &quot;building&quot;: &quot;KAd&quot;,
+  &quot;room&quot;: &quot;101&quot;,
+  &quot;category&quot;: &quot;Classroom Technology&quot;,
+  &quot;assignment_group&quot;: &quot;Presentation Support&quot;,
+  &quot;short_description&quot;: &quot;KAd 101 display not showing instructor PC&quot;,
+  &quot;affected_device&quot;: &quot;Front Display&quot;,
+  &quot;troubleshooting_notes&quot;: [
+    &quot;Confirmed room and caller location.&quot;,
+    &quot;Checked Dashboard status: Fusion online, display power on.&quot;,
+    &quot;Opened XPanel and verified selected source.&quot;,
+    &quot;Guided caller through cable/source verification.&quot;
+  ],
+  &quot;template_fields&quot;: {
+    &quot;symptom&quot;: &quot;Display not showing expected source&quot;,
+    &quot;steps_completed&quot;: &quot;Verification steps completed with caller&quot;,
+    &quot;resolution_or_next_step&quot;: &quot;Escalate if issue persists after local verification&quot;
+  },
+  &quot;dashboard_snapshot&quot;: {
+    &quot;room_online&quot;: true,
+    &quot;fusion_processor&quot;: &quot;online&quot;,
+    &quot;display_power&quot;: &quot;on&quot;,
+    &quot;active_event&quot;: &quot;Sample Class&quot;
+  },
+  &quot;recent_dashboard_actions&quot;: []
+}</code></pre>
+<p>Submission rules:</p>
+<ul>
+<li>Technician must review and submit.</li>
+<li>Bot may suggest field values.</li>
+<li>Bot should highlight uncertainty or missing information.</li>
+<li>Every draft creation and submission/update event should be audited.</li>
+</ul>
+<h2>Knowledge And SharePoint Strategy</h2>
+<p>Phase 1:</p>
+<ul>
+<li>Link to organized SharePoint PDFs from the Dashboard and AI responses.</li>
+<li>Use title, category, device type, campus/building/room metadata.</li>
+</ul>
+<p>Phase 2:</p>
+<ul>
+<li>Create an approved knowledge index.</li>
+<li>Add retrieval over approved training documents.</li>
+<li>Store document source links with every answer.</li>
+<li>Re-index on a schedule or when SharePoint owners publish updates.</li>
+</ul>
+<p>Phase 3:</p>
+<ul>
+<li>Add analytics for common unresolved questions and missing documentation.</li>
+</ul>
+<h2>Safety And Feedback</h2>
+<p>Power cycling policy:</p>
+<ul>
+<li>Recommend only after verification steps.</li>
+<li>Identify the affected device and outlet label.</li>
+<li>Ask technician to confirm.</li>
+<li>Record recommendation, confirmation, outcome, and technician feedback.</li>
+</ul>
+<p>Feedback model:</p>
+<pre><code>{
+  &quot;feedback_id&quot;: &quot;fb-000001&quot;,
+  &quot;timestamp&quot;: &quot;2026-05-30T17:00:00Z&quot;,
+  &quot;user_id&quot;: &quot;tech-onid&quot;,
+  &quot;room_id&quot;: &quot;corvallis-kad-101&quot;,
+  &quot;recommendation_id&quot;: &quot;rec-000010&quot;,
+  &quot;rating&quot;: &quot;helpful&quot;,
+  &quot;accepted&quot;: true,
+  &quot;edited_ticket_draft&quot;: true,
+  &quot;comment&quot;: &quot;Good steps, but assignment group needed correction.&quot;
+}</code></pre>
+<p>The system may use feedback for reporting and prompt improvement. It should not automatically retrain or modify model behavior without review.</p>
+<h2>Local Model Deployment</h2>
+<p>DGX Spark baseline:</p>
+<ul>
+<li>Host model server on trusted local network.</li>
+<li>Restrict access to Chat API service.</li>
+<li>Monitor latency, throughput, GPU memory, and error rates.</li>
+<li>Start with one approved model and a small pilot group.</li>
+<li>Keep fallback behavior for model unavailability.</li>
+</ul>
+<p>Orion scale-up option:</p>
+<ul>
+<li>Use if DGX Spark cannot meet latency/concurrency needs.</li>
+<li>Consider for larger context windows, heavier retrieval, or broader rollout.</li>
+</ul>
+<p>Operational requirements:</p>
+<ul>
+<li>Define model update process.</li>
+<li>Keep model configuration versioned.</li>
+<li>Record prompt template version with each AI session.</li>
+<li>Monitor quality and safety metrics.</li>
+</ul>
+<h2>Security And Compliance</h2>
+<p>Required controls:</p>
+<ul>
+<li>Use approved Dashboard context APIs.</li>
+<li>Do not expose ServiceNow or SharePoint credentials to the browser.</li>
+<li>Redact unnecessary personal data before prompt assembly.</li>
+<li>Restrict raw IP/device data to authorized users.</li>
+<li>Define prompt/response retention before production use.</li>
+<li>Keep AI logs searchable only by authorized admins.</li>
+<li>Follow OSU cybersecurity, privacy, FERPA, and data classification policies.</li>
+</ul>
+<p>Audit events:</p>
+<ul>
+<li>AI chat session started.</li>
+<li>Room context requested.</li>
+<li>Knowledge document referenced.</li>
+<li>Recommendation generated.</li>
+<li>Recommendation accepted/rejected.</li>
+<li>Ticket draft generated.</li>
+<li>Ticket draft edited.</li>
+<li>Ticket submitted or abandoned.</li>
+<li>Feedback submitted.</li>
+</ul>
+<h2>Build Phases</h2>
+<ol>
+<li>Define support scenarios and safety rules.</li>
+<li>Collect Call Documentation templates.</li>
+<li>Stand up local model service on DGX Spark.</li>
+<li>Build chat backend with mock room context.</li>
+<li>Connect Dashboard context endpoint.</li>
+<li>Add ServiceNow draft schema and editable review UI.</li>
+<li>Add SharePoint knowledge links.</li>
+<li>Add feedback capture.</li>
+<li>Pilot with student workers and technicians.</li>
+<li>Review logs, improve prompts, and expand scenarios.</li>
+</ol>
+<h2>Acceptance Test Checklist</h2>
+<ul>
+<li>Start chat from a room context.</li>
+<li>Bot identifies stale or missing room data.</li>
+<li>Bot asks for missing caller ONID when needed.</li>
+<li>Bot recommends verification steps before power cycling.</li>
+<li>Bot requires human confirmation before disruptive steps.</li>
+<li>Bot drafts ServiceNow ticket fields from conversation and context.</li>
+<li>Technician can edit draft before submission.</li>
+<li>Bot references approved SharePoint resources.</li>
+<li>Feedback is stored as structured data.</li>
+<li>Prompt template version is logged.</li>
+<li>Local model outage produces graceful fallback message.</li>
+<li>Sensitive credentials are never included in prompts or browser responses.</li>
+</ul>
+<h2>Screenshot Placeholders For Future Prototype</h2>
+<p>When the AI mock exists, add annotated screenshots for:</p>
+<ul>
+<li>Chat panel embedded in the Dashboard.</li>
+<li>Room context summary shown to technician.</li>
+<li>Guided call documentation flow.</li>
+<li>ServiceNow draft generation.</li>
+<li>Required human review before ticket submission.</li>
+<li>AI feedback controls.</li>
+<li>Model outage fallback message.</li>
+</ul>
+<h2>Next Steps After Playbook Approval</h2>
+<ol>
+<li>Gather Call Documentation templates.</li>
+<li>Select initial pilot troubleshooting scenarios.</li>
+<li>Confirm DGX Spark access and local model-serving requirements.</li>
+<li>Define the Dashboard context endpoint contract.</li>
+<li>Build the AI chat mock flow with static room context.</li>
+<li>Add ServiceNow draft payload mapping.</li>
+<li>Review prompt retention, redaction, and AI audit requirements with OSU cybersecurity.</li>
+</ol>
+<h2>Open Questions</h2>
+<ul>
+<li>Which local model family should be approved first?</li>
+<li>What is the final prompt/response retention policy?</li>
+<li>Which ServiceNow categories and assignment groups are approved defaults?</li>
+<li>Which SharePoint folders are approved for AI indexing?</li>
+<li>What concurrency target should DGX Spark support for the pilot?</li>
+</ul>
+  </main>
+</body>
+</html>
