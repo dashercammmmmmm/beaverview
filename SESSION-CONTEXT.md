@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** After search/history/admin-bypass fixes + complete build playbook generated.
+**Last updated:** After git init, admin link, search fixes, HCIC placeholder, CLAUDE.md.
 
 ---
 
@@ -36,20 +36,23 @@ BeaverView is an OSU Presentation Support dashboard — a FastAPI backend + vani
 New project/
 ├── .gitignore               ← excludes .env, beaverview.db, hardware_ips.csv, *.pdf
 ├── .env.example             ← credential template (safe to commit)
+├── CLAUDE.md                ← AI assistant guidance (architecture, dev commands)
+├── SESSION-CONTEXT.md       ← this file
 ├── api/
-│   ├── main.py              ← FastAPI app (1360+ lines) — ALL backend code
+│   ├── main.py              ← FastAPI app (~1400 lines) — ALL backend code
 │   ├── data_mock.py         ← 19 mock rooms for dev/test
-│   ├── requirements.txt     ← fastapi, uvicorn, python-dotenv, httpx, msal, starlette-sessions, itsdangerous
+│   ├── requirements.txt     ← fastapi, uvicorn, python-dotenv, httpx, msal, starlette-sessions>=0.3.0, itsdangerous
+│   ├── venv/                ← Python virtual environment (auto-created, not committed)
 │   ├── .env                 ← YOUR credentials (NEVER commit — in .gitignore)
 │   ├── migrate_data.py      ← one-time: data.js → SQLite
 │   ├── import_device_ips.py ← one-time: hardware_ips.csv → SQLite
-│   └── beaverview.db        ← SQLite database (auto-created on first run)
+│   └── beaverview.db        ← SQLite database (auto-created on first run, not committed)
 └── dashboard/
     ├── index.html           ← main dashboard page
-    ├── app.js               ← all interactivity (~1150 lines)
+    ├── app.js               ← all interactivity (~1230 lines)
     ├── styles.css           ← all visual design (~1400 lines)
-    ├── data.js              ← room inventory + campus data (472 lines)
-    ├── osu-map-buildings.js ← 278 OSU building footprints (DO NOT EDIT)
+    ├── data.js              ← room inventory + campus data (includes HCIC placeholder)
+    ├── osu-map-buildings.js ← 278 OSU building footprints + HCIC manual entry
     ├── vendor/maplibre/     ← local MapLibre GL (DO NOT EDIT)
     └── admin/
         ├── admin.js         ← shared auth check + API helpers
@@ -69,8 +72,15 @@ New project/
 Press **Command + Space**, type **Terminal**, press **Enter**.
 
 ### Step 2 — Paste this exact command and press Enter:
+
+**First time only** (creates the virtual environment and installs packages):
 ```
-cd "/Users/cam/Documents/New project/api" && uvicorn main:app --reload --port 8000
+cd "/Users/cam/Documents/New project/api" && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --reload --port 8000
+```
+
+**Every time after that** (venv already exists):
+```
+cd "/Users/cam/Documents/New project/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
 ```
 
 ### Step 3 — Open the site
@@ -82,10 +92,8 @@ Go to: `http://localhost:8000/admin/`
 ### To stop the server:
 Click in the Terminal window and press **Control + C** (hold Control, tap C).
 
-### If uvicorn is not found:
-```
-cd "/Users/cam/Documents/New project/api" && pip3 install -r requirements.txt && uvicorn main:app --reload --port 8000
-```
+### If you see "externally-managed-environment" from pip:
+macOS Homebrew Python blocks system-wide pip installs. The venv command above is the correct fix — it creates an isolated environment. Never use `pip3 install` without a venv active on macOS.
 
 ---
 
@@ -129,56 +137,60 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ---
 
-## What was just changed (latest session)
+## What was just changed (latest sessions)
 
-### Search bar — 3 fixes
-1. **Single match → zooms in** to zoom 18.5 (street level) using `map.flyTo()`
-2. **Single match → building turns orange** (auto-selects building, which triggers the selected color)
-3. **Single match → right panel updates** with rooms for that building
-4. **2–6 matches** zoom closer than campus default (maxZoom 17.5 vs 15.25)
+### Git repository initialized
+- `git init` + initial commit (ec60a6f) — all project files committed
+- Remaining step: create repo on GitHub and `git remote add origin …` + `git push -u origin main`
 
-### History tab (was "Log")
-- Tab renamed from "Log" → **"History"**
-- Shows **last 5 building + room combos** visited, most recent first
-- Click any history row to fly back to that location
-- Individual tool actions still go to backend audit log (admin console only)
-- New functions: `addToHistory(room)`, updated `renderLog()`, history-row click handler
+### Python venv required (macOS)
+- macOS Homebrew Python blocks system-wide `pip install` (PEP 668)
+- Fixed: `api/venv/` created, `starlette-sessions` version corrected to `>=0.3.0` in `requirements.txt`
 
-### Admin panel dev bypass
-- `/api/me` now returns `{role: 'admin'}` automatically when:
-  - Running on localhost (127.0.0.1)
-  - AND `AZURE_CLIENT_ID` is not set in `.env`
-- Auto-disables in production when Azure creds are added
+### Admin link in dashboard header
+- Orange-tinted "Admin" button appears in the top-right header
+- Shown only when `GET /api/me` returns `role: 'admin'`
+- Hidden (`hidden` attribute) by default; revealed by `checkRole()` in `app.js`
+- `dashboard/index.html`, `dashboard/app.js`, `dashboard/styles.css` all updated
 
-### Comprehensive build playbook generated
-- `BeaverView-Complete-Build-Playbook.pdf` — 167 pages, every file copy-paste ready
-- Generated by `generate_complete_playbook.py`
+### Search improvements
+- **Fuzzy/normalized search**: `normalizeSearch()` strips apostrophes, dashes, `&`→"and" before matching — "womens" now finds "Women's Building"
+- **Building clicks work while search is active**: all buildings stay on the map; non-matching ones fade to 18% opacity instead of disappearing — you can click any building at any time
+
+### HCIC placeholder
+- Added to `osu-map-buildings.js` (approximate coordinates — update when building is officially placed)
+- Added to `data.js` with one placeholder room; clicking it shows a "Upcoming building" banner
+- Search for "HCIC" or "Health and Collaborative" will find it
+
+### CLAUDE.md created
+- `CLAUDE.md` at project root — guides AI assistants on architecture, dev commands, and key file rules
 
 ---
 
 ## What is NOT done (priority order)
 
-### 🔴 Blocking — must fix before production
+### 🔴 Blocking — must do before production
 | Item | Notes |
 |---|---|
-| **Git repository** | Files are local only. Need to `git init` and push to GitHub or Azure DevOps |
-| **Azure App Registration** | IT team needs to do this. See playbook Part 7, Steps 1–3. They need Application Administrator role in Azure Portal |
-| **.env credentials** | AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, group IDs — not filled in yet |
-| **Ubuntu VM** | Not yet created. See playbook Part 2 |
-| **Data migration** | `python3 migrate_data.py` not yet run — rooms table is empty (dev works on mock data) |
+| **Push to GitHub** | `git init` done locally (commit ec60a6f). Create repo on GitHub, then `git remote add origin …` + `git push -u origin main` |
+| **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
+| **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, group object IDs |
+| **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
+| **Data migration** | `python3 migrate_data.py` not yet run — SQLite rooms table is empty (dev uses `data.js` mock) |
 
 ### 🟠 Important — needed soon
 | Item | Notes |
 |---|---|
-| Add "Admin" link to main dashboard header | Show only when role === 'admin'. Small app.js + styles.css change |
 | Windows hosts file entries | `192.168.x.x beaverview` on each Windows PC |
-| nginx + SSL + systemd setup | Part 7–8 of playbook |
+| nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
+| Device issue diagnostics card | In room Overview tab: show which device is failing, probable cause, "Auto-Fix" button (WattBox reboot). Auto-fix only when room is empty. Recommended but not yet built. |
 
 ### 🟡 Nice to have
 | Item | Notes |
 |---|---|
-| Chart.js in vendor/ | For admin summary bar charts (currently shows tables, not charts) |
+| HCIC map coordinates | Current pin is approximate — update `osu-map-buildings.js` entry when building is officially on OSU's map |
+| Chart.js in vendor/ | Admin summary page shows tables; charts would be better |
 | Rate limiting (slowapi) | On admin log export endpoint |
 | Mobile responsive design | Currently desktop-only |
 | 3-Series processor TCP fallback | Port 41794 ping instead of REST API |
@@ -192,14 +204,7 @@ I'm continuing work on the BeaverView OSU Presentation Support Dashboard.
 Read SESSION-CONTEXT.md at /Users/cam/Documents/New project/SESSION-CONTEXT.md first —
 it has the full project state.
 
-Here is what I need help with next:
-1. Set up a git repository so I can keep the project organized and push it to GitHub
-2. Add an "Admin" link to the main dashboard header that only shows when the user's
-   role is 'admin' (the /api/me endpoint returns the role)
-3. I want to test the admin panel — the dev bypass is in place so it should work on
-   localhost. Walk me through what to expect and how to verify each admin page works.
-
 Key files: api/main.py, dashboard/app.js, dashboard/index.html, dashboard/styles.css
 Project root: /Users/cam/Documents/New project/
-Dev server command: cd "/Users/cam/Documents/New project/api" && uvicorn main:app --reload --port 8000
+Dev server: cd "/Users/cam/Documents/New project/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
 ```

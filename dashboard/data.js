@@ -455,6 +455,30 @@ window.dashboardData = {
               devices: [["Display", "LG", "Sample", "Sanitized host"]]
             }
           ]
+        },
+        {
+          code: "HCIC",
+          name: "Health and Collaborative Innovation Center",
+          x: 50,
+          y: 62,
+          rooms: [
+            {
+              number: "TBD",
+              type: "Presentation Space — Placeholder",
+              status: "available",
+              health: 0,
+              activeEvent: "Available",
+              processor: "not-configured",
+              display: "not-configured",
+              screenconnect: false,
+              wattbox: false,
+              hybrid: false,
+              stale: false,
+              placeholder: true,
+              incidents: { open: [], closed: [] },
+              devices: []
+            }
+          ]
         }
       ]
     }

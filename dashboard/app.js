@@ -129,17 +129,31 @@ function roomMatchesFilters(room) {
   return true;
 }
 
+function normalizeSearch(s) {
+  return s.toLowerCase()
+    .replace(/['’‘`]/g, "")   // strip apostrophes
+    .replace(/[-–—]/g, " ")             // dashes → space
+    .replace(/&/g, "and")
+    .replace(/[.,()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function buildingMatches(building) {
-  const term = state.search.trim().toLowerCase();
+  const term = normalizeSearch(state.search.trim());
   const rooms = allRooms().filter((room) => room.building.id === building.id);
   const hasFilters = state.filters.size > 0;
   const passesFilter = hasFilters ? rooms.some(roomMatchesFilters) : true;
   if (!passesFilter) return false;
   if (!term) return true;
+  const normCode = normalizeSearch(building.code || "");
+  const normName = normalizeSearch(building.name);
   return (
-    (building.code || "").toLowerCase().includes(term) ||
-    building.name.toLowerCase().includes(term) ||
-    rooms.some((room) => `${building.code || building.name} ${room.number}`.toLowerCase().includes(term))
+    normCode.includes(term) ||
+    normName.includes(term) ||
+    rooms.some((room) =>
+      normalizeSearch(`${building.code || building.name} ${room.number}`).includes(term)
+    )
   );
 }
 
@@ -171,11 +185,12 @@ function buildingLabel(building) {
   return building.code || "";
 }
 
-function buildingGeoJSON(buildings) {
+function buildingGeoJSON(buildings, matchedIds = null) {
   return {
     type: "FeatureCollection",
     features: buildings.map((building) => {
       const summary = buildingSummary(building);
+      const matches = matchedIds === null || matchedIds.has(building.id);
       return {
         type: "Feature",
         id: building.id,
@@ -192,7 +207,8 @@ function buildingGeoJSON(buildings) {
           status: summary.status,
           supportRooms: summary.rooms.length,
           issues: summary.issues,
-          selected: state.selectedBuildingCode === building.id
+          selected: state.selectedBuildingCode === building.id,
+          matches
         }
       };
     })
@@ -274,6 +290,7 @@ function ensureMap() {
         "fill-opacity": [
           "case",
           ["==", ["get", "selected"], true], 0.78,
+          ["==", ["get", "matches"], false], 0.18,
           [">", ["get", "supportRooms"], 0], 0.74,
           0.58
         ]
@@ -287,7 +304,7 @@ function ensureMap() {
       paint: {
         "line-color": ["case", ["==", ["get", "selected"], true], "#80220a", "#ffffff"],
         "line-width": ["case", ["==", ["get", "selected"], true], 2.5, 0.8],
-        "line-opacity": 0.88
+        "line-opacity": ["case", ["==", ["get", "matches"], false], 0.15, 0.88]
       }
     });
 
@@ -332,11 +349,15 @@ function ensureMap() {
 function updateMapData(options = {}) {
   ensureMap();
   if (!mapReady) return;
-  const buildings = campusBuildings().filter(buildingMatches);
+  const all = campusBuildings();
+  const matched = all.filter(buildingMatches);
+  const matchedIds = (state.search.trim() || state.filters.size > 0)
+    ? new Set(matched.map((b) => b.id))
+    : null;  // null = all match (no dimming)
   const source = map.getSource("osu-buildings");
-  if (source) source.setData(buildingGeoJSON(buildings));
-  if (options.fit && buildings.length) {
-    map.fitBounds(campusBoundsLngLat(buildings), { padding: 42, duration: 0, maxZoom: campusViewDefaults[state.campusId].zoom });
+  if (source) source.setData(buildingGeoJSON(all, matchedIds));
+  if (options.fit && matched.length) {
+    map.fitBounds(campusBoundsLngLat(matched), { padding: 42, duration: 0, maxZoom: campusViewDefaults[state.campusId].zoom });
   }
 }
 
@@ -492,6 +513,7 @@ function renderRoom() {
       <strong>${statusLabel(room.status)}</strong>
       <span>${room.health}% health</span>
     </div>
+    ${room.placeholder ? `<div class="assistant-callout inventory-warning"><strong>Upcoming building — HCIC</strong><span>This building is not yet in service. Room data and device configuration will be added when the building opens. Map pin location is approximate.</span></div>` : ""}
     ${room.generated ? `<div class="assistant-callout inventory-warning"><strong>Placeholder room</strong><span>This room was generated so every mapped building is clickable. Replace it with the secure Hardware IP List / room inventory import before production review.</span></div>` : ""}
   `;
 
