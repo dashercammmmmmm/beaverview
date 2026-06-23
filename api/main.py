@@ -865,8 +865,12 @@ def auth_logout(request: Request):
 
 @app.get('/api/me')
 def me(request: Request):
-    session = getattr(request, 'session', {})
-    user = session.get('user')
+    user = None
+    if _SESSION_MIDDLEWARE_AVAILABLE:
+        try:
+            user = request.session.get('user')
+        except (AssertionError, KeyError):
+            pass
     if not user:
         # Dev bypass: when SSO is not configured (no AZURE_CLIENT_ID) AND
         # the request comes from localhost, return a local admin session.
