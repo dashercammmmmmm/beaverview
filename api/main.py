@@ -611,6 +611,63 @@ def room_log(room_id: str, limit: int = 50):
     return {"room_id": room_id, "events": [dict(r) for r in rows]}
 
 
+# ServiceNow incidents endpoint
+@app.get("/api/rooms/{room_id}/incidents")
+async def room_incidents(room_id: str, request: Request = None):
+    """
+    Fetch incidents for a room from ServiceNow.
+    FERPA-safe: returns only incident number, short description, state.
+    Falls back to mock data if ServiceNow unavailable.
+    """
+    from connectors.servicenow import get_incidents_for_room
+
+    # Get room details for ServiceNow query
+    conn = get_db()
+    room = conn.execute("SELECT id, number, building_id FROM rooms WHERE id = ?", (room_id,)).fetchone()
+    building = None
+    if room:
+        building = conn.execute("SELECT code, name FROM buildings WHERE id = ?", (room[2],)).fetchone()
+    conn.close()
+
+    if not room or not building:
+        return {"room_id": room_id, "incidents": []}
+
+    # Query ServiceNow for incidents
+    room_code = f"{building[0]} {room[1]}"  # "KA 101"
+    building_name = building[1]             # "Kerr Hall"
+
+    incidents = await get_incidents_for_room(
+        room_id=room_id,
+        room_code=room_code,
+        building_name=building_name,
+        instance=os.getenv("SN_INSTANCE"),
+        mode="live" if os.getenv("SN_INSTANCE") else "mock"
+    )
+
+    return {
+        "room_id": room_id,
+        "incidents": [
+            {
+                "number": i.number,
+                "short_description": i.short_description,
+                "state": i.state,
+                "sys_id": i.sys_id,
+                "opened_at": i.opened_at
+            }
+            for i in incidents
+        ]
+    }
+
+
+@app.get("/api/connectors/servicenow/test")
+async def test_servicenow():
+    """Health check for ServiceNow connector."""
+    from connectors.servicenow import test_servicenow_connection
+
+    result = await test_servicenow_connection(os.getenv("SN_INSTANCE") or "")
+    return result
+
+
 @app.get("/api/audit")
 def audit_log(
     limit: int = 200,

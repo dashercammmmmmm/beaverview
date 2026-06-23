@@ -280,19 +280,19 @@ function ensureMap() {
       paint: {
         "fill-color": [
           "case",
-          ["==", ["get", "selected"], true], "#d73f09",
-          ["==", ["get", "status"], "issue"], "#7a2f26",
-          ["==", ["get", "status"], "offline"], "#7a2f26",
-          ["==", ["get", "status"], "in-use"], "#24485d",
-          ["==", ["get", "status"], "available"], "#274536",
-          "#2e2b2a"
+          ["==", ["get", "selected"], true], "#d73f09",        /* OSU orange — selected */
+          ["==", ["get", "status"], "issue"], "#f59e0b",       /* Amber — accessible issue indicator */
+          ["==", ["get", "status"], "offline"], "#9ca3af",     /* Gray — offline/unknown */
+          ["==", ["get", "status"], "in-use"], "#3b82f6",      /* Blue — in use */
+          ["==", ["get", "status"], "available"], "#10b981",   /* Green — available */
+          "#6b7280"                                              /* Dark gray — default */
         ],
         "fill-opacity": [
           "case",
-          ["==", ["get", "selected"], true], 0.78,
-          ["==", ["get", "matches"], false], 0.18,
-          [">", ["get", "supportRooms"], 0], 0.74,
-          0.58
+          ["==", ["get", "selected"], true], 0.85,
+          ["==", ["get", "matches"], false], 0.15,
+          [">", ["get", "supportRooms"], 0], 0.72,
+          0.55
         ]
       }
     });
@@ -302,9 +302,9 @@ function ensureMap() {
       type: "line",
       source: "osu-buildings",
       paint: {
-        "line-color": ["case", ["==", ["get", "selected"], true], "#80220a", "#ffffff"],
-        "line-width": ["case", ["==", ["get", "selected"], true], 2.5, 0.8],
-        "line-opacity": ["case", ["==", ["get", "matches"], false], 0.15, 0.88]
+        "line-color": ["case", ["==", ["get", "selected"], true], "#a83205", "#d1d5db"],
+        "line-width": ["case", ["==", ["get", "selected"], true], 3, 1.2],
+        "line-opacity": ["case", ["==", ["get", "matches"], false], 0.15, 0.7]
       }
     });
 
@@ -322,9 +322,9 @@ function ensureMap() {
         "text-ignore-placement": false
       },
       paint: {
-        "text-color": "#1b1d21",
-        "text-halo-color": "#ffffff",
-        "text-halo-width": 1.5
+        "text-color": "#111827",
+        "text-halo-color": "#f3f4f6",
+        "text-halo-width": 1.8
       }
     });
 
@@ -381,6 +381,15 @@ function selectBuilding(buildingId) {
   renderSelectedBuilding();
   renderRoom();
   updateMapData();
+
+  // Zoom to the selected building with smooth animation
+  if (mapReady) {
+    const building = campusBuildings().find((b) => b.id === buildingId);
+    if (building) {
+      const bounds = campusBoundsLngLat([building]);
+      map.fitBounds(bounds, { padding: 60, duration: 500, maxZoom: 19 });
+    }
+  }
 }
 
 function renderCampusTabs() {
@@ -525,7 +534,8 @@ function renderRoom() {
     overview: renderOverview,
     tools: renderTools,
     incidents: renderIncidents,
-    log: renderLog
+    log: renderLog,
+    chat: renderChat
   };
   els.roomBody.innerHTML = renderers[state.activeTab](room);
 }
@@ -622,13 +632,25 @@ function renderTools(room) {
     }
   ].filter(Boolean);  // drop the falsy entries from conditional includes
 
+  const tooltips = {
+    xpanel: "Open Crestron room control panel for this room in a new tab",
+    screenconnect: "Launch remote desktop session to the AV control PC",
+    ptz: "View and control the PTZ camera in this room",
+    wattbox: "Check WattBox outlet status or power-cycle AV devices",
+    device_web: "Open the device's local web interface",
+    sharepoint: "Open room documentation and knowledge base on SharePoint",
+    servicenow: "Create or view support tickets for this room"
+  };
+
   return `
     <div class="tool-list">
       ${tools.map(t => `
         <button type="button" class="tool-action${t.danger ? " danger" : ""}"
-                data-action="${t.action}" data-tool="${t.tool}">
+                data-action="${t.action}" data-tool="${t.tool}"
+                aria-label="${t.label}" aria-describedby="tooltip-${t.tool}">
           <strong>${t.label}</strong>
           <span>${t.desc}</span>
+          <div class="tool-tooltip">${tooltips[t.tool] || t.desc}</div>
         </button>
       `).join("")}
     </div>
@@ -958,6 +980,40 @@ function renderLog() {
         </div>
       `).join("")}
     </div>`;
+}
+
+function renderChat(room) {
+  // Hermes AI assistant chat interface. Stateless on backend.
+  // Session stored in browser — backend never persists conversation.
+  return `
+    <div class="chat-panel">
+      <div class="chat-intro">
+        <strong>Hi, I'm Hermes!</strong> I can help troubleshoot
+        <strong>${room.building.code || room.building.name} ${room.number}</strong>,
+        explain incidents, and find documentation for this room.
+      </div>
+
+      <div class="chat-messages" id="chatMessages" role="log" aria-live="polite"
+           aria-label="Conversation with Hermes">
+        <div class="chat-message assistant">
+          <strong>How can I help you today?</strong>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <textarea id="chatInput" class="chat-input"
+                  placeholder="Ask about this room, its devices, or past incidents..."
+                  rows="1"></textarea>
+        <button type="button" id="chatSendBtn" class="chat-send-btn"
+                aria-label="Send message">Send</button>
+      </div>
+
+      <div class="chat-disclaimer">
+        Hermes uses only room context — no personal information is shared.
+        Powered by local AI on DGX Spark.
+      </div>
+    </div>
+  `;
 }
 
 function addToHistory(room) {
