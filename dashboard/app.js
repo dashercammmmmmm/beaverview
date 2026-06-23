@@ -40,6 +40,12 @@ const els = {
   adminLink: document.querySelector("#adminLink")
 };
 
+// Debug: check for null elements
+const nullEls = Object.entries(els).filter(([_, el]) => el === null).map(([name]) => name);
+if (nullEls.length > 0) {
+  console.error('❌ Missing DOM elements:', nullEls);
+}
+
 function currentCampus() {
   return data.campuses.find((campus) => campus.id === state.campusId);
 }
@@ -1383,9 +1389,39 @@ async function checkRole() {
   }
 }
 
-renderAll();
-checkBackend();
-checkRole();
+try {
+  console.log('🔧 Starting app initialization...');
+
+  // Check critical dependencies
+  const checks = {
+    'maplibregl': typeof window.maplibregl !== 'undefined',
+    'osuMapBuildings': typeof window.osuMapBuildings !== 'undefined',
+    'data': typeof data !== 'undefined',
+    'state': typeof state !== 'undefined'
+  };
+
+  Object.entries(checks).forEach(([key, ok]) => {
+    console.log(`  ${key}: ${ok ? '✓' : '✗'}`);
+  });
+
+  if (!checks.data) throw new Error('data.js not loaded');
+  if (!checks.osuMapBuildings) throw new Error('osu-map-buildings.js not loaded');
+  if (!checks.maplibregl) throw new Error('maplibre-gl.js not loaded');
+
+  console.log(`  data.campuses: ${data.campuses.length} campuses`);
+  console.log(`  osuMapBuildings: ${window.osuMapBuildings.length} buildings`);
+
+  renderAll();
+  console.log('✓ renderAll() completed');
+
+  checkBackend();
+  checkRole();
+  console.log('✓ App initialized successfully');
+} catch (err) {
+  console.error('❌ App initialization error:', err.message);
+  console.error('Stack:', err.stack);
+  document.body.innerHTML = `<div style="padding: 20px; color: red; font-family: monospace;"><h1>🔴 App Error</h1><pre>${err.message}\n\n${err.stack}</pre></div>`;
+}
 
 // Dev helper — exposes selectBuilding() to the browser console for testing
 // Usage: _dev.selectBuilding("1027537")  (building ID from osuMapBuildings)
