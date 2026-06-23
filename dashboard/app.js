@@ -217,6 +217,7 @@ function buildingGeoJSON(buildings, matchedIds = null) {
 }
 
 function campusBoundsLngLat(buildings) {
+  if (!buildings.length) return null;
   const coords = buildings.flatMap((building) => (
     building.polygon && building.polygon.length ? building.polygon : [[building.lng, building.lat]]
   ));
@@ -358,7 +359,8 @@ function updateMapData(options = {}) {
   const source = map.getSource("osu-buildings");
   if (source) source.setData(buildingGeoJSON(all, matchedIds));
   if (options.fit && matched.length) {
-    map.fitBounds(campusBoundsLngLat(matched), { padding: 42, duration: 0, maxZoom: campusViewDefaults[state.campusId].zoom });
+    const bounds = campusBoundsLngLat(matched);
+    if (bounds) map.fitBounds(bounds, { padding: 42, duration: 0, maxZoom: campusViewDefaults[state.campusId].zoom });
   }
 }
 
@@ -367,7 +369,8 @@ function resetMapView() {
   if (!mapReady) return;
   const buildings = campusBuildings().filter(buildingMatches);
   if ((state.search || state.filters.size > 0) && buildings.length) {
-    map.fitBounds(campusBoundsLngLat(buildings), { padding: 42, duration: 350, maxZoom: campusViewDefaults[state.campusId].zoom });
+    const bounds = campusBoundsLngLat(buildings);
+    if (bounds) map.fitBounds(bounds, { padding: 42, duration: 350, maxZoom: campusViewDefaults[state.campusId].zoom });
   } else {
     map.easeTo({ center: campusViewDefaults[state.campusId].center, zoom: campusViewDefaults[state.campusId].zoom, duration: 350 });
   }
@@ -388,7 +391,7 @@ function selectBuilding(buildingId) {
     const building = campusBuildings().find((b) => b.id === buildingId);
     if (building) {
       const bounds = campusBoundsLngLat([building]);
-      map.fitBounds(bounds, { padding: 60, duration: 500, maxZoom: 19 });
+      if (bounds) map.fitBounds(bounds, { padding: 60, duration: 500, maxZoom: 19 });
     }
   }
 }
@@ -1182,7 +1185,8 @@ els.search.addEventListener("input", (event) => {
     }
   } else if (matches.length >= 2 && matches.length <= 6) {
     // A few matches → zoom closer than campus default
-    map.fitBounds(campusBoundsLngLat(matches), { padding: 80, duration: 400, maxZoom: 17.5 });
+    const bounds = campusBoundsLngLat(matches);
+    if (bounds) map.fitBounds(bounds, { padding: 80, duration: 400, maxZoom: 17.5 });
   }
 });
 
