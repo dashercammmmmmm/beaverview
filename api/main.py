@@ -423,6 +423,17 @@ class ActionRequest(BaseModel):
     notes: str | None = None
 
 
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    room_id: str | None = None
+    history: list[ChatMessage] | None = None
+
+
 # ---------------------------------------------------------------------------
 # API routes
 # ---------------------------------------------------------------------------
@@ -665,6 +676,41 @@ async def test_servicenow():
     from connectors.servicenow import test_servicenow_connection
 
     result = await test_servicenow_connection(os.getenv("SN_INSTANCE") or "")
+    return result
+
+
+@app.post("/api/chat")
+async def chat_endpoint(req: ChatRequest):
+    """
+    Chat with Hermes (DGX Spark local LLM).
+
+    Request: {message, room_id (optional), history (optional)}
+    Response: {reply, model, tokens_used, timestamp}
+
+    FERPA-safe: context includes room/devices/incidents only, never PII.
+    System prompt is hardcoded and not overridable.
+    """
+    from connectors.chat import chat_with_hermes
+
+    conn = get_db()
+    try:
+        response = await chat_with_hermes(
+            message=req.message,
+            room_id=req.room_id,
+            conversation_history=[msg.dict() for msg in (req.history or [])],
+            db=conn
+        )
+        return response
+    finally:
+        conn.close()
+
+
+@app.get("/api/connectors/chat/test")
+async def test_chat():
+    """Health check for chat/Hermes connector."""
+    from connectors.chat import test_chat_connection
+
+    result = await test_chat_connection()
     return result
 
 

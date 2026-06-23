@@ -12,7 +12,8 @@ const state = {
   compact: false,
   backendOnline: false,
   connectorOverrides: {},  // campus_id -> connector health object from /api
-  lastSynced: null          // ISO timestamp of last successful connector fetch
+  lastSynced: null,         // ISO timestamp of last successful connector fetch
+  chatHistory: {}           // room_id -> [{role, content}, ...]
 };
 
 const els = {
@@ -302,7 +303,7 @@ function ensureMap() {
       type: "line",
       source: "osu-buildings",
       paint: {
-        "line-color": ["case", ["==", ["get", "selected"], true], "#a83205", "#d1d5db"],
+        "line-color": ["case", ["==", ["get", "selected"], true], "#1F2937", "#d1d5db"],
         "line-width": ["case", ["==", ["get", "selected"], true], 3, 1.2],
         "line-opacity": ["case", ["==", ["get", "matches"], false], 0.15, 0.7]
       }
@@ -1051,6 +1052,83 @@ function addAudit(action, outcome = "success") {
   }
 }
 
+async function sendChatMessage() {
+  const room = selectedRoom();
+  if (!room) return;
+
+  const input = document.querySelector("#chatInput");
+  const message = (input?.value || "").trim();
+  if (!message) return;
+
+  const messagesDiv = document.querySelector("#chatMessages");
+  if (!messagesDiv) return;
+
+  // Initialize chat history for this room if needed
+  if (!state.chatHistory[room.id]) {
+    state.chatHistory[room.id] = [];
+  }
+
+  // Add user message to UI
+  const userMsg = document.createElement("div");
+  userMsg.className = "chat-message user";
+  userMsg.textContent = message;
+  messagesDiv.appendChild(userMsg);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // Add to state history
+  state.chatHistory[room.id].push({ role: "user", content: message });
+
+  // Clear input
+  if (input) input.value = "";
+
+  // Show typing indicator
+  const typingDiv = document.createElement("div");
+  typingDiv.className = "chat-message typing";
+  typingDiv.innerHTML = '<div class="chat-typing-indicator"><span></span><span></span><span></span></div>';
+  messagesDiv.appendChild(typingDiv);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // Send to Hermes
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        room_id: room.id,
+        history: state.chatHistory[room.id].slice(0, -1)  // exclude latest user message
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+
+    // Remove typing indicator
+    if (typingDiv.parentNode) typingDiv.remove();
+
+    // Add assistant response
+    const assistantMsg = document.createElement("div");
+    assistantMsg.className = "chat-message assistant";
+    assistantMsg.textContent = data.reply || "(No response)";
+    messagesDiv.appendChild(assistantMsg);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Add to state history
+    state.chatHistory[room.id].push({ role: "assistant", content: data.reply });
+
+  } catch (error) {
+    // Remove typing indicator
+    if (typingDiv.parentNode) typingDiv.remove();
+
+    // Show error
+    const errorMsg = document.createElement("div");
+    errorMsg.className = "chat-message assistant";
+    errorMsg.textContent = `Error: ${error.message}. Check that CHAT_BASE_URL is configured.`;
+    messagesDiv.appendChild(errorMsg);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+}
+
 function renderAll() {
   renderCampusTabs();
   renderFilters();
@@ -1204,6 +1282,22 @@ els.roomBody.addEventListener("click", (event) => {
     // Fallback: go to log tab
     state.activeTab = "log";
     renderRoom();
+  }
+});
+
+// Chat input handlers (delegated from roomBody)
+els.roomBody.addEventListener("keydown", (event) => {
+  if (event.target.id === "chatInput") {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendChatMessage();
+    }
+  }
+});
+
+els.roomBody.addEventListener("click", (event) => {
+  if (event.target.id === "chatSendBtn") {
+    sendChatMessage();
   }
 });
 
