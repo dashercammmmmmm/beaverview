@@ -2,6 +2,18 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Dashboard launch endpoint wiring
+
+- Wired XPanel, ScreenConnect, and SharePoint launch buttons to `GET /api/rooms/{room_id}/launch/{tool}`.
+- Launch buttons now open a new tab only when the backend reports `mode: live` and returns a URL; otherwise the panel shows the connector prerequisite message.
+- Tightened the SharePoint launch contract so mock mode returns `url: null` instead of a default-looking SharePoint URL.
+- Expanded offline API contracts and smoke checks for ScreenConnect and SharePoint launch behavior.
+
+### Next
+
+- Configure `SC_BASE_URL` and `SHAREPOINT_BASE_URL`, then verify one ScreenConnect machine and one SharePoint room page open through the dashboard launch buttons.
+- Load real Hardware IP data before validating XPanel live launch, because the backend proxy depends on `device_ips`.
+
 ## 2026-06-24 - Dashboard PTZ and WattBox guarded controls
 
 - Wired PTZ dashboard controls to `POST /api/rooms/{room_id}/ptz/{command}` for pan, tilt, zoom, home, and preset recall commands.

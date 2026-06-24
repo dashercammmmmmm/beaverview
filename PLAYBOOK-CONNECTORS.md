@@ -507,6 +507,13 @@ The technician's OSU session handles authentication when the new tab opens.
    ```
 2. Restart. The dashboard's SharePoint links will now point to real URLs.
 
+### How it works
+When a technician opens SharePoint documentation from the dashboard:
+1. The frontend calls `GET /api/rooms/{room_id}/launch/sharepoint`.
+2. The backend returns a room documentation URL only when `SHAREPOINT_BASE_URL` is configured.
+3. In mock mode, the backend returns `url: null` so the browser does not open a default-looking placeholder.
+4. The technician's existing OSU O365 session handles authentication.
+
 ### Document library structure expected
 ```
 /sites/AVSupport/

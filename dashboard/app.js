@@ -736,8 +736,10 @@ function renderXPanelTool(room) {
           ${cp ? `&nbsp;&nbsp;<strong>CP:</strong>&nbsp;${cp[1]} ${cp[2]}` : ""}
         </div>
       </div>
+      <button class="dev-launch" type="button" data-action="launch_tool" data-launch-tool="xpanel">Open Proxied XPanel →</button>
+      <div class="tool-status" data-tool-status aria-live="polite"></div>
     </div>
-  `, `Mock UI — in production this connects via the backend proxy to the ${cp ? `${cp[1]} ${cp[2]}` : "control processor"} in ${room.building.code} ${room.number}`);
+  `, `Launch requests route through the BeaverView backend. XPanel credentials and Hardware IP records must be loaded before the proxied panel opens.`);
 }
 
 // ScreenConnect — remote session launcher
@@ -758,11 +760,12 @@ function renderScreenConnectTool(room) {
         <span class="connector-state ${online ? "ok" : "offline"}">${online ? "Online" : "Offline"}</span>
       </div>
       ${online
-        ? `<button class="sc-launch" type="button">Launch Remote Session →</button>
+        ? `<button class="sc-launch" type="button" data-action="launch_tool" data-launch-tool="screenconnect">Launch Remote Session →</button>
            <p class="sc-sessions">Session proxied through ScreenConnect · filtered by room tag</p>`
         : `<p class="sc-sessions" style="color:var(--status-offline);padding:8px 0">
              No active connection — machine offline or SC agent not responding
            </p>`}
+      <div class="tool-status" data-tool-status aria-live="polite"></div>
       <div class="dev-inventory">
         ${(room.devices || []).map(d => `
           <div class="dev-card">
@@ -775,7 +778,7 @@ function renderScreenConnectTool(room) {
         `).join("")}
       </div>
     </div>
-  `, `Mock UI — in production opens a ScreenConnect session for ${machineName} via the OSU proxy`);
+  `, `Launch requests route through the BeaverView backend. ScreenConnect base URL must be configured before a live session opens.`);
 }
 
 // PTZ Camera — pan/tilt/zoom controls + preset recall
@@ -891,7 +894,7 @@ function renderSharePointTool(room) {
           <strong>${g.title}</strong>
           <span>${g.pages} · Updated ${g.updated}</span>
         </div>
-        <button class="dev-launch" type="button">Open PDF →</button>
+        <button class="dev-launch" type="button" data-action="launch_tool" data-launch-tool="sharepoint">Open PDF →</button>
       </div>
       <div class="dev-card">
         <span class="dev-card-type" style="font-size:22px;width:36px">🔧</span>
@@ -899,7 +902,7 @@ function renderSharePointTool(room) {
           <strong>Troubleshooting Runbook</strong>
           <span>Common issues · Escalation paths</span>
         </div>
-        <button class="dev-launch" type="button">Open →</button>
+        <button class="dev-launch" type="button" data-action="launch_tool" data-launch-tool="sharepoint">Open →</button>
       </div>
       <div class="dev-card">
         <span class="dev-card-type" style="font-size:22px;width:36px">📋</span>
@@ -907,10 +910,11 @@ function renderSharePointTool(room) {
           <strong>Room Inventory Record</strong>
           <span>Hardware list · warranty · install date</span>
         </div>
-        <button class="dev-launch" type="button">Open →</button>
+        <button class="dev-launch" type="button" data-action="launch_tool" data-launch-tool="sharepoint">Open →</button>
       </div>
+      <div class="tool-status" data-tool-status aria-live="polite"></div>
     </div>
-  `, "Mock UI — in production opens the SharePoint document library filtered to this room type");
+  `, "Launch requests route through the BeaverView backend. SharePoint base URL must be configured before live documentation opens.");
 }
 
 // ServiceNow — pre-filled incident draft form
@@ -1096,6 +1100,44 @@ function apiDetail(data, fallback) {
   if (typeof data?.detail === "string") return data.detail;
   if (Array.isArray(data?.detail)) return data.detail.map((item) => item.msg || String(item)).join("; ");
   return fallback;
+}
+
+async function launchBackendTool(button) {
+  const room = selectedRoom();
+  const launchTool = button.dataset.launchTool;
+  const panel = button.closest(".xpanel, .sc-panel, .dev-inventory");
+  const statusEl = panel?.querySelector("[data-tool-status]");
+  if (!room || !launchTool) return;
+
+  button.disabled = true;
+  if (statusEl) statusEl.textContent = `Checking ${launchTool} launch target.`;
+
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(room.id)}/launch/${encodeURIComponent(launchTool)}`, {
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(apiDetail(data, `HTTP ${response.status}`));
+    }
+
+    if (data.mode === "live" && data.url) {
+      window.open(data.url, "_blank", "noopener,noreferrer");
+      addAudit(`${launchTool}_launched`, "backend launch opened");
+      if (statusEl) statusEl.textContent = `${launchTool} launch opened in a new tab.`;
+      return;
+    }
+
+    const message = data.note || `${launchTool} launch is not configured yet.`;
+    addAudit(`${launchTool}_launch_pending`, data.mode || "mock");
+    if (statusEl) statusEl.textContent = `${message} Configure the connector before live launch.`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "request failed";
+    addAudit(`${launchTool}_launch_failed`, message);
+    if (statusEl) statusEl.textContent = `${launchTool} launch unavailable: ${message}`;
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function refreshWattBoxOutlets(room) {
@@ -1445,6 +1487,10 @@ els.roomBody.addEventListener("click", async (event) => {
   }
   if (action === "wattbox_outlet_cycle") {
     await cycleWattBoxOutlet(button);
+    return;
+  }
+  if (action === "launch_tool") {
+    await launchBackendTool(button);
     return;
   }
 

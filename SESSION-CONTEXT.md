@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after wiring dashboard ServiceNow, 25Live, PTZ, and WattBox flows to guarded backend endpoints.
+**Last updated:** 2026-06-24 after wiring dashboard ServiceNow, 25Live, PTZ, WattBox, and launch flows to guarded backend endpoints.
 
 ---
 
@@ -253,6 +253,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - PTZ camera commands use `/api/rooms/{room_id}/ptz/{command}` with an allowlist, backend-only credentials, proxyable-IP validation, and audit logging.
 - The active dashboard PTZ controls now call the backend command endpoint and show inline prerequisite/error status.
 - The active dashboard WattBox panel now checks backend outlet status on open and routes outlet cycle buttons through the backend with explicit confirmation.
+- The active dashboard XPanel, ScreenConnect, and SharePoint launch buttons now call `/api/rooms/{room_id}/launch/{tool}` and open only live backend-provided URLs.
 - Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
 - `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
 - `import_device_ips.py --dry-run <csv>` validates Hardware IP CSV data without replacing the `device_ips` table.
@@ -343,6 +344,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
 | Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `python3 import_device_ips.py hardware_ips.csv`, then verify proxy lookup with a real room/device. |
 | Live PTZ/WattBox validation | Frontend and backend paths exist; still requires real `hardware_ips.csv` plus PTZ/WattBox credentials before live room testing. |
+| Live launch validation | Frontend and backend launch paths exist for XPanel, ScreenConnect, and SharePoint; still requires `SC_BASE_URL`, `SHAREPOINT_BASE_URL`, XPanel credentials, and real Hardware IP records. |
 | Device issue diagnostics card | In room Overview tab: show which device is failing, probable cause, "Auto-Fix" button (WattBox reboot). Auto-fix only when room is empty. Recommended but not yet built. |
 
 ### 🟡 Nice to have

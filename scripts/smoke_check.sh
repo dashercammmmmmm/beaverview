@@ -40,6 +40,8 @@ curl -fsS "$BASE_URL/api/me" | grep -q '"role":"admin"'
 curl -fsS "$BASE_URL/api/campus/corvallis/schedule" | grep -q '"mode":"mock"'
 curl -fsS "$BASE_URL/api/connectors/servicenow/test" | grep -q '"status":"mock"'
 curl -fsS "$BASE_URL/api/connectors/chat/test" | grep -q '"status":"mock"'
+curl -fsS "$BASE_URL/api/rooms/corvallis-kad-101/launch/screenconnect" | grep -q '"url":null'
+curl -fsS "$BASE_URL/api/rooms/corvallis-kad-101/launch/sharepoint" | grep -q '"url":null'
 
 proxy_status="$(curl -sS -o /tmp/beaverview-proxy.json -w "%{http_code}" "$BASE_URL/api/rooms/corvallis-kad-101/proxy/xpanel/")"
 if [ "$proxy_status" = "501" ]; then

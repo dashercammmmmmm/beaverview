@@ -918,8 +918,7 @@ def room_launch(room_id: str, tool: str, request: Request):
         }
 
     if tool == "sharepoint":
-        base = _SP_URL or "https://oregonstate.sharepoint.com/sites/AVSupport"
-        url = f"{base}/SitePages/Rooms/{room_id}.aspx"
+        url = f"{_SP_URL}/SitePages/Rooms/{room_id}.aspx" if _SP_URL else None
         return {
             "tool": tool, "room_id": room_id,
             "mode": "live" if _SP_URL else "mock",

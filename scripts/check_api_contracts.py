@@ -250,6 +250,18 @@ def main() -> int:
         expect(launch_data.get("mode") == "mock", "xpanel launch should be mock with offline env")
         expect(launch_data.get("url") is None, "xpanel launch exposed a URL in offline env")
 
+        screenconnect_launch = client.get(f"/api/rooms/{room_id}/launch/screenconnect")
+        expect(screenconnect_launch.status_code == 200, f"ScreenConnect launch returned {screenconnect_launch.status_code}")
+        screenconnect_launch_data = json_response(screenconnect_launch, "ScreenConnect launch")
+        expect(screenconnect_launch_data.get("mode") == "mock", "ScreenConnect launch should be mock with offline env")
+        expect(screenconnect_launch_data.get("url") is None, "ScreenConnect launch exposed a URL in offline env")
+
+        sharepoint_launch = client.get(f"/api/rooms/{room_id}/launch/sharepoint")
+        expect(sharepoint_launch.status_code == 200, f"SharePoint launch returned {sharepoint_launch.status_code}")
+        sharepoint_launch_data = json_response(sharepoint_launch, "SharePoint launch")
+        expect(sharepoint_launch_data.get("mode") == "mock", "SharePoint launch should be mock with offline env")
+        expect(sharepoint_launch_data.get("url") is None, "SharePoint launch exposed a URL in offline env")
+
         proxy = client.get("/api/rooms/__contract-no-ip__/proxy/xpanel/")
         expect(proxy.status_code != 501, "device proxy is still the old 501 stub")
         expect(proxy.status_code == 404, f"device proxy missing-IP contract returned {proxy.status_code}")

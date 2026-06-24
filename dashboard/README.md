@@ -27,6 +27,7 @@ http://localhost:8000
 - ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
 - PTZ and WattBox controls route through guarded backend endpoints and show prerequisite messages until Hardware IP records and credentials are loaded.
+- XPanel, ScreenConnect, and SharePoint launch buttons ask the backend for live URLs and stay in pending mode until their connectors are configured.
 - First-run guided tour.
 
 ## What This Version Does Not Do Yet

@@ -1413,6 +1413,10 @@ h1, h2, h3, p {
   transition: background .12s;
 }
 .sc-launch:hover { background: #155e8a; }
+.sc-launch:disabled {
+  cursor: wait;
+  opacity: .72;
+}
 .sc-sessions { font-size: 11px; color: var(--text-muted); text-align: center; }
 
 /* ── PTZ Camera ── */
@@ -1570,6 +1574,10 @@ h1, h2, h3, p {
   transition: border-color .1s, color .1s;
 }
 .dev-launch:hover { border-color: var(--osu-orange); color: var(--osu-orange); }
+.dev-launch:disabled {
+  cursor: wait;
+  opacity: .55;
+}
 
 /* ── ServiceNow ticket form ── */
 .sn-panel { display: flex; flex-direction: column; gap: 10px; }
