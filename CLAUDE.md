@@ -78,7 +78,7 @@ Run this after changing API route, auth, connector fallback, or proxy behavior:
 scripts/check_api_contracts.py
 ```
 
-It exercises the FastAPI app in-process with deterministic mock connector settings: health, localhost dev auth, admin inventory, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow/chat fallbacks, `/api/chat`, and room incidents.
+It exercises the FastAPI app in-process with deterministic mock connector settings: health, localhost dev auth, admin inventory, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow/chat fallbacks, `/api/chat`, and room incidents.
 
 Run this after changing runtime environment variables in `api/main.py`, connector modules, or readiness checks:
 

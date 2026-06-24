@@ -369,6 +369,35 @@ def _insert_audit_event(
     conn.close()
 
 
+def _mock_campus_schedule(campus_id: str) -> list[dict]:
+    conn = get_db()
+    campus = conn.execute("SELECT id FROM campuses WHERE id=?", (campus_id,)).fetchone()
+    if not campus:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Campus '{campus_id}' not found")
+    rows = conn.execute(
+        "SELECT r.id AS room_id, r.number, r.status, r.active_event,"
+        " b.code AS building_code, b.name AS building_name"
+        " FROM rooms r"
+        " JOIN buildings b ON b.id = r.building_id"
+        " WHERE b.campus_id=?"
+        " ORDER BY b.code, r.number",
+        (campus_id,),
+    ).fetchall()
+    conn.close()
+    return [
+        {
+            "room_id": row["room_id"],
+            "building_code": row["building_code"],
+            "building_name": row["building_name"],
+            "room_number": row["number"],
+            "active_event": row["active_event"] or "Available",
+            "room_status": row["status"],
+        }
+        for row in rows
+    ]
+
+
 def _credential_presence() -> dict[str, bool]:
     """Return connector credential presence without exposing secret values."""
     return {
@@ -806,6 +835,41 @@ def crestron_rooms(campus_id: str):
         data = crestron_processor_status_mock(campus_id)
     CONNECTOR_REGISTRY[campus_id]["crestron"]["last_synced"] = _now()
     return {"campus_id": campus_id, "mode": mode, "rooms": data, "ts": _now()}
+
+
+@app.get("/api/campus/{campus_id}/schedule")
+async def room_schedule(campus_id: str):
+    """Return campus room schedule from 25Live, or seeded mock schedule offline."""
+    mock_events = _mock_campus_schedule(campus_id)
+    if not (_LIVE25_URL and _LIVE25_USER and _LIVE25_PASS):
+        return {"campus_id": campus_id, "mode": "mock", "events": mock_events, "ts": _now()}
+
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx is not installed in the API environment")
+
+    url = f"{_LIVE25_URL.rstrip('/')}/events.json"
+    try:
+        async with httpx.AsyncClient(follow_redirects=False, timeout=15.0) as client:
+            upstream = await client.get(
+                url,
+                auth=(_LIVE25_USER, _LIVE25_PASS),
+                params={"scope": "location", "campus": campus_id},
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="25Live schedule request timed out")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"25Live schedule request failed: {str(exc)[:120]}")
+
+    if upstream.status_code >= 400:
+        raise HTTPException(status_code=502, detail=f"25Live schedule returned HTTP {upstream.status_code}")
+    try:
+        payload = upstream.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="25Live schedule did not return JSON")
+
+    return {"campus_id": campus_id, "mode": "live", "events": payload, "ts": _now()}
 
 
 @app.get("/api/rooms/{room_id}/launch/{tool}")

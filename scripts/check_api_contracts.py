@@ -229,6 +229,21 @@ def main() -> int:
         missing_connector = client.post("/api/admin/connectors/corvallis/__missing__/test")
         expect(missing_connector.status_code == 404, "missing connector test did not return 404")
 
+        schedule = client.get("/api/campus/corvallis/schedule")
+        expect(schedule.status_code == 200, f"campus schedule returned {schedule.status_code}")
+        schedule_data = json_response(schedule, "campus schedule")
+        expect(schedule_data.get("mode") == "mock", "campus schedule should stay mock offline")
+        expect(schedule_data.get("campus_id") == "corvallis", "campus schedule returned wrong campus")
+        expect(isinstance(schedule_data.get("events"), list), "campus schedule did not return an events list")
+        expect(schedule_data["events"], "campus schedule returned no seeded events")
+        expect(
+            {"room_id", "building_code", "room_number", "active_event"}.issubset(schedule_data["events"][0].keys()),
+            "campus schedule event shape changed",
+        )
+
+        missing_schedule = client.get("/api/campus/__missing__/schedule")
+        expect(missing_schedule.status_code == 404, "missing campus schedule did not return 404")
+
         launch = client.get(f"/api/rooms/{room_id}/launch/xpanel")
         expect(launch.status_code == 200, f"xpanel launch returned {launch.status_code}")
         launch_data = json_response(launch, "xpanel launch")

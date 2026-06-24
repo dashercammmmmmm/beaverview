@@ -264,6 +264,10 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Live-mode tests return `pending`, `error`, or `live` using configured credentials and imported device IPs without exposing secrets or raw device IPs.
 - ServiceNow supports both documented auth paths: OAuth client credentials or Basic Auth service account.
 
+### 25Live schedule endpoint
+- `GET /api/campus/{campus_id}/schedule` returns seeded mock schedule data from `rooms.active_event` when 25Live credentials are missing.
+- With `LIVE25_BASE_URL`, `LIVE25_USERNAME`, and `LIVE25_PASSWORD`, the endpoint calls 25Live server-side with Basic Auth and returns the upstream schedule payload without exposing credentials.
+
 ### Pilot readiness preflight
 - `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
@@ -279,7 +283,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
-- It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+- It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
 
 ### Environment template consistency
 - `scripts/check_env_template.py` verifies `api/.env.example` matches runtime env vars used by `api/main.py`, connector modules, and readiness checks.

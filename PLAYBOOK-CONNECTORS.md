@@ -278,22 +278,21 @@ sqlite3 api/beaverview.db "SELECT room_id, ip_address, reachable, last_seen FROM
 2. Restart the backend.
 3. The **25Live** badge in the sidebar turns green.
 
-### What to implement in main.py
-Add a new endpoint (or integrate into the room status endpoint):
-```python
-@app.get("/api/campus/{campus_id}/schedule")
-def room_schedule(campus_id: str):
-    import httpx, base64
-    creds = base64.b64encode(f"{_LIVE25_USER}:{_LIVE25_PASS}".encode()).decode()
-    resp = httpx.get(
-        f"{_LIVE25_URL}/events.json",
-        headers={"Authorization": f"Basic {creds}"},
-        params={"scope": "location", "campus": campus_id},
-        timeout=15,
-    )
-    resp.raise_for_status()
-    return resp.json()
+BeaverView includes the campus schedule endpoint:
+
+```http
+GET /api/campus/{campus_id}/schedule
 ```
+
+When 25Live credentials are missing, the endpoint returns seeded mock schedule data from `rooms.active_event`. When `LIVE25_BASE_URL`, `LIVE25_USERNAME`, and `LIVE25_PASSWORD` are configured, the backend calls 25Live with server-side Basic Auth and returns the upstream schedule payload. Credentials are never returned to the browser.
+
+Validate offline behavior:
+
+```bash
+scripts/check_api_contracts.py
+```
+
+The contract covers mock schedule output and unknown campus handling without requiring live 25Live access.
 
 ---
 

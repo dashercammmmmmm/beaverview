@@ -251,3 +251,15 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - After real OvrC credentials are available, test one low-risk room outlet status call before enabling cycle actions in technician workflows.
+
+## 2026-06-24 - 25Live schedule endpoint scaffold
+
+- Added `GET /api/campus/{campus_id}/schedule`.
+- The endpoint returns seeded mock schedule data from `rooms.active_event` when 25Live credentials are missing.
+- With `LIVE25_BASE_URL`, `LIVE25_USERNAME`, and `LIVE25_PASSWORD`, the backend calls 25Live server-side with Basic Auth and returns the upstream schedule payload without exposing credentials.
+- Expanded offline API contracts to cover mock schedule output and unknown campus handling without live 25Live access.
+- Updated connector docs to describe the implemented endpoint and validation path.
+
+### Next
+
+- After real 25Live credentials are available, compare one room's live schedule payload with the seeded dashboard event display before wiring the frontend to this endpoint.
