@@ -21,6 +21,7 @@ fi
   "$API_DIR/connectors/servicenow.py"
 
 "$API_DIR/venv/bin/python" -c "import fastapi, httpx, msal, starlette_sessions"
+node --check "$ROOT/dashboard/app.js" >/dev/null
 
 cd "$API_DIR"
 "$API_DIR/venv/bin/uvicorn" main:app --host 127.0.0.1 --port "$PORT" > /tmp/beaverview-smoke.log 2>&1 &

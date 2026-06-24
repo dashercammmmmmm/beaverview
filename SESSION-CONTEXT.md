@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after source-of-truth stabilization on the Mac Mini v2 checkout.
+**Last updated:** 2026-06-24 after wiring the dashboard ServiceNow draft form to the backend.
 
 ---
 
@@ -268,6 +268,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `POST /api/rooms/{room_id}/servicenow/incident` returns a mock draft when ServiceNow credentials are missing.
 - With `SN_INSTANCE` plus OAuth or Basic Auth credentials, the endpoint creates the incident server-side and returns only number, sys_id, and state.
 - The endpoint audits mock drafts and live create attempts.
+- The active dashboard ServiceNow form now submits to this backend endpoint when served from FastAPI and shows inline status for mock draft/live create/error outcomes.
 
 ### 25Live schedule endpoint
 - `GET /api/campus/{campus_id}/schedule` returns seeded mock schedule data from `rooms.active_event` when 25Live credentials are missing.
@@ -338,6 +339,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
 | Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `python3 import_device_ips.py hardware_ips.csv`, then verify proxy lookup with a real room/device. |
+| Frontend PTZ/WattBox wiring | Backend endpoints exist; active dashboard PTZ and WattBox panels still need guarded fetch calls after real device IP records are loaded. |
 | Device issue diagnostics card | In room Overview tab: show which device is failing, probable cause, "Auto-Fix" button (WattBox reboot). Auto-fix only when room is empty. Recommended but not yet built. |
 
 ### 🟡 Nice to have

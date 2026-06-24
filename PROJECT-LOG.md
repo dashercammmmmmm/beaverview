@@ -2,6 +2,20 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Dashboard ServiceNow backend wiring
+
+- Wired the active dashboard ServiceNow draft form to `POST /api/rooms/{room_id}/servicenow/incident`.
+- The form now sends short description, category, priority-derived urgency/impact, and description to the backend.
+- Added inline submit status so technicians can see whether the backend created a live incident, returned the offline mock draft, or rejected the room/request.
+- Updated the room log tab to show recent local actions as well as recent room visits.
+- Added `node --check dashboard/app.js` to `scripts/smoke_check.sh` so dashboard syntax regressions fail the fast local gate.
+- Updated `dashboard/README.md` so it no longer describes the active dashboard as having no backend/API path for ServiceNow drafts.
+
+### Next
+
+- Wire the PTZ and WattBox tool panels to their guarded backend endpoints after validating the first real hardware IP records.
+- Add browser-level smoke coverage for the ServiceNow form once the frontend test harness is chosen.
+
 ## 2026-06-24 - Source-of-truth stabilization
 
 - Confirmed canonical local repo: `/Users/benjaminfranklinautomation/projects/beaverview`.

@@ -1580,6 +1580,13 @@ h1, h2, h3, p {
 .sn-field input[readonly] { background: var(--bg-page); color: var(--text-muted); }
 .sn-field textarea { resize: vertical; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.6; }
 
+.sn-status {
+  min-height: 18px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 .sn-submit {
   padding: 10px;
   background: var(--osu-orange);
@@ -1592,6 +1599,10 @@ h1, h2, h3, p {
   transition: background .12s;
 }
 .sn-submit:hover { background: var(--osu-orange-dark); }
+.sn-submit:disabled {
+  cursor: wait;
+  opacity: .72;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════

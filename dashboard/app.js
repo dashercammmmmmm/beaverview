@@ -919,20 +919,20 @@ function renderServiceNowTool(room) {
       </div>
       <div class="sn-field">
         <label>Short Description</label>
-        <input type="text" value="${shortDesc}">
+        <input type="text" data-sn-field="short_description" value="${shortDesc}">
       </div>
       <div class="sn-field">
         <label>Category</label>
-        <select>
-          <option selected>AV Equipment</option>
-          <option>Network Connectivity</option>
-          <option>Software / Control System</option>
-          <option>Physical / Facilities</option>
+        <select data-sn-field="category">
+          <option value="AV Equipment" selected>AV Equipment</option>
+          <option value="Network Connectivity">Network Connectivity</option>
+          <option value="Software / Control System">Software / Control System</option>
+          <option value="Physical / Facilities">Physical / Facilities</option>
         </select>
       </div>
       <div class="sn-field">
         <label>Priority</label>
-        <select>
+        <select data-sn-field="priority">
           <option value="2" ${priority === "2" ? "selected" : ""}>2 — High (room down)</option>
           <option value="3" ${priority === "3" ? "selected" : ""}>3 — Moderate (partial issue)</option>
           <option value="4" ${priority === "4" ? "selected" : ""}>4 — Low (cosmetic / informational)</option>
@@ -940,13 +940,14 @@ function renderServiceNowTool(room) {
       </div>
       <div class="sn-field">
         <label>Description</label>
-        <textarea rows="5">${bodyText}</textarea>
+        <textarea rows="5" data-sn-field="description">${bodyText}</textarea>
       </div>
+      <div class="sn-status" data-sn-status aria-live="polite"></div>
       <button class="sn-submit" type="button" data-action="servicenow_ticket_submitted" data-tool="sn_submit">
         Create Draft Ticket
       </button>
     </div>
-  `, "Mock UI — in production this opens a pre-filled ServiceNow incident for your review before submission");
+  `, "Submits to the BeaverView backend. Without ServiceNow credentials, the backend returns and logs a mock draft.");
 }
 
 function renderIncidents(room) {
@@ -964,24 +965,37 @@ function renderIncidents(room) {
 }
 
 function renderLog() {
-  // Shows the last 5 building + room combinations visited (browsing history).
-  // Individual tool actions are logged to the admin audit log only.
-  if (!state.history.length) {
+  // Shows recent local actions and the last 5 building + room combinations visited.
+  if (!state.log.length && !state.history.length) {
     return `
       <div class="audit-list">
         <div class="audit-row">
           <strong>No rooms visited yet</strong>
-          <span>Select a building on the map, then click a room — your last 5 visits appear here.</span>
+          <span>Select a building on the map, then click a room. Recent actions and visits appear here.</span>
         </div>
       </div>`;
   }
   return `
     <div class="audit-list">
-      <div class="audit-row" style="opacity:.55;font-size:.8em;border-bottom:none;padding-bottom:0">
-        <strong>Recently visited</strong>
-        <span>Click any row to return</span>
-      </div>
-      ${state.history.map((entry, i) => `
+      ${state.log.length ? `
+        <div class="audit-row" style="opacity:.55;font-size:.8em;border-bottom:none;padding-bottom:0">
+          <strong>Recent actions</strong>
+          <span>Backend-backed actions are also written to the admin audit log when the API is reachable.</span>
+        </div>
+        ${state.log.slice(0, 5).map((entry) => `
+          <div class="audit-row">
+            <strong>${entry.action.replaceAll("_", " ")}</strong>
+            <span>${entry.outcome}</span>
+            <em>${entry.time}</em>
+          </div>
+        `).join("")}
+      ` : ""}
+      ${state.history.length ? `
+        <div class="audit-row" style="opacity:.55;font-size:.8em;border-bottom:none;padding-bottom:0">
+          <strong>Recently visited</strong>
+          <span>Click any row to return</span>
+        </div>
+        ${state.history.map((entry, i) => `
         <div class="audit-row history-row" data-history-idx="${i}"
              style="cursor:pointer" title="Return to ${entry.buildingCode} ${entry.roomNumber}">
           <strong>${entry.buildingCode} · ${entry.roomNumber}</strong>
@@ -989,6 +1003,7 @@ function renderLog() {
           <em>${entry.ts}</em>
         </div>
       `).join("")}
+      ` : ""}
     </div>`;
 }
 
@@ -1058,6 +1073,58 @@ function addAudit(action, outcome = "success") {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action_type: action, outcome })
     }).catch(() => {});
+  }
+}
+
+async function submitServiceNowIncident(button) {
+  const room = selectedRoom();
+  const panel = button.closest(".sn-panel");
+  const statusEl = panel?.querySelector("[data-sn-status]");
+  if (!room || !panel) return;
+
+  const valueFor = (name) => (panel.querySelector(`[data-sn-field="${name}"]`)?.value || "").trim();
+  const priority = valueFor("priority") || "3";
+  const payload = {
+    short_description: valueFor("short_description"),
+    description: valueFor("description"),
+    category: valueFor("category") || "AV Equipment",
+    urgency: priority,
+    impact: priority
+  };
+
+  button.disabled = true;
+  button.textContent = "Submitting...";
+  if (statusEl) statusEl.textContent = "Sending draft to BeaverView backend.";
+
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(room.id)}/servicenow/incident`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.detail || `HTTP ${response.status}`);
+    }
+
+    const incidentNumber = data.incident?.number;
+    const outcome = data.status === "live" && incidentNumber
+      ? `created ${incidentNumber}`
+      : "mock draft returned";
+    addAudit("servicenow_ticket_submitted", outcome);
+    if (statusEl) {
+      statusEl.textContent = data.status === "live" && incidentNumber
+        ? `Created ServiceNow incident ${incidentNumber}.`
+        : "ServiceNow credentials are not configured; backend logged a mock draft.";
+    }
+    button.textContent = data.status === "live" ? "Incident Created" : "Draft Captured";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "request failed";
+    addAudit("servicenow_ticket_failed", message);
+    if (statusEl) statusEl.textContent = `Could not create draft: ${message}`;
+    button.textContent = "Retry Draft";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -1222,7 +1289,7 @@ els.roomTabs.addEventListener("click", (event) => {
   renderRoom();
 });
 
-els.roomBody.addEventListener("click", (event) => {
+els.roomBody.addEventListener("click", async (event) => {
   // History row — click to return to that building + room
   const historyRow = event.target.closest("[data-history-idx]");
   if (historyRow) {
@@ -1260,18 +1327,16 @@ els.roomBody.addEventListener("click", (event) => {
   const action = button.dataset.action;
   const tool   = button.dataset.tool || "";
 
+  if (action === "servicenow_ticket_submitted") {
+    await submitServiceNowIncident(button);
+    return;
+  }
+
   // Power cycle needs an explicit confirmation before proceeding
   if (action.includes("power") && !confirm("Power cycling is a last-resort action. Confirm? This will be logged.")) return;
 
   // Log the action
   addAudit(action, action.includes("power") ? "confirmation logged" : "success");
-
-  // ServiceNow submit inside the draft form → go to log
-  if (action === "servicenow_ticket_submitted") {
-    state.activeTab = "log";
-    renderRoom();
-    return;
-  }
 
   // Map tool key → renderer function
   const PANELS = {

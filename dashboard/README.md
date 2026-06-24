@@ -1,11 +1,11 @@
-# OSU Presentation Support Dashboard Mock
+# OSU Presentation Support Dashboard
 
-This is the Phase 1 static clickable mock for the OSU Presentation Support Platform dashboard.
+This is the active dashboard UI for the OSU Presentation Support Platform. It can still be opened as a static clickable mock, but API-backed features require serving it from the FastAPI app.
 
 Open locally:
 
 ```text
-file:///Users/cam/Documents/New%20project/dashboard/index.html
+http://localhost:8000
 ```
 
 ## What This Version Demonstrates
@@ -22,20 +22,19 @@ file:///Users/cam/Documents/New%20project/dashboard/index.html
 - Mock room status, schedule, devices, ServiceNow incidents, and connector health.
 - Generated placeholder rooms for every public OSU map building so every building can be opened during review.
 - Quick filters.
-- Mock tool actions.
-- Mock action/audit logging.
+- Tool actions with local feedback.
+- Local action logging, plus backend admin audit logging when served by FastAPI.
+- ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
 - First-run guided tour.
 
 ## What This Version Does Not Do Yet
 
-- No real APIs.
 - No real Hardware IP data.
 - Generated room entries are placeholders and must be replaced by the secure inventory import.
-- No backend service.
 - Public `map.oregonstate.edu` provides building/location data, not the internal Presentation Support room inventory.
 - No Microsoft Entra SSO.
-- No ServiceNow ticket creation from the static dashboard UI yet; the backend has a guarded create endpoint.
 - No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls.
+- Static file mode cannot call backend APIs; use `http://localhost:8000` for API-backed workflows.
 
 ## Version Archive
 
