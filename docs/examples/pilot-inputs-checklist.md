@@ -138,6 +138,19 @@ Required `api/.env` value:
 
 No SharePoint password is stored in BeaverView. Technicians authenticate through their existing OSU O365 browser session when the live documentation URL opens.
 
+## Hermes Chat Endpoint
+
+Required `api/.env` value:
+
+- `CHAT_BASE_URL`
+
+Optional `api/.env` values:
+
+- `CHAT_MODEL`
+- `CHAT_TIMEOUT`
+
+Hermes uses a local OpenAI-compatible endpoint. Do not route room context to a public model endpoint unless OSU approves that data path.
+
 ## ServiceNow Credentials
 
 Required instance value:

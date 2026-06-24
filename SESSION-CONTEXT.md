@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding launch URL readiness tracking for ScreenConnect and SharePoint.
+**Last updated:** 2026-06-24 after adding Hermes readiness tracking and browser coverage.
 
 ---
 
@@ -283,7 +283,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.
-- It exits nonzero only for local failures; missing Azure credentials, connector credentials, ScreenConnect/SharePoint launch URLs, and Hardware IP records are reported as pending external prerequisites.
+- It exits nonzero only for local failures; missing Azure credentials, connector credentials, ScreenConnect/SharePoint launch URLs, Hermes chat endpoint, and Hardware IP records are reported as pending external prerequisites.
 - It runs the data migration and hardware IP import validators directly before reporting DB/input readiness.
 - It also validates reusable deployment templates under `deploy/`.
 - `scripts/init_local_env.sh` creates/updates ignored `api/.env` and sets `PROXY_SECRET` plus `SESSION_SECRET_KEY` without printing them.
@@ -297,7 +297,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Dashboard browser smoke
 - `scripts/check_dashboard_browser.sh` starts a local FastAPI server and runs the Playwright browser smoke in headless Chromium.
-- It selects seeded rooms and verifies guarded UI flows for ServiceNow draft submission, XPanel launch, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ command feedback.
+- It selects seeded rooms and verifies guarded UI flows for ServiceNow draft submission, XPanel launch, ScreenConnect launch, SharePoint launch, WattBox status/cycle, PTZ command feedback, and Hermes chat fallback.
 - This check is part of `scripts/check_pilot_readiness.py`.
 
 ### Environment template consistency

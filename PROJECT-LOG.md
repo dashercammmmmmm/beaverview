@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Hermes readiness and browser coverage
+
+- Added `CHAT_BASE_URL` to the pilot readiness pending-prerequisite list so the visible Ask Hermes tab is tracked before pilot use.
+- Updated the pilot input checklist and validator to collect the local OpenAI-compatible Hermes endpoint details.
+- Expanded `scripts/check_dashboard_browser.py` to verify the dashboard chat tab surfaces the offline "Chat agent not configured" fallback when `CHAT_BASE_URL` is missing.
+
+### Next
+
+- When the approved local AI endpoint is available, add `CHAT_BASE_URL` to ignored `api/.env`, optionally set `CHAT_MODEL` and `CHAT_TIMEOUT`, and rerun browser smoke before pilot review.
+
 ## 2026-06-24 - Active docs guarded-workflow refresh
 
 - Updated setup and development docs that still described active tool panels as mock-only placeholders.

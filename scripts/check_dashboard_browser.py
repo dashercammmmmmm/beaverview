@@ -86,6 +86,11 @@ def main() -> int:
             click_tool(page, "Control PTZ Camera")
             page.locator("button[data-command='home']").click()
             expect(page.locator("[data-tool-status]")).to_contain_text("PTZ command unavailable", timeout=8_000)
+
+            page.locator("#roomTabs button[data-tab='chat']").click()
+            page.locator("#chatInput").fill("What should I check first?")
+            page.locator("#chatSendBtn").click()
+            expect(page.locator("#chatMessages")).to_contain_text("Chat agent not configured", timeout=8_000)
         finally:
             browser.close()
 

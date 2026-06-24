@@ -28,6 +28,7 @@ http://localhost:8000
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
 - PTZ and WattBox controls route through guarded backend endpoints and show prerequisite messages until Hardware IP records and credentials are loaded.
 - XPanel, ScreenConnect, and SharePoint launch buttons ask the backend for live URLs and stay in pending mode until their connectors are configured.
+- Ask Hermes chat calls the backend and shows a clear fallback until the local AI endpoint is configured.
 - First-run guided tour.
 
 ## What This Version Does Not Do Yet
@@ -45,7 +46,7 @@ http://localhost:8000
 scripts/check_dashboard_browser.sh
 ```
 
-This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, ScreenConnect, SharePoint, WattBox, and PTZ workflows in headless Chromium.
+This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, ScreenConnect, SharePoint, WattBox, PTZ, and Hermes chat workflows in headless Chromium.
 
 ## Version Archive
 

@@ -361,6 +361,7 @@ def check_env_prereqs() -> None:
     launch_urls = {
         "ScreenConnect base URL": "SC_BASE_URL",
         "SharePoint base URL": "SHAREPOINT_BASE_URL",
+        "Hermes chat base URL": "CHAT_BASE_URL",
     }
     for label, key in launch_urls.items():
         if is_configured(env.get(key)):
