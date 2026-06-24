@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding browser smoke coverage for guarded dashboard workflows.
+**Last updated:** 2026-06-24 after adding launch URL readiness tracking for ScreenConnect and SharePoint.
 
 ---
 
@@ -283,7 +283,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.
-- It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
+- It exits nonzero only for local failures; missing Azure credentials, connector credentials, ScreenConnect/SharePoint launch URLs, and Hardware IP records are reported as pending external prerequisites.
 - It runs the data migration and hardware IP import validators directly before reporting DB/input readiness.
 - It also validates reusable deployment templates under `deploy/`.
 - `scripts/init_local_env.sh` creates/updates ignored `api/.env` and sets `PROXY_SECRET` plus `SESSION_SECRET_KEY` without printing them.

@@ -358,6 +358,16 @@ def check_env_prereqs() -> None:
         else:
             pending(f"{label} credentials are not complete")
 
+    launch_urls = {
+        "ScreenConnect base URL": "SC_BASE_URL",
+        "SharePoint base URL": "SHAREPOINT_BASE_URL",
+    }
+    for label, key in launch_urls.items():
+        if is_configured(env.get(key)):
+            pass_(f"{label} is configured")
+        else:
+            pending(f"{label} is not configured")
+
     servicenow_oauth = has_all(env, ("SN_INSTANCE", "SN_CLIENT_ID", "SN_CLIENT_SECRET"))
     servicenow_basic = has_all(env, ("SN_INSTANCE", "SN_USERNAME", "SN_PASSWORD"))
     if servicenow_oauth or servicenow_basic:

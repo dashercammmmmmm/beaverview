@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Launch URL readiness tracking
+
+- Updated `scripts/check_pilot_readiness.py` to report missing `SC_BASE_URL` and `SHAREPOINT_BASE_URL` as pending external prerequisites.
+- Kept ScreenConnect and SharePoint separate from stored connector credentials because they use OSU browser-session passthrough instead of service passwords.
+- Updated `docs/examples/pilot-inputs-checklist.md` and its validator so the external-input packet now covers ScreenConnect and SharePoint launch URLs.
+
+### Next
+
+- When OSU provides ScreenConnect and SharePoint base URLs, add them to ignored `api/.env`, restart the backend, and verify the dashboard launch buttons.
+
 ## 2026-06-24 - Dashboard browser smoke coverage
 
 - Added `scripts/check_dashboard_browser.py` and `scripts/check_dashboard_browser.sh`.

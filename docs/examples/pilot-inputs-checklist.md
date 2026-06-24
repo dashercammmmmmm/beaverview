@@ -93,6 +93,14 @@ Required `api/.env` values:
 - `CRESTRON_PROXY_PASSWORD`
 - `CRESTRON_PROXY_SCHEME`
 
+## ScreenConnect Launch URL
+
+Required `api/.env` value:
+
+- `SC_BASE_URL`
+
+No ScreenConnect service password is stored in BeaverView. Technicians authenticate through their existing OSU browser session when the live launch URL opens.
+
 ## WattBox Direct Proxy Credentials
 
 Required `api/.env` values:
@@ -121,6 +129,14 @@ Required `api/.env` values:
 - `LIVE25_BASE_URL`
 - `LIVE25_USERNAME`
 - `LIVE25_PASSWORD`
+
+## SharePoint Launch URL
+
+Required `api/.env` value:
+
+- `SHAREPOINT_BASE_URL`
+
+No SharePoint password is stored in BeaverView. Technicians authenticate through their existing OSU O365 browser session when the live documentation URL opens.
 
 ## ServiceNow Credentials
 
