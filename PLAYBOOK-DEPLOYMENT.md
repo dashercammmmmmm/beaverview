@@ -194,6 +194,14 @@ sudo nano /home/beaverview/app/api/.env
 
 The initializer does not print generated secret values. Fill the Azure and connector credentials in `.env`, then save with `Ctrl+O`, Enter, `Ctrl+X`.
 
+For pilot or production use, also set the browser origin that may call the API:
+
+```env
+BEAVERVIEW_CORS_ORIGINS=https://beaverview
+```
+
+Use a comma-separated list only if the deployment has multiple approved HTTPS hostnames. Do not use `*` outside isolated local development.
+
 ```bash
 sudo chmod 600 /home/beaverview/app/api/.env
 sudo chown beaverview:beaverview /home/beaverview/app/api/.env
@@ -511,9 +519,10 @@ Run through this before announcing the URL to users:
 - [ ] **`.env` not in Git** — run `git -C /home/beaverview/app status` — confirm `.env` is not listed
 - [ ] **No raw IPs in browser** — open DevTools → Network tab → confirm no `10.x.x.x` or `192.168.x.x` addresses in API responses
 - [ ] **Audit log working** — click a tool action, then `curl -k https://beaverview/api/audit` and confirm the entry appears
-- [ ] **CORS restricted** — in `main.py`, change `allow_origins=["*"]` to `allow_origins=["https://beaverview"]`
-- [ ] **Live reload removed** — delete the `<!-- Live reload -->` block from `dashboard/index.html`
-- [ ] **Dev helper removed** — delete the `window._dev = { selectBuilding }` line from `dashboard/app.js`
+- [ ] **CORS restricted** — set `BEAVERVIEW_CORS_ORIGINS=https://beaverview` in `/home/beaverview/app/api/.env`, then restart BeaverView
+- [ ] **Live reload localhost-only** — the live-reload block in `dashboard/index.html` exits unless the browser host is `localhost` or `127.0.0.1`
+- [ ] **Dev helper localhost-only** — `window._dev` in `dashboard/app.js` is created only for `localhost`, `127.0.0.1`, or `::1`
+- [ ] **Pilot readiness passing** — run `python3 scripts/check_pilot_readiness.py` from `/home/beaverview/app`; local failures must be `0`
 
 ---
 

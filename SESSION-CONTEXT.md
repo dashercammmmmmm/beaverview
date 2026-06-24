@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding readiness pending-action coverage validation.
+**Last updated:** 2026-06-24 after adding production safety guardrails.
 
 ---
 
@@ -232,6 +232,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ## What was just changed (latest sessions)
 
+### Production safety guardrails
+- `api/main.py` reads CORS origins from `BEAVERVIEW_CORS_ORIGINS`; unset still defaults to `*` for isolated local development.
+- `scripts/check_pilot_readiness.py` now reports `CORS allowed origins are not restricted` as pending until ignored `api/.env` sets an HTTPS origin such as `https://beaverview`.
+- `dashboard/app.js` creates `window._dev` only on `localhost`, `127.0.0.1`, or `::1`.
+- `scripts/check_production_safety.py` validates CORS configurability, localhost-only browser dev helpers/live reload, and deployment playbook security guidance. It is part of pilot readiness.
+
 ### Readiness pending-action coverage
 - `scripts/check_pilot_readiness.py` now has explicit `PENDING_ACTIONS` entries for missing `api/.env`, `PROXY_SECRET`, `SESSION_SECRET_KEY`, and Azure redirect URI pending states.
 - `scripts/check_readiness_actions.py` validates that every literal `pending(...)` call in readiness has a mapped next action.
@@ -366,6 +372,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/generate_self_signed_cert.sh <vm-ip> [output-dir] [dns-name]` validates the VM IP and generates the self-signed cert/key pair.
 - `scripts/render_nginx_config.sh <vm-ip> [output-path]` validates the VM IP and renders the nginx template before installing.
 - `scripts/check_deployment_assets.sh` validates these templates locally.
+- `scripts/check_production_safety.py` validates that production safety stays environment-controlled, including `BEAVERVIEW_CORS_ORIGINS` and localhost-only browser dev helpers.
 
 ### Admin link in dashboard header
 - Orange-tinted "Admin" button appears in the top-right header
@@ -393,7 +400,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | Item | Notes |
 |---|---|
 | **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
-| **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, group object IDs |
+| **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, group object IDs, and `BEAVERVIEW_CORS_ORIGINS=https://beaverview` |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
 | **Real inventory import** | `dashboard/data.js` now migrates cleanly into SQLite. Secure Hardware IP import from `hardware_ips.csv` still requires the real spreadsheet. |
 

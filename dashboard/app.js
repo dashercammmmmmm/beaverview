@@ -1896,9 +1896,15 @@ try {
   document.body.innerHTML = `<div style="padding: 20px; color: red; font-family: monospace;"><h1>🔴 App Error</h1><pre>${err.message}\n\n${err.stack}</pre></div>`;
 }
 
-// Dev helper — exposes selectBuilding() to the browser console for testing
+// Dev helper — exposes selectBuilding() to the browser console for local testing
 // Usage: _dev.selectBuilding("1027537")  (building ID from osuMapBuildings)
-window._dev = {
-  selectBuilding,
-  inventorySource: () => state.inventorySources[state.campusId] || "static"
-};
+function isLocalDevHost() {
+  return ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
+}
+
+if (isLocalDevHost()) {
+  window._dev = {
+    selectBuilding,
+    inventorySource: () => state.inventorySources[state.campusId] || "static"
+  };
+}

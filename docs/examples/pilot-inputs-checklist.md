@@ -27,6 +27,16 @@ Required generated values:
 - `PROXY_SECRET`
 - `SESSION_SECRET_KEY`
 
+## Production HTTP Origin
+
+Set this in ignored `api/.env` before VM pilot use:
+
+```bash
+BEAVERVIEW_CORS_ORIGINS=https://beaverview
+```
+
+Use a comma-separated list only if the deployment has multiple approved HTTPS hostnames. Do not use `*` for pilot or production.
+
 ## Hardware IP Records
 
 Target file: ignored `api/hardware_ips.csv`

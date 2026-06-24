@@ -115,6 +115,7 @@ python3 scripts/check_env_template.py
 ```
 
 It verifies `api/.env.example` documents the runtime env vars used by code/readiness, has no duplicate keys, and has no stale documented keys.
+`BEAVERVIEW_CORS_ORIGINS` should be set to `https://beaverview` on the VM before pilot use. Leaving it unset keeps the local wildcard default and is reported as pending by pilot readiness.
 
 Run this once on a local checkout or VM to create/update ignored `api/.env` with generated `PROXY_SECRET` and `SESSION_SECRET_KEY` values:
 
@@ -137,6 +138,14 @@ scripts/check_deployment_assets.sh
 ```
 
 It validates the checked-in systemd and nginx templates under `deploy/`, including a sample nginx render with `scripts/render_nginx_config.sh` and a sample self-signed certificate with `scripts/generate_self_signed_cert.sh`.
+
+Run this after changing production safety behavior, CORS, deployment playbook security guidance, or dashboard dev-only browser helpers:
+
+```bash
+python3 scripts/check_production_safety.py
+```
+
+It verifies CORS is controlled by `BEAVERVIEW_CORS_ORIGINS`, dashboard `_dev` and live reload stay localhost-only, and the deployment playbook does not instruct operators to make manual source edits before go-live. It is also part of `scripts/check_pilot_readiness.py`.
 
 There is no build step, bundler, or test suite. Frontend changes are visible immediately — `index.html` has a built-in live-reload poller (HEAD requests every 1.5s, localhost only).
 

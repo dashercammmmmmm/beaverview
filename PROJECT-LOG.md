@@ -2,6 +2,17 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Production safety guardrails
+
+- Replaced hardcoded wildcard CORS middleware config with `BEAVERVIEW_CORS_ORIGINS`, preserving wildcard behavior only as the local default.
+- Added readiness tracking for unrestricted CORS so VM pilot use requires `BEAVERVIEW_CORS_ORIGINS=https://beaverview` in ignored `api/.env`.
+- Guarded dashboard `window._dev` so it is created only on localhost-style hosts.
+- Added `scripts/check_production_safety.py` and wired it into pilot readiness to verify CORS configurability, localhost-only dev helpers/live reload, and deployment playbook guidance.
+
+### Next
+
+- Before VM pilot use, set `BEAVERVIEW_CORS_ORIGINS=https://beaverview` in the ignored VM `api/.env`, restart BeaverView, and rerun pilot readiness.
+
 ## 2026-06-24 - Readiness pending-action coverage
 
 - Added explicit `PENDING_ACTIONS` entries for missing `api/.env`, `PROXY_SECRET`, `SESSION_SECRET_KEY`, and Azure redirect URI readiness states.

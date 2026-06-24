@@ -50,6 +50,7 @@ HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
+PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
 
 LOCAL_FAILURES: list[str] = []
@@ -68,6 +69,10 @@ PENDING_ACTIONS = {
     "SESSION_SECRET_KEY is not set": {
         "action": "Run bash scripts/init_local_env.sh to generate SESSION_SECRET_KEY in ignored api/.env.",
         "reference": "docs/examples/pilot-inputs-checklist.md#local-secret-baseline",
+    },
+    "CORS allowed origins are not restricted": {
+        "action": "Set BEAVERVIEW_CORS_ORIGINS=https://beaverview in ignored api/.env before VM pilot use.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#production-http-origin",
     },
     "hardware IP records are not loaded yet": {
         "action": "Place the secure export at ignored api/hardware_ips.csv, run scripts/check_hardware_ip_import.sh, then import it from the api directory.",
@@ -383,6 +388,18 @@ def check_readiness_actions() -> None:
         fail("readiness pending-action reference validation failed")
 
 
+def check_production_safety() -> None:
+    if not PRODUCTION_SAFETY_SCRIPT.exists():
+        fail("production safety validator is missing")
+        return
+
+    result = run([sys.executable, str(PRODUCTION_SAFETY_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("production safety guardrails validate")
+    else:
+        fail("production safety guardrail validation failed")
+
+
 def check_live_validation_doc() -> None:
     if not LIVE_VALIDATION_SCRIPT.exists():
         fail("first live-room validation doc validator is missing")
@@ -465,6 +482,15 @@ def has_all(env: dict[str, str], keys: tuple[str, ...]) -> bool:
     return all(is_configured(env.get(key)) for key in keys)
 
 
+def cors_origins_are_restricted(value: str | None) -> bool:
+    if not is_configured(value):
+        return False
+    origins = [origin.strip() for origin in value.split(",") if origin.strip()]
+    if not origins or "*" in origins:
+        return False
+    return all(origin.startswith("https://") for origin in origins)
+
+
 def check_azure_template() -> None:
     if AZURE_CHECKLIST_PATH.exists():
         pass_("Azure/Entra app registration checklist exists")
@@ -505,6 +531,11 @@ def check_env_prereqs() -> None:
         pass_("SESSION_SECRET_KEY is set")
     else:
         pending("SESSION_SECRET_KEY is not set")
+
+    if cors_origins_are_restricted(env.get("BEAVERVIEW_CORS_ORIGINS")):
+        pass_("CORS allowed origins are restricted")
+    else:
+        pending("CORS allowed origins are not restricted")
 
     if has_all(env, ("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")):
         pass_("Azure app credentials are present")
@@ -565,6 +596,7 @@ def run_checks() -> None:
     check_env_template()
     check_pilot_inputs_doc()
     check_readiness_actions()
+    check_production_safety()
     check_live_validation_doc()
     check_first_live_room_preflight_cases()
     check_env_prereqs()

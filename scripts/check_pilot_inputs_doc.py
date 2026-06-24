@@ -17,6 +17,7 @@ REQUIRED_TERMS = (
     "bash scripts/init_local_env.sh",
     "PROXY_SECRET",
     "SESSION_SECRET_KEY",
+    "BEAVERVIEW_CORS_ORIGINS",
     "room_id",
     "device_type",
     "ip_address",

@@ -150,6 +150,12 @@ def main() -> int:
         expect(health.status_code == 200, f"/api/health returned {health.status_code}")
         expect(json_response(health, "/api/health").get("status") == "ok", "/api/health status is not ok")
 
+        cors_health = client.get("/api/health", headers={"Origin": "https://contract.localhost"})
+        expect(
+            cors_health.headers.get("access-control-allow-origin") == "*",
+            "default local CORS origin behavior changed",
+        )
+
         me = client.get("/api/me")
         expect(me.status_code == 200, f"/api/me returned {me.status_code}")
         me_data = json_response(me, "/api/me")

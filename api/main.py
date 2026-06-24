@@ -700,9 +700,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="BeaverView API", version="0.4.0", lifespan=lifespan)
 
+
+def _parse_cors_origins() -> list[str]:
+    raw = os.getenv("BEAVERVIEW_CORS_ORIGINS", "*").strip()
+    if not raw:
+        return ["*"]
+    origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    return origins or ["*"]
+
+
+_CORS_ORIGINS = _parse_cors_origins()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_CORS_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
