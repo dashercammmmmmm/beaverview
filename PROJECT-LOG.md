@@ -2,6 +2,19 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Admin browser smoke coverage
+
+- Added `scripts/check_admin_browser.py` and `scripts/check_admin_browser.sh`.
+- The admin browser smoke starts BeaverView locally, opens `/admin/`, and verifies summary, room listing/edit drawer, connector management, logs, and user role pages in headless Chromium.
+- Wired the admin browser smoke into `scripts/check_pilot_readiness.py` so pilot readiness now covers both technician dashboard workflows and admin management pages.
+- Fixed the current admin implementation under the app CSP by allowing existing inline admin scripts/handlers from self-served pages.
+- Made localhost dev auth consistent for `/api/admin/*` when Azure SSO is not fully configured, matching `/api/me`.
+- Replaced brittle raw JSON `onclick` payloads in room/user edit rows with encoded data attributes and delegated handlers.
+
+### Next
+
+- Later hardening: move admin page scripts and handlers into external files so `script-src 'unsafe-inline'` can be removed again before an internet-exposed deployment.
+
 ## 2026-06-24 - Device web UI readiness state
 
 - Reworked the dashboard Device web UIs panel so it no longer displays dead "Open UI" buttons.

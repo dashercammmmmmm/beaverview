@@ -721,7 +721,7 @@ async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' blob:; "
+        "script-src 'self' 'unsafe-inline' blob:; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src https://fonts.gstatic.com; "
         "img-src 'self' data: https://tile.openstreetmap.org; "
@@ -736,11 +736,35 @@ async def add_security_headers(request: Request, call_next):
 # Auth helpers
 # ---------------------------------------------------------------------------
 
+def _is_local_request(request: Request) -> bool:
+    client_host = (request.client.host if request.client else "") or ""
+    return client_host in ("127.0.0.1", "::1", "localhost")
+
+
+def _azure_sso_configured() -> bool:
+    return all(
+        os.getenv(key, "").strip()
+        for key in ("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
+    )
+
+
+def _dev_admin_session() -> dict:
+    return {
+        "oid": "dev-localhost",
+        "preferred_username": "dev@localhost",
+        "name": "Dev Admin (localhost)",
+        "email": "dev@localhost",
+        "groups": [],
+    }
+
+
 def require_admin(request: Request):
     """Dependency for all /api/admin/... routes. Raises 401/403 if not an admin."""
     session = getattr(request, 'session', {})
     user = session.get('user')
     if not user:
+        if not _azure_sso_configured() and _is_local_request(request):
+            return _dev_admin_session()
         raise HTTPException(401, 'Not authenticated')
     groups = user.get('groups', [])
     admin_group = os.getenv('AZURE_GROUP_ADMIN', '')
@@ -1437,8 +1461,11 @@ def _get_msal_app():
 @app.get("/auth/login")
 def auth_login(request: Request, next: str = "/admin/"):
     """Redirect browser to Microsoft login page."""
+    if not (_AZURE_TENANT and _AZURE_CLIENT and _AZURE_SECRET):
+        raise HTTPException(503, "Entra SSO not configured. Set AZURE_TENANT_ID, "
+                                 "AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in .env")
     msal_app = _get_msal_app()
-    if not msal_app or not (_AZURE_TENANT and _AZURE_CLIENT):
+    if not msal_app:
         raise HTTPException(503, "Entra SSO not configured. Set AZURE_TENANT_ID, "
                                  "AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in .env")
     from fastapi.responses import RedirectResponse
@@ -1545,11 +1572,11 @@ def me(request: Request):
         except (AssertionError, KeyError):
             pass
     if not user:
-        # Dev bypass: when SSO is not configured (no AZURE_CLIENT_ID) AND
+        # Dev bypass: when SSO is not fully configured AND
         # the request comes from localhost, return a local admin session.
-        # This auto-disables in production once AZURE_CLIENT_ID is set in .env.
-        client_host = (request.client.host if request.client else "") or ""
-        if not _AZURE_CLIENT and client_host in ("127.0.0.1", "::1", "localhost"):
+        # This auto-disables in production once Azure tenant, client, and
+        # client secret values are all set in .env.
+        if not _azure_sso_configured() and _is_local_request(request):
             return {
                 'user':  'dev@localhost',
                 'name':  'Dev Admin (localhost)',

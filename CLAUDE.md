@@ -45,6 +45,14 @@ scripts/check_dashboard_browser.sh
 
 It starts uvicorn on `127.0.0.1:8027`, opens the active dashboard in headless Chromium through Playwright, selects seeded rooms, and verifies guarded UI feedback for ServiceNow, XPanel, ScreenConnect, SharePoint, WattBox, PTZ, and Hermes chat fallback. It is also part of `scripts/check_pilot_readiness.py`.
 
+Run this after changing admin pages, auth, or admin API behavior:
+
+```bash
+scripts/check_admin_browser.sh
+```
+
+It starts uvicorn on `127.0.0.1:8028`, opens the admin panel in headless Chromium through Playwright, and verifies the summary, rooms, connectors, logs, and users pages. It is also part of `scripts/check_pilot_readiness.py`.
+
 Run this after changing `dashboard/data.js`, `api/migrate_data.py`, or DB schema:
 
 ```bash

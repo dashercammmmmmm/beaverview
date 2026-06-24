@@ -50,6 +50,12 @@ scripts/check_dashboard_browser.sh
 
 This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, Device web UI, ScreenConnect, SharePoint, WattBox, PTZ, and Hermes chat workflows in headless Chromium.
 
+```text
+scripts/check_admin_browser.sh
+```
+
+This starts the local backend and verifies the admin summary, rooms, connectors, logs, and users pages in headless Chromium.
+
 ## Version Archive
 
 - `archive/v1-static-clickable-mock` - first static clickable dashboard mock.

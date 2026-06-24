@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding the guarded Device web UI readiness state.
+**Last updated:** 2026-06-24 after adding admin browser smoke coverage.
 
 ---
 
@@ -100,6 +100,16 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && api/start.sh
 **Smoke check before pushes or connector/auth changes:**
 ```
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
+```
+
+**Dashboard browser smoke after technician workflow changes:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_dashboard_browser.sh
+```
+
+**Admin browser smoke after admin/auth changes:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_admin_browser.sh
 ```
 
 **Data migration check after data/schema changes:**
@@ -280,7 +290,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard browser smoke coverage, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.
@@ -299,6 +309,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Dashboard browser smoke
 - `scripts/check_dashboard_browser.sh` starts a local FastAPI server and runs the Playwright browser smoke in headless Chromium.
 - It selects seeded rooms and verifies guarded UI flows for ServiceNow draft submission, XPanel launch, Device web UI readiness, ScreenConnect launch, SharePoint launch, WattBox status/cycle, PTZ command feedback, and Hermes chat fallback.
+- This check is part of `scripts/check_pilot_readiness.py`.
+
+### Admin browser smoke
+- `scripts/check_admin_browser.sh` starts a local FastAPI server and runs the Playwright admin smoke in headless Chromium.
+- It verifies `/admin/`, room listing and edit drawer rendering, connector management, audit logs, and user role pages under the local dev auth path.
 - This check is part of `scripts/check_pilot_readiness.py`.
 
 ### Environment template consistency

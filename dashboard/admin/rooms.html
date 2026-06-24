@@ -176,6 +176,10 @@
 <script>
 let campuses = [], buildings = [], currentBldg = null, deviceRows = [];
 
+function encodePayload(value) {
+  return encodeURIComponent(JSON.stringify(value));
+}
+
 document.addEventListener('admin-ready', async () => {
   document.getElementById('main').style.display = '';
   await loadCampuses();
@@ -251,7 +255,7 @@ function renderRoomsTable(rooms) {
       <td>${r.processor || 'mock'}</td>
       <td>${(r.devices || []).length}</td>
       <td>
-        <button class="btn btn--secondary btn--sm" onclick="openEditRoom(${JSON.stringify(JSON.stringify(r))})">Edit</button>
+        <button class="btn btn--secondary btn--sm" data-room-edit="${encodePayload(r)}">Edit</button>
       </td>
     </tr>`).join('');
 }
@@ -281,8 +285,14 @@ document.getElementById('btn-add-room').addEventListener('click', () => {
   openDrawer(true);
 });
 
+document.getElementById('rooms-body').addEventListener('click', event => {
+  const btn = event.target.closest('[data-room-edit]');
+  if (!btn) return;
+  openEditRoom(decodeURIComponent(btn.dataset.roomEdit));
+});
+
 window.openEditRoom = function(jsonStr) {
-  const r = JSON.parse(jsonStr);
+  const r = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
   document.getElementById('f-room-id').value       = r.id || '';
   document.getElementById('f-building-id').value   = r.building_id || currentBldg;
   document.getElementById('f-number').value         = r.number || '';

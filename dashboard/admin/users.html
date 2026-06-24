@@ -90,6 +90,10 @@ document.addEventListener('admin-ready', () => {
 });
 document.getElementById('btn-refresh').addEventListener('click', loadUsers);
 
+function encodePayload(value) {
+  return encodeURIComponent(JSON.stringify(value));
+}
+
 async function loadUsers() {
   try {
     const rows = await adminGet('/api/admin/users');
@@ -115,7 +119,7 @@ function renderTable(rows) {
       <td style="font-size:.8rem">${r.notes || ''}</td>
       <td>
         <button class="btn btn--secondary btn--sm"
-          onclick='openEdit(${JSON.stringify(JSON.stringify(r))})'>Edit</button>
+          data-user-edit="${encodePayload(r)}">Edit</button>
       </td>
     </tr>`).join('');
 }
@@ -132,8 +136,14 @@ document.getElementById('drawer-close').addEventListener('click', closeDrawer);
 document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
 document.getElementById('btn-cancel').addEventListener('click', closeDrawer);
 
+document.getElementById('users-body').addEventListener('click', event => {
+  const btn = event.target.closest('[data-user-edit]');
+  if (!btn) return;
+  openEdit(decodeURIComponent(btn.dataset.userEdit));
+});
+
 window.openEdit = function(jsonStr) {
-  const r = JSON.parse(jsonStr);
+  const r = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
   document.getElementById('f-entra-id').value = r.entra_id;
   document.getElementById('f-role').value    = r.role || 'technician';
   document.getElementById('f-notes').value   = r.notes || '';
