@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding the first live-room validation runbook.
+**Last updated:** 2026-06-24 after adding the sanitized backend inventory endpoint.
 
 ---
 
@@ -197,6 +197,7 @@ macOS Homebrew Python blocks system-wide pip installs. The venv command above is
 |---|---|---|
 | GET | `/api/health` | ✅ Live |
 | GET | `/api/campus/{id}/connectors` | ✅ Live (mock) |
+| GET | `/api/campus/{id}/inventory` | ✅ Live (SQLite inventory, sanitized) |
 | GET | `/api/campus/{id}/crestron/rooms` | ✅ Live (mock/live) |
 | GET | `/api/rooms/{room_id}/launch/{tool}` | ✅ Live (mock/live launch metadata) |
 | GET | `/api/rooms/{room_id}/proxy/{tool}/{path}` | ✅ Live foundation (server-side IP lookup) |
@@ -230,6 +231,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ---
 
 ## What was just changed (latest sessions)
+
+### Backend inventory endpoint
+- `GET /api/campus/{campus_id}/inventory` returns SQLite campus, building, room, device, and incident data.
+- The endpoint intentionally omits `device_ips` and raw `ip_address` fields; device web access still goes through approved backend routes.
+- `scripts/check_api_contracts.py` verifies the inventory response shape, seeded counts, missing-campus 404, and no hardware IP field exposure.
+- The visible dashboard still reads `dashboard/data.js`; the next local step is comparing one campus against this endpoint before switching the frontend read path.
 
 ### Git repository initialized
 - `git init` + initial commit (ec60a6f) — all project files committed
@@ -312,7 +319,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
-- It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow incident read/create fallbacks, chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+- It validates health, localhost dev auth, admin inventory access, sanitized campus inventory, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow incident read/create fallbacks, chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
 
 ### Dashboard browser smoke
 - `scripts/check_dashboard_browser.sh` starts a local FastAPI server and runs the Playwright browser smoke in headless Chromium.

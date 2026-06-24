@@ -74,6 +74,14 @@ def json_response(response: Any, label: str) -> Any:
         fail(f"{label} did not return JSON: {exc}")
 
 
+def contains_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        return key in value or any(contains_key(item, key) for item in value.values())
+    if isinstance(value, list):
+        return any(contains_key(item, key) for item in value)
+    return False
+
+
 def connector_mode_snapshot() -> list[tuple[str, str, str]]:
     con = sqlite3.connect(DB_PATH)
     try:
@@ -153,6 +161,33 @@ def main() -> int:
         room_data = json_response(rooms, "/api/admin/rooms")
         expect(isinstance(room_data, list) and room_data, "/api/admin/rooms returned no seeded rooms")
         room_id = room_data[0].get("id") or "corvallis-kad-101"
+
+        inventory = client.get("/api/campus/corvallis/inventory")
+        expect(inventory.status_code == 200, f"campus inventory returned {inventory.status_code}")
+        inventory_data = json_response(inventory, "campus inventory")
+        expect(inventory_data.get("source") == "sqlite", "campus inventory should identify SQLite as source")
+        expect(inventory_data.get("campus", {}).get("id") == "corvallis", "campus inventory returned wrong campus")
+        expect(isinstance(inventory_data.get("buildings"), list), "campus inventory did not return buildings")
+        expect(isinstance(inventory_data.get("rooms"), list), "campus inventory did not return rooms")
+        expect(inventory_data.get("counts", {}).get("buildings", 0) > 0, "campus inventory returned no building count")
+        expect(inventory_data.get("counts", {}).get("rooms", 0) > 0, "campus inventory returned no room count")
+        expect(inventory_data.get("counts", {}).get("devices", 0) > 0, "campus inventory returned no device count")
+        seeded_room = next(
+            (room for room in inventory_data["rooms"] if room.get("id") == "corvallis-kad-101"),
+            inventory_data["rooms"][0],
+        )
+        expect(isinstance(seeded_room.get("devices"), list), "campus inventory room did not include devices")
+        expect(
+            {"building_code", "number", "status", "health", "devices", "incidents"}.issubset(seeded_room.keys()),
+            "campus inventory room shape changed",
+        )
+        expect(
+            not contains_key(inventory_data, "ip_address") and not contains_key(inventory_data, "device_ips"),
+            "campus inventory exposed hardware IP fields",
+        )
+
+        missing_inventory = client.get("/api/campus/__missing__/inventory")
+        expect(missing_inventory.status_code == 404, "missing campus inventory did not return 404")
 
         connectors = client.get("/api/admin/connectors")
         expect(connectors.status_code == 200, f"/api/admin/connectors returned {connectors.status_code}")

@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Backend inventory endpoint
+
+- Added `GET /api/campus/{campus_id}/inventory` as a read-only SQLite inventory endpoint for campus, building, room, device, and incident data.
+- Kept hardware IP records out of the response; browser-visible inventory now has a backend target without exposing `device_ips`.
+- Expanded offline API contracts to verify the inventory response shape, seeded counts, missing-campus 404, and no raw hardware IP fields.
+
+### Next
+
+- Compare one campus between `dashboard/data.js` and `/api/campus/corvallis/inventory`, then switch the dashboard room read path only after the UI behavior remains unchanged.
+
 ## 2026-06-24 - First live-room validation runbook
 
 - Added `docs/examples/first-live-room-validation.md` as the no-secrets runbook for the first non-critical room and connector validation.

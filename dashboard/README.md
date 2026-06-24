@@ -24,6 +24,7 @@ http://localhost:8000
 - Quick filters.
 - Tool actions with local feedback.
 - Local action logging, plus backend admin audit logging when served by FastAPI.
+- Backend SQLite inventory is available through `GET /api/campus/{campus_id}/inventory` for the future dashboard read path.
 - Room Overview diagnostics summarize likely causes and keep WattBox Auto-Fix disabled while a room appears occupied.
 - ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
@@ -36,7 +37,7 @@ http://localhost:8000
 ## What This Version Does Not Do Yet
 
 - No real Hardware IP data.
-- Generated room entries are placeholders and must be replaced by the secure inventory import.
+- The visible dashboard room list still reads `data.js`; generated room entries are placeholders and must be replaced by the secure inventory import/backend inventory read path.
 - Public `map.oregonstate.edu` provides building/location data, not the internal Presentation Support room inventory.
 - No Microsoft Entra SSO.
 - No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls until credentials and Hardware IP records are loaded.

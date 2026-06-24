@@ -149,7 +149,7 @@ No framework. Three files own everything:
 
 **State object** (`state` in app.js) holds the single source of truth: selected campus, building, room, active tab, search string, filters, history, connector overrides.
 
-**Map data flow:** `window.osuMapBuildings` (278 footprints from `osu-map-buildings.js`) drives the MapLibre map. When a building is clicked, `supportBuildingFor()` matches it to a `data.js` entry by `code` field. If no match, `generatedRoomsForBuilding()` auto-generates placeholder rooms so every building is clickable. The `data.js` mock remains active until `migrate_data.py` seeds the SQLite DB and the backend API is used instead.
+**Map data flow:** `window.osuMapBuildings` (278 footprints from `osu-map-buildings.js`) drives the MapLibre map. When a building is clicked, `supportBuildingFor()` matches it to a `data.js` entry by `code` field. If no match, `generatedRoomsForBuilding()` auto-generates placeholder rooms so every building is clickable. The visible dashboard still reads `data.js`, but `GET /api/campus/{campus_id}/inventory` now exposes the migrated SQLite campus/building/room/device data as the sanitized backend target for the future dashboard read path.
 
 **Search:** `normalizeSearch()` strips apostrophes, dashes, and `&`→`and` before matching, so "womens" finds "Women's Building". Non-matching buildings are dimmed (18% opacity) rather than removed, so map clicks always work.
 
@@ -160,9 +160,9 @@ No framework. Three files own everything:
 | Source | Used when | How to populate |
 |---|---|---|
 | `dashboard/data.js` | Always (frontend mock) | Edit by hand |
-| `api/beaverview.db` | When backend connectors are in live mode | `python3 migrate_data.py` (rooms from data.js), `python3 import_device_ips.py` (from `hardware_ips.csv`) |
+| `api/beaverview.db` | Admin APIs, connector state, audit logs, and `GET /api/campus/{campus_id}/inventory` | `python3 migrate_data.py` (rooms from data.js), `python3 import_device_ips.py` (from `hardware_ips.csv`) |
 
-The DB is empty until migration runs. Dev mode works entirely off `data.js` mock data.
+The DB is empty until migration runs. Frontend room rendering still works from `data.js`; backend inventory reads use SQLite and must not expose `device_ips` or raw IP fields.
 
 ## Key files and their rules
 

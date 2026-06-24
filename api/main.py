@@ -839,6 +839,132 @@ def campus_connectors(campus_id: str):
     }
 
 
+@app.get("/api/campus/{campus_id}/inventory")
+def campus_inventory(campus_id: str):
+    """Return sanitized room inventory from SQLite without hardware IP records."""
+    conn = get_db()
+    try:
+        campus = conn.execute(
+            "SELECT id, name, subtitle, center_lng, center_lat, zoom"
+            " FROM campuses WHERE id=?",
+            (campus_id,),
+        ).fetchone()
+        if not campus:
+            raise HTTPException(status_code=404, detail=f"Campus '{campus_id}' not found")
+
+        building_rows = conn.execute(
+            "SELECT b.id, b.campus_id, b.code, b.name, b.active,"
+            " COUNT(r.id) AS room_count"
+            " FROM buildings b"
+            " LEFT JOIN rooms r ON r.building_id = b.id"
+            " WHERE b.campus_id=?"
+            " GROUP BY b.id"
+            " ORDER BY b.code",
+            (campus_id,),
+        ).fetchall()
+        room_rows = conn.execute(
+            "SELECT r.id, r.building_id, r.number, r.type, r.status, r.health,"
+            " r.active_event, r.processor, r.display, r.screenconnect, r.wattbox,"
+            " r.hybrid, r.stale, r.notes, r.updated_at,"
+            " b.code AS building_code, b.name AS building_name"
+            " FROM rooms r"
+            " JOIN buildings b ON b.id = r.building_id"
+            " WHERE b.campus_id=?"
+            " ORDER BY b.code, r.number",
+            (campus_id,),
+        ).fetchall()
+
+        room_ids = [row["id"] for row in room_rows]
+        devices_by_room: dict[str, list[dict]] = {room_id: [] for room_id in room_ids}
+        incidents_by_room: dict[str, list[dict]] = {room_id: [] for room_id in room_ids}
+        if room_ids:
+            placeholders = ",".join("?" for _ in room_ids)
+            device_rows = conn.execute(
+                "SELECT id, room_id, device_type, manufacturer, model, connection, sort_order"
+                f" FROM devices WHERE room_id IN ({placeholders})"
+                " ORDER BY room_id, sort_order, id",
+                room_ids,
+            ).fetchall()
+            for device in device_rows:
+                devices_by_room[device["room_id"]].append(
+                    {
+                        "id": device["id"],
+                        "device_type": device["device_type"],
+                        "manufacturer": device["manufacturer"],
+                        "model": device["model"],
+                        "connection": device["connection"],
+                        "sort_order": device["sort_order"],
+                    }
+                )
+
+            incident_rows = conn.execute(
+                "SELECT id, room_id, ticket, status"
+                f" FROM incidents WHERE room_id IN ({placeholders})"
+                " ORDER BY room_id, id",
+                room_ids,
+            ).fetchall()
+            for incident in incident_rows:
+                incidents_by_room[incident["room_id"]].append(
+                    {
+                        "id": incident["id"],
+                        "ticket": incident["ticket"],
+                        "status": incident["status"],
+                    }
+                )
+
+        buildings = [
+            {
+                "id": row["id"],
+                "campus_id": row["campus_id"],
+                "code": row["code"],
+                "name": row["name"],
+                "active": bool(row["active"]),
+                "room_count": row["room_count"],
+            }
+            for row in building_rows
+        ]
+        rooms = [
+            {
+                "id": row["id"],
+                "building_id": row["building_id"],
+                "building_code": row["building_code"],
+                "building_name": row["building_name"],
+                "number": row["number"],
+                "type": row["type"],
+                "status": row["status"],
+                "health": row["health"],
+                "active_event": row["active_event"],
+                "processor": row["processor"],
+                "display": row["display"],
+                "screenconnect": bool(row["screenconnect"]),
+                "wattbox": bool(row["wattbox"]),
+                "hybrid": bool(row["hybrid"]),
+                "stale": bool(row["stale"]),
+                "notes": row["notes"],
+                "updated_at": row["updated_at"],
+                "devices": devices_by_room.get(row["id"], []),
+                "incidents": incidents_by_room.get(row["id"], []),
+            }
+            for row in room_rows
+        ]
+    finally:
+        conn.close()
+
+    return {
+        "campus": dict(campus),
+        "buildings": buildings,
+        "rooms": rooms,
+        "counts": {
+            "buildings": len(buildings),
+            "rooms": len(rooms),
+            "devices": sum(len(room["devices"]) for room in rooms),
+            "incidents": sum(len(room["incidents"]) for room in rooms),
+        },
+        "source": "sqlite",
+        "ts": _now(),
+    }
+
+
 @app.get("/api/campus/{campus_id}/crestron/rooms")
 def crestron_rooms(campus_id: str):
     """Processor status for all rooms on a campus.
