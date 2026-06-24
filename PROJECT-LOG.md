@@ -148,6 +148,7 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 - ServiceNow now honors both documented auth paths: OAuth client credentials and Basic Auth service accounts.
 - Updated the API contract check to clear local `.env` values deterministically and cover admin connector test behavior.
 - Cleaned stale handoff/playbook references to the old XPanel proxy 501 stub.
+- Updated handoff commands to run pilot readiness through `python3 scripts/check_pilot_readiness.py`, while the script also self-selects the project venv when available.
 
 ### Next
 

@@ -25,6 +25,7 @@ ENV_ASSIGNMENT_RE = re.compile(r"^\s*#?\s*([A-Z][A-Z0-9_]*)\s*=")
 # Backward-compatible aliases accepted by code but intentionally omitted from
 # the canonical template so new deployments use the current SN_* names.
 ALLOWED_CODE_ONLY = {
+    "BEAVERVIEW_PILOT_READINESS_REEXEC",
     "SERVICENOW_INSTANCE",
     "SERVICENOW_CLIENT_ID",
     "SERVICENOW_CLIENT_SECRET",

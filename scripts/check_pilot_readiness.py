@@ -20,6 +20,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
+VENV_PYTHON = API_DIR / "venv" / "bin" / "python"
+
+if (
+    VENV_PYTHON.exists()
+    and Path(sys.executable).resolve() != VENV_PYTHON.resolve()
+    and os.environ.get("BEAVERVIEW_PILOT_READINESS_REEXEC") != "1"
+):
+    env = os.environ.copy()
+    env["BEAVERVIEW_PILOT_READINESS_REEXEC"] = "1"
+    os.execve(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]], env)
+
 DB_PATH = API_DIR / "beaverview.db"
 ENV_PATH = API_DIR / ".env"
 HARDWARE_SAMPLE_PATH = ROOT / "docs" / "examples" / "hardware_ips.sample.csv"
@@ -206,7 +217,7 @@ def check_api_contracts() -> None:
         fail("API contract validator is missing")
         return
 
-    result = run([str(API_CONTRACTS_SCRIPT)], cwd=ROOT)
+    result = run([sys.executable, str(API_CONTRACTS_SCRIPT)], cwd=ROOT)
     if result.returncode == 0:
         pass_("offline API contracts validate")
     else:
@@ -218,7 +229,7 @@ def check_env_template() -> None:
         fail("environment template validator is missing")
         return
 
-    result = run([str(ENV_TEMPLATE_SCRIPT)], cwd=ROOT)
+    result = run([sys.executable, str(ENV_TEMPLATE_SCRIPT)], cwd=ROOT)
     if result.returncode == 0:
         pass_("environment template matches runtime env usage")
     else:

@@ -109,7 +109,7 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data
 
 **Pilot readiness preflight before deployment work:**
 ```
-cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_pilot_readiness.py
 ```
 
 **Offline API contract check after route/auth/connector changes:**
@@ -119,7 +119,7 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_api_
 
 **Env template consistency after runtime env changes:**
 ```
-cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_env_template.py
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_env_template.py
 ```
 
 **Initialize local `.env` with generated `PROXY_SECRET`:**
@@ -334,5 +334,5 @@ Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scrip
 Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
 Hardware IP CSV check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
 Deployment asset check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_deployment_assets.sh
-Pilot readiness: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
+Pilot readiness: cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_pilot_readiness.py
 ```

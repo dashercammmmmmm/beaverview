@@ -58,7 +58,7 @@ It dry-runs the committed sample and dry-runs the real ignored CSV if present, w
 Run this for a broader local readiness snapshot before deployment work:
 
 ```bash
-scripts/check_pilot_readiness.py
+python3 scripts/check_pilot_readiness.py
 ```
 
 It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, offline API contracts, env-template consistency, and reports pending external prerequisites without printing secret values.
@@ -74,7 +74,7 @@ It exercises the FastAPI app in-process with deterministic mock connector settin
 Run this after changing runtime environment variables in `api/main.py`, connector modules, or readiness checks:
 
 ```bash
-scripts/check_env_template.py
+python3 scripts/check_env_template.py
 ```
 
 It verifies `api/.env.example` documents the runtime env vars used by code/readiness, has no duplicate keys, and has no stale documented keys.
