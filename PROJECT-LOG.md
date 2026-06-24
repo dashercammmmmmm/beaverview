@@ -6,13 +6,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 - Added `--list-candidates` to `scripts/check_first_live_room_preflight.py`.
 - Added `--connector <name>` filtering for candidate lists so OSU can shortlist rooms for a chosen first connector.
+- Added `--hardware-csv <path>` preview support so device-backed connector candidates can be checked from a validated secure Hardware IP CSV before import.
 - The candidate list reports sanitized room IDs, building/room labels, status, health, eligible connector hints, and Hardware IP device types without printing raw IP addresses.
 - Extended `scripts/check_first_live_room_preflight_cases.py` to verify candidate-list JSON behavior and no raw IP leakage against an isolated temp DB.
 - Updated the pilot input checklist and first live-room validation runbook to run the candidate shortlist before setting `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR`.
 
 ### Next
 
-- After the secure Hardware IP export is loaded, use `scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json` to choose the first non-critical target with OSU.
+- After the secure Hardware IP export is validated, use `scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv --json` to choose the first non-critical target with OSU before import.
 
 ## 2026-06-24 - Deployment playbook validation
 

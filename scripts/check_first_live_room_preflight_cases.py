@@ -147,6 +147,22 @@ def expect_candidate_list(db_path: Path) -> None:
     expect(payload.get("status") == "fail", f"invalid connector candidate filter should fail: {payload}")
 
 
+def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
+    csv_path.write_text(
+        "room_id,device_type,ip_address,notes\n"
+        f"corvallis-kad-101,ptz,{RAW_IP_SENTINEL},preview PTZ\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(csv_path))
+    expect(code == 0, f"hardware CSV candidate preview returned exit {code}: {payload}")
+    expect(payload.get("hardware_source") == "csv", f"hardware CSV preview did not identify CSV source: {payload}")
+    candidates = payload.get("candidates")
+    expect(isinstance(candidates, list) and len(candidates) == 1, f"hardware CSV preview returned unexpected candidates: {payload}")
+    first = candidates[0]
+    expect(first.get("room_id") == "corvallis-kad-101", f"hardware CSV preview returned wrong room: {first}")
+    expect("ptz" in first.get("eligible_connectors", []), "hardware CSV preview did not include ptz hint")
+    expect("ptz" in first.get("hardware_ip_device_types", []), "hardware CSV preview did not include sanitized ptz device type")
+
+
 def main() -> int:
     if not SCRIPT.exists():
         fail("first live-room preflight script is missing")
@@ -180,6 +196,7 @@ def main() -> int:
             env_extra={"SC_BASE_URL": "https://screenconnect.example.test"},
         )
         expect_candidate_list(db_path)
+        expect_hardware_csv_preview(db_path, Path(tmp) / "hardware_ips.preview.csv")
 
         duplicate_db = Path(tmp) / "beaverview.duplicate.db"
         create_db(duplicate_db, duplicate=True)

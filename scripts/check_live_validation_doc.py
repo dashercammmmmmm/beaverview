@@ -22,6 +22,7 @@ REQUIRED_TERMS = (
     "scripts/check_first_live_room_preflight.py",
     "--list-candidates",
     "--connector",
+    "--hardware-csv",
     "import_device_ips.py",
     "XPanel",
     "25Live",

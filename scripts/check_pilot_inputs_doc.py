@@ -29,6 +29,7 @@ REQUIRED_TERMS = (
     "scripts/check_first_live_room_preflight.py",
     "--list-candidates",
     "--connector",
+    "--hardware-csv",
     "scripts/check_first_live_room_preflight_cases.py",
     "scripts/check_readiness_actions.py",
     "crestron_poll",

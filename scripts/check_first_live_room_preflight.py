@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import sqlite3
@@ -139,6 +140,26 @@ def device_ip_counts(con: sqlite3.Connection) -> dict[str, dict[str, int]]:
     return counts
 
 
+def hardware_csv_device_counts(path: Path) -> dict[str, dict[str, int]]:
+    if not path.exists():
+        raise ValueError(f"hardware CSV does not exist: {path}")
+    counts: dict[str, dict[str, int]] = {}
+    with path.open(newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = set(reader.fieldnames or [])
+        missing = {"room_id", "device_type"} - fieldnames
+        if missing:
+            raise ValueError("hardware CSV is missing required columns: " + ", ".join(sorted(missing)))
+        for row in reader:
+            room_id = (row.get("room_id") or "").strip().lower()
+            device_type = (row.get("device_type") or "").strip().lower()
+            if not room_id or not device_type:
+                continue
+            room_counts = counts.setdefault(room_id, {})
+            room_counts[device_type] = room_counts.get(device_type, 0) + 1
+    return counts
+
+
 def connector_hints(room: sqlite3.Row, counts: dict[str, int]) -> list[str]:
     connectors = ["25live", "servicenow", "sharepoint"]
     if bool(room["screenconnect"]):
@@ -166,7 +187,13 @@ def is_non_critical_candidate(room: sqlite3.Row) -> bool:
     return True
 
 
-def list_candidates(*, as_json: bool = False, limit: int = 12, connector: str = "") -> int:
+def list_candidates(
+    *,
+    as_json: bool = False,
+    limit: int = 12,
+    connector: str = "",
+    hardware_csv: str = "",
+) -> int:
     if not DB_PATH.exists():
         return emit("fail", "api/beaverview.db is missing; run scripts/check_data_migration.sh", as_json=as_json)
     connector_filter = normalize_connector(connector) if connector else ""
@@ -181,7 +208,15 @@ def list_candidates(*, as_json: bool = False, limit: int = 12, connector: str = 
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
     try:
-        counts_by_room = device_ip_counts(con)
+        if hardware_csv:
+            try:
+                counts_by_room = hardware_csv_device_counts(Path(hardware_csv))
+            except ValueError as exc:
+                return emit("fail", str(exc), as_json=as_json)
+            hardware_source = "csv"
+        else:
+            counts_by_room = device_ip_counts(con)
+            hardware_source = "sqlite"
         rows = con.execute(
             """
             SELECT
@@ -229,6 +264,7 @@ def list_candidates(*, as_json: bool = False, limit: int = 12, connector: str = 
         "status": "pass",
         "message": "first live-room candidates listed",
         "connector_filter": connector_filter or None,
+        "hardware_source": hardware_source,
         "count": len(candidates),
         "candidates": candidates,
     }
@@ -266,11 +302,17 @@ def main() -> int:
     parser.add_argument("--connector", help="first connector to validate, e.g. xpanel, ptz, 25live")
     parser.add_argument("--list-candidates", action="store_true", help="list non-critical candidate rooms without printing raw IPs")
     parser.add_argument("--limit", type=int, default=12, help="maximum candidates to list with --list-candidates")
+    parser.add_argument("--hardware-csv", help="preview candidate device-type matches from a Hardware IP CSV without printing raw IPs")
     parser.add_argument("--json", action="store_true", help="print machine-readable result")
     args = parser.parse_args()
 
     if args.list_candidates:
-        return list_candidates(as_json=args.json, limit=max(args.limit, 1), connector=args.connector or "")
+        return list_candidates(
+            as_json=args.json,
+            limit=max(args.limit, 1),
+            connector=args.connector or "",
+            hardware_csv=args.hardware_csv or "",
+        )
 
     env = parse_env(ENV_PATH)
     room_id = (args.room_id or env.get("FIRST_LIVE_ROOM_ID", "")).strip().lower()
