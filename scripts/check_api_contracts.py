@@ -241,6 +241,33 @@ def main() -> int:
         proxy_data = json_response(proxy, "device proxy missing-IP contract")
         expect("No xpanel IP on record" in str(proxy_data.get("detail", "")), "device proxy missing-IP detail changed")
 
+        wattbox_missing_creds = client.get(f"/api/rooms/{room_id}/wattbox/outlets")
+        expect(
+            wattbox_missing_creds.status_code == 400,
+            f"WattBox missing-credentials contract returned {wattbox_missing_creds.status_code}",
+        )
+        expect(
+            "WattBox OvrC credentials are not configured" in str(json_response(wattbox_missing_creds, "WattBox missing credentials").get("detail", "")),
+            "WattBox missing-credentials detail changed",
+        )
+
+        wattbox_bad_outlet = client.post(f"/api/rooms/{room_id}/wattbox/outlets/0/cycle")
+        expect(wattbox_bad_outlet.status_code == 400, f"WattBox bad outlet returned {wattbox_bad_outlet.status_code}")
+        expect(
+            "outlet_num must be between 1 and 48" in str(json_response(wattbox_bad_outlet, "WattBox bad outlet").get("detail", "")),
+            "WattBox bad outlet detail changed",
+        )
+
+        wattbox_cycle_missing_creds = client.post(f"/api/rooms/{room_id}/wattbox/outlets/1/cycle")
+        expect(
+            wattbox_cycle_missing_creds.status_code == 400,
+            f"WattBox cycle missing-credentials contract returned {wattbox_cycle_missing_creds.status_code}",
+        )
+        expect(
+            "WattBox OvrC credentials are not configured" in str(json_response(wattbox_cycle_missing_creds, "WattBox cycle missing credentials").get("detail", "")),
+            "WattBox cycle missing-credentials detail changed",
+        )
+
         bad_ptz = client.post(f"/api/rooms/{room_id}/ptz/not-a-command")
         expect(bad_ptz.status_code == 400, f"bad PTZ command returned {bad_ptz.status_code}")
         expect("Unknown PTZ command" in str(json_response(bad_ptz, "bad PTZ command").get("detail", "")), "bad PTZ command detail changed")

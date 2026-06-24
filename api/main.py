@@ -342,6 +342,33 @@ def _proxy_auth(tool: str, config: dict):
     return (config["username"], config["password"])
 
 
+def _require_wattbox_ovrc_config() -> tuple[str, str]:
+    if not (_WATTBOX_URL and _WATTBOX_KEY):
+        raise HTTPException(
+            status_code=400,
+            detail="WattBox OvrC credentials are not configured in api/.env",
+        )
+    return _WATTBOX_URL.rstrip("/"), _WATTBOX_KEY
+
+
+def _insert_audit_event(
+    room_id: str,
+    action_type: str,
+    target: str,
+    outcome: str,
+    notes: str,
+    user: str = "technician",
+) -> None:
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO audit_log (ts, user, room_id, action_type, target, outcome, notes) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (_now(), user, room_id, action_type, target, outcome, notes),
+    )
+    conn.commit()
+    conn.close()
+
+
 def _credential_presence() -> dict[str, bool]:
     """Return connector credential presence without exposing secret values."""
     return {
@@ -920,6 +947,81 @@ async def device_proxy(room_id: str, tool: str, path: str, request: Request):
     )
 
 
+@app.get("/api/rooms/{room_id}/wattbox/outlets")
+async def wattbox_outlets(room_id: str):
+    """Fetch WattBox outlet status through the configured OvrC API."""
+    base_url, api_key = _require_wattbox_ovrc_config()
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx is not installed in the API environment")
+
+    safe_room_id = quote(room_id, safe="-_.")
+    url = f"{base_url}/devices/{safe_room_id}/outlets"
+    try:
+        async with httpx.AsyncClient(follow_redirects=False, timeout=10.0) as client:
+            upstream = await client.get(url, headers={"Authorization": f"Bearer {api_key}"})
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="WattBox OvrC outlet status timed out")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"WattBox OvrC outlet status failed: {str(exc)[:120]}")
+
+    if upstream.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail=f"WattBox OvrC outlet status returned HTTP {upstream.status_code}",
+        )
+    try:
+        outlets = upstream.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="WattBox OvrC outlet status did not return JSON")
+
+    return {"room_id": room_id, "source": "ovrc", "outlets": outlets}
+
+
+@app.post("/api/rooms/{room_id}/wattbox/outlets/{outlet_num}/cycle")
+async def wattbox_cycle(room_id: str, outlet_num: int, request: Request):
+    """Cycle one WattBox outlet through the configured OvrC API."""
+    if outlet_num < 1 or outlet_num > 48:
+        raise HTTPException(status_code=400, detail="outlet_num must be between 1 and 48")
+
+    base_url, api_key = _require_wattbox_ovrc_config()
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx is not installed in the API environment")
+
+    safe_room_id = quote(room_id, safe="-.")
+    url = f"{base_url}/devices/{safe_room_id}/outlets/{outlet_num}/cycle"
+    user = request.headers.get("X-User", "technician")
+    try:
+        async with httpx.AsyncClient(follow_redirects=False, timeout=15.0) as client:
+            upstream = await client.post(url, headers={"Authorization": f"Bearer {api_key}"})
+    except httpx.TimeoutException:
+        _insert_audit_event(room_id, "wattbox_outlet_cycle", str(outlet_num), "error", "timeout", user)
+        raise HTTPException(status_code=504, detail="WattBox OvrC outlet cycle timed out")
+    except httpx.RequestError as exc:
+        _insert_audit_event(room_id, "wattbox_outlet_cycle", str(outlet_num), "error", str(exc)[:120], user)
+        raise HTTPException(status_code=502, detail=f"WattBox OvrC outlet cycle failed: {str(exc)[:120]}")
+
+    outcome = "success" if upstream.status_code < 400 else "error"
+    _insert_audit_event(
+        room_id,
+        "wattbox_outlet_cycle",
+        str(outlet_num),
+        outcome,
+        f"HTTP {upstream.status_code}",
+        user,
+    )
+    if upstream.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail=f"WattBox OvrC outlet cycle returned HTTP {upstream.status_code}",
+        )
+
+    return {"status": "ok", "room_id": room_id, "outlet": outlet_num, "http_status": upstream.status_code}
+
+
 @app.post("/api/rooms/{room_id}/ptz/{command}")
 async def ptz_command(room_id: str, command: str, request: Request):
     """Send an allowlisted PTZOptics HTTP CGI command through the backend."""
@@ -952,14 +1054,7 @@ async def ptz_command(room_id: str, command: str, request: Request):
 
     outcome = "success" if upstream.status_code < 500 else "error"
     user = request.headers.get("X-User", "technician")
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO audit_log (ts, user, room_id, action_type, target, outcome, notes) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (_now(), user, room_id, "ptz_command", normalized, outcome, f"HTTP {upstream.status_code}"),
-    )
-    conn.commit()
-    conn.close()
+    _insert_audit_event(room_id, "ptz_command", normalized, outcome, f"HTTP {upstream.status_code}", user)
 
     return {
         "status": "ok" if outcome == "success" else "error",

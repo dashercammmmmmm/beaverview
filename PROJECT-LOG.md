@@ -239,3 +239,15 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - After real PTZ credentials and camera IPs are available, test one room with `home` and a preset command before wiring dashboard controls to the endpoint.
+
+## 2026-06-24 - WattBox OvrC outlet endpoints
+
+- Added `GET /api/rooms/{room_id}/wattbox/outlets` for OvrC-backed outlet status.
+- Added `POST /api/rooms/{room_id}/wattbox/outlets/{outlet_num}/cycle` with outlet-number validation and audit logging.
+- The endpoints inject `WATTBOX_OVRC_API_KEY` server-side and keep the key out of browser responses.
+- Expanded offline API contracts to cover missing OvrC config and invalid outlet-cycle input without live WattBox access.
+- Updated connector docs to describe the implemented WattBox endpoints and validation path.
+
+### Next
+
+- After real OvrC credentials are available, test one low-risk room outlet status call before enabling cycle actions in technician workflows.

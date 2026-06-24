@@ -249,6 +249,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Supported proxy tools: `xpanel`, `wattbox`, `ptz`.
 - Device IPs are looked up server-side from `device_ips`; browser responses never include the raw IP.
 - Credentials are read from `.env`: `CRESTRON_PROXY_*`, `WATTBOX_DIRECT_*`, `PTZ_PROXY_*`.
+- WattBox OvrC outlet status/cycle endpoints use `WATTBOX_OVRC_*` server-side and log outlet-cycle attempts.
 - PTZ camera commands use `/api/rooms/{room_id}/ptz/{command}` with an allowlist, backend-only credentials, proxyable-IP validation, and audit logging.
 - Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
 - `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
@@ -278,7 +279,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
-- It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, PTZ command failure contracts, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+- It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
 
 ### Environment template consistency
 - `scripts/check_env_template.py` verifies `api/.env.example` matches runtime env vars used by `api/main.py`, connector modules, and readiness checks.

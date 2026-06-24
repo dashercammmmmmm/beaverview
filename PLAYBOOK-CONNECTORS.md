@@ -344,30 +344,22 @@ ScreenConnect machines must be named in the format: `{BUILDINGCODE}-{ROOM}-PC`
    ```
 2. Restart the backend. The **WattBox/OvrC** badge turns green.
 
-**What to implement in main.py** — add outlet endpoints:
-```python
-@app.get("/api/rooms/{room_id}/wattbox/outlets")
-def wattbox_outlets(room_id: str):
-    import httpx
-    resp = httpx.get(
-        f"{_WATTBOX_URL}/devices/{room_id}/outlets",
-        headers={"Authorization": f"Bearer {_WATTBOX_KEY}"},
-        timeout=10,
-    )
-    resp.raise_for_status()
-    return resp.json()
+BeaverView includes backend OvrC outlet endpoints:
 
-@app.post("/api/rooms/{room_id}/wattbox/outlets/{outlet_num}/cycle")
-def wattbox_cycle(room_id: str, outlet_num: int):
-    import httpx
-    resp = httpx.post(
-        f"{_WATTBOX_URL}/devices/{room_id}/outlets/{outlet_num}/cycle",
-        headers={"Authorization": f"Bearer {_WATTBOX_KEY}"},
-        timeout=15,
-    )
-    resp.raise_for_status()
-    return {"status": "ok", "outlet": outlet_num}
+```http
+GET  /api/rooms/{room_id}/wattbox/outlets
+POST /api/rooms/{room_id}/wattbox/outlets/{outlet_num}/cycle
 ```
+
+The endpoints inject the OvrC API key server-side, never return the API key, and log outlet-cycle attempts in the audit log. `outlet_num` must be between 1 and 48.
+
+Validate offline behavior:
+
+```bash
+scripts/check_api_contracts.py
+```
+
+The contract covers missing OvrC credentials and invalid outlet numbers without requiring live WattBox/OvrC access.
 
 ### Option B — Direct device access (no cloud)
 
