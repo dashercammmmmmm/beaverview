@@ -102,6 +102,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && api/start.sh
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 ```
 
+**Data migration check after data/schema changes:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
+```
+
 ### Step 3 — Open the site
 Open **Chrome** or **Safari** and go to: `http://localhost:8000`
 
@@ -154,6 +159,13 @@ incidents, connector_config, user_roles, device_ips
 Migration script (`migrate_data.py`) seeds campuses/buildings/rooms from `data.js`.
 Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
+2026-06-24 verification: `scripts/check_data_migration.sh` seeds the local ignored DB successfully from `dashboard/data.js`:
+- campuses: 3
+- buildings: 18
+- rooms: 20
+- devices: 22
+- connector modes: all normalized to `mock`/`live`
+
 ---
 
 ## What was just changed (latest sessions)
@@ -161,7 +173,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Git repository initialized
 - `git init` + initial commit (ec60a6f) — all project files committed
 - GitHub remote exists at `https://github.com/dashercammmmmmm/beaverview`
-- Current local repo is six commits ahead of GitHub `origin/main`: five BeaverView v2 commits plus this stabilization commit
+- Current local repo is seven commits ahead of GitHub `origin/main`: five BeaverView v2 commits plus source-of-truth stabilization and data-migration repair
 - Remaining step: push local v2 to GitHub after smoke checks and approval
 
 ### Python venv required (macOS)
@@ -175,6 +187,15 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `a51006e` Map crash fix when search/filters match zero buildings
 - `c1f98ea` `/api/me` unsafe session access fix
 - `9a4cb4f` Relaxed CSP for MapLibre and OSM tiles
+- `82fbfa3` Source-of-truth handoff and smoke checks
+- Data migration repair: `fix: repair dashboard data migration`
+
+### Data migration repaired
+- `migrate_data.py` now handles the JavaScript object literal shape in `dashboard/data.js` instead of assuming strict JSON.
+- It calls `init_db()` before seeding, so it works against a fresh local DB.
+- It preserves either `processor` or legacy `crestron` room fields into `rooms.processor`.
+- It normalizes connector config values to valid admin modes: `mock` or `live`.
+- `scripts/check_data_migration.sh` reruns the migration and verifies inventory counts.
 
 ### Admin link in dashboard header
 - Orange-tinted "Admin" button appears in the top-right header
@@ -201,11 +222,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### 🔴 Blocking — must do before production
 | Item | Notes |
 |---|---|
-| **Push local v2 to GitHub** | GitHub remote exists. Local `main` is six commits ahead of `origin/main`; push after smoke checks and approval. |
+| **Push local v2 to GitHub** | GitHub remote exists. Local `main` is seven commits ahead of `origin/main`; push after smoke checks and approval. |
 | **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
 | **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, group object IDs |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
-| **Data migration** | `python3 migrate_data.py` not yet run — SQLite rooms table is empty (dev uses `data.js` mock) |
+| **Real inventory import** | `dashboard/data.js` now migrates cleanly into SQLite. Secure Hardware IP import from `hardware_ips.csv` still requires the real spreadsheet. |
 
 ### 🟠 Important — needed soon
 | Item | Notes |
@@ -237,4 +258,5 @@ Key files: api/main.py, dashboard/app.js, dashboard/index.html, dashboard/styles
 Project root: /Users/benjaminfranklinautomation/projects/beaverview/
 Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
 Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
+Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
 ```

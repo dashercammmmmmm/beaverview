@@ -1,30 +1,42 @@
 """
 One-time migration: imports data.js room inventory into SQLite.
-Run once from the api/ folder:  python3 migrate_data.py
-Safe to re-run — clears existing rows first (does NOT touch audit_log or user_roles).
+Run from the api/ folder:  python3 migrate_data.py
+Safe to re-run — clears existing inventory rows first.
+Does NOT touch audit_log, user_roles, or device_ips.
 """
-import sqlite3, json, re, os
+import json
+import os
+import re
+import sqlite3
 
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'beaverview.db')
 DATA_PATH = os.path.join(os.path.dirname(__file__), '../dashboard/data.js')
 
 
 def extract_json(js_text):
-    match = re.search(r'window\.dashboardData\s*=\s*(\{.*\})', js_text, re.DOTALL)
+    match = re.search(r'window\.dashboardData\s*=\s*(\{.*\})\s*;?\s*$', js_text, re.DOTALL)
     if not match:
         raise ValueError('Could not find window.dashboardData in data.js')
     json_str = match.group(1)
-    # Replace JS booleans/null so json.loads accepts the string
-    json_str = re.sub(r'\btrue\b',  'true',  json_str)
-    json_str = re.sub(r'\bfalse\b', 'false', json_str)
-    json_str = re.sub(r'\bnull\b',  'null',  json_str)
+    # data.js is a JavaScript object literal. Convert its simple unquoted keys
+    # to JSON keys before parsing with the standard library.
+    json_str = re.sub(r'([,{]\s*)([A-Za-z_$][A-Za-z0-9_$]*)\s*:', r'\1"\2":', json_str)
     json_str = re.sub(r',\s*([}\]])', r'\1', json_str)  # strip trailing commas
     return json.loads(json_str)
+
+
+def normalize_connector_mode(value):
+    if isinstance(value, dict):
+        value = value.get('mode', 'mock')
+    return value if value in ('live', 'mock') else 'mock'
 
 
 def migrate():
     with open(DATA_PATH) as f:
         data = extract_json(f.read())
+
+    from main import init_db
+    init_db()
 
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
@@ -43,9 +55,7 @@ def migrate():
         # Seed connector_config from campus.connectors (or default to mock)
         for conn_name in ['crestron', 'live25', 'screenconnect', 'wattbox',
                           'servicenow', 'sharepoint', 'ptz']:
-            mode = campus.get('connectors', {}).get(conn_name, 'mock')
-            if isinstance(mode, dict):
-                mode = mode.get('mode', 'mock')
+            mode = normalize_connector_mode(campus.get('connectors', {}).get(conn_name, 'mock'))
             cur.execute(
                 'INSERT INTO connector_config(campus_id,connector_name,mode) VALUES(?,?,?)',
                 (cid, conn_name, mode)
@@ -71,7 +81,7 @@ def migrate():
                      room.get('status', 'offline'),
                      room.get('health', 0),
                      room.get('activeEvent', ''),
-                     room.get('processor', 'mock'),    # renamed from fusion
+                     room.get('processor', room.get('crestron', 'mock')),
                      room.get('display', 'unknown'),
                      int(room.get('screenconnect', False)),
                      int(room.get('wattbox', False)),

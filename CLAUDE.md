@@ -37,6 +37,14 @@ scripts/smoke_check.sh
 
 It compiles active Python modules, verifies required imports, starts uvicorn on `127.0.0.1:8017`, then checks `/api/health`, `/api/me`, ServiceNow mock fallback, and chat mock fallback.
 
+Run this after changing `dashboard/data.js`, `api/migrate_data.py`, or DB schema:
+
+```bash
+scripts/check_data_migration.sh
+```
+
+It rebuilds the ignored local SQLite inventory from `dashboard/data.js` and verifies non-empty campus, building, room, and device counts plus valid connector modes.
+
 There is no build step, bundler, or test suite. Frontend changes are visible immediately — `index.html` has a built-in live-reload poller (HEAD requests every 1.5s, localhost only).
 
 ## Architecture

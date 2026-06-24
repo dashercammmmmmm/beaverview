@@ -20,3 +20,16 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 - Run `scripts/smoke_check.sh` before pushing or starting feature work.
 - Push the five local v2 commits plus this stabilization commit to GitHub once Cam approves syncing `main`.
+
+## 2026-06-24 - Data migration repair
+
+- Found `api/beaverview.db` had the expected tables but zero seeded campuses, buildings, rooms, and devices.
+- Verified `api/migrate_data.py` failed because `dashboard/data.js` is a JavaScript object literal with unquoted keys, not strict JSON.
+- Updated `api/migrate_data.py` to parse the current `data.js` shape, initialize the schema before seeding, preserve legacy `crestron` fields as `rooms.processor`, and normalize connector modes to `mock`/`live`.
+- Added `scripts/check_data_migration.sh` to rerun migration and verify non-empty inventory counts plus valid connector modes.
+- Ran the migration successfully. Local ignored SQLite counts: 3 campuses, 18 buildings, 20 rooms, 22 devices.
+
+### Next
+
+- Import real device IP data with `api/import_device_ips.py` after the secure `hardware_ips.csv` is available locally.
+- Replace the `/api/rooms/{room_id}/proxy/{tool}/{path}` 501 placeholder with Hardware IP lookup and safe proxying for the first device class.
