@@ -430,37 +430,23 @@ For WattBoxes on the local network without OvrC (uses the same `device_ips` tabl
    PTZ_PROXY_USERNAME=admin
    PTZ_PROXY_PASSWORD=your-ptz-admin-password
    ```
-2. Implement PTZ command endpoints in `main.py`:
-   ```python
-   @app.post("/api/rooms/{room_id}/ptz/{command}")
-   async def ptz_command(room_id: str, command: str):
-       """PTZOptics HTTP CGI API — commands via GET requests."""
-       device = get_db().execute(
-           "SELECT ip_address FROM device_ips WHERE room_id=? AND device_type='ptz'",
-           (room_id,)).fetchone()
-       if not device:
-           raise HTTPException(404, f"No PTZ camera IP on record for {room_id}")
-       cgi_map = {
-           "up":       "ptzctrl.cgi?ptzcmd&up&5&5",
-           "down":     "ptzctrl.cgi?ptzcmd&down&5&5",
-           "left":     "ptzctrl.cgi?ptzcmd&left&5&5",
-           "right":    "ptzctrl.cgi?ptzcmd&right&5&5",
-           "home":     "ptzctrl.cgi?ptzcmd&home",
-           "preset_1": "ptzctrl.cgi?ptzcmd&poscall&1",
-           "preset_2": "ptzctrl.cgi?ptzcmd&poscall&2",
-           "preset_3": "ptzctrl.cgi?ptzcmd&poscall&3",
-       }
-       url = cgi_map.get(command)
-       if not url:
-           raise HTTPException(400, f"Unknown PTZ command: {command}")
-       async with httpx.AsyncClient(verify=False) as client:
-           await client.get(
-               f"http://{device[0]}/{url}",
-               auth=(_PTZ_USER, _PTZ_PASS),
-               timeout=5,
-           )
-       return {"status": "ok", "command": command}
+2. BeaverView includes the PTZ command endpoint:
+
+   ```http
+   POST /api/rooms/{room_id}/ptz/{command}
    ```
+
+   Supported commands: `up`, `down`, `left`, `right`, `home`, `stop`, `zoom_in`, `zoom_out`, `preset_1`, `preset_2`, `preset_3`, `preset_4`.
+
+   The endpoint looks up the camera IP from `device_ips`, validates that it is proxyable, injects `PTZ_PROXY_USERNAME`/`PTZ_PROXY_PASSWORD` server-side, sends the PTZOptics HTTP CGI request, and writes an audit-log row. Responses never include the raw camera IP or credentials.
+
+3. Validate offline behavior:
+
+   ```bash
+   scripts/check_api_contracts.py
+   ```
+
+   The contract covers unknown commands, missing credentials, and missing camera IP behavior without requiring a live PTZ camera.
 
 ---
 

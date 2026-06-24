@@ -134,6 +134,8 @@ def main() -> int:
     }
 
     connector_snapshot = connector_mode_snapshot()
+    original_ptz_user = api._PTZ_USER
+    original_ptz_pass = api._PTZ_PASS
     client = TestClient(api.app, client=("127.0.0.1", 50000))
     try:
         health = client.get("/api/health")
@@ -239,6 +241,25 @@ def main() -> int:
         proxy_data = json_response(proxy, "device proxy missing-IP contract")
         expect("No xpanel IP on record" in str(proxy_data.get("detail", "")), "device proxy missing-IP detail changed")
 
+        bad_ptz = client.post(f"/api/rooms/{room_id}/ptz/not-a-command")
+        expect(bad_ptz.status_code == 400, f"bad PTZ command returned {bad_ptz.status_code}")
+        expect("Unknown PTZ command" in str(json_response(bad_ptz, "bad PTZ command").get("detail", "")), "bad PTZ command detail changed")
+
+        ptz_missing_creds = client.post(f"/api/rooms/{room_id}/ptz/home")
+        expect(ptz_missing_creds.status_code == 400, f"PTZ missing-credentials contract returned {ptz_missing_creds.status_code}")
+        expect(
+            "ptz proxy credentials are not configured" in str(json_response(ptz_missing_creds, "PTZ missing credentials").get("detail", "")),
+            "PTZ missing-credentials detail changed",
+        )
+
+        api._PTZ_USER = "contract-user"
+        api._PTZ_PASS = "contract-pass"
+        ptz_missing_ip = client.post("/api/rooms/__contract-no-ip__/ptz/home")
+        expect(ptz_missing_ip.status_code == 404, f"PTZ missing-IP contract returned {ptz_missing_ip.status_code}")
+        expect("No ptz IP on record" in str(json_response(ptz_missing_ip, "PTZ missing IP").get("detail", "")), "PTZ missing-IP detail changed")
+        api._PTZ_USER = original_ptz_user
+        api._PTZ_PASS = original_ptz_pass
+
         sn = client.get("/api/connectors/servicenow/test")
         expect(sn.status_code == 200, f"ServiceNow connector test returned {sn.status_code}")
         expect(json_response(sn, "ServiceNow connector test").get("status") == "mock", "ServiceNow test is not mock")
@@ -257,6 +278,8 @@ def main() -> int:
         expect(isinstance(incidents_data.get("incidents"), list), "room incidents did not return a list")
     finally:
         client.close()
+        api._PTZ_USER = original_ptz_user
+        api._PTZ_PASS = original_ptz_pass
         restore_connector_modes(connector_snapshot)
         api.app.dependency_overrides.clear()
 

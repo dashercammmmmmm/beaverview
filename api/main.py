@@ -284,6 +284,22 @@ def _device_proxy_config(tool: str) -> dict:
     return configs[tool]
 
 
+PTZ_COMMAND_PATHS = {
+    "up": "ptzctrl.cgi?ptzcmd&up&5&5",
+    "down": "ptzctrl.cgi?ptzcmd&down&5&5",
+    "left": "ptzctrl.cgi?ptzcmd&left&5&5",
+    "right": "ptzctrl.cgi?ptzcmd&right&5&5",
+    "home": "ptzctrl.cgi?ptzcmd&home",
+    "stop": "ptzctrl.cgi?ptzcmd&ptzstop",
+    "zoom_in": "ptzctrl.cgi?ptzcmd&zoomin&5",
+    "zoom_out": "ptzctrl.cgi?ptzcmd&zoomout&5",
+    "preset_1": "ptzctrl.cgi?ptzcmd&poscall&1",
+    "preset_2": "ptzctrl.cgi?ptzcmd&poscall&2",
+    "preset_3": "ptzctrl.cgi?ptzcmd&poscall&3",
+    "preset_4": "ptzctrl.cgi?ptzcmd&poscall&4",
+}
+
+
 def _lookup_device_ip(room_id: str, device_type: str) -> str:
     con = get_db()
     row = con.execute(
@@ -902,6 +918,55 @@ async def device_proxy(room_id: str, tool: str, path: str, request: Request):
         media_type=content_type,
         headers=response_headers,
     )
+
+
+@app.post("/api/rooms/{room_id}/ptz/{command}")
+async def ptz_command(room_id: str, command: str, request: Request):
+    """Send an allowlisted PTZOptics HTTP CGI command through the backend."""
+    normalized = command.strip().lower().replace("-", "_")
+    command_path = PTZ_COMMAND_PATHS.get(normalized)
+    if not command_path:
+        allowed = ", ".join(sorted(PTZ_COMMAND_PATHS))
+        raise HTTPException(status_code=400, detail=f"Unknown PTZ command '{command}'. Allowed: {allowed}")
+
+    config = _device_proxy_config("ptz")
+    auth = _proxy_auth("ptz", config)
+    device_ip = _validate_proxy_ip(_lookup_device_ip(room_id, config["device_type"]))
+    scheme = config["scheme"].lower()
+    if scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Invalid PTZ proxy scheme")
+
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx is not installed in the API environment")
+
+    target_url = f"{scheme}://{device_ip}/{command_path}"
+    try:
+        async with httpx.AsyncClient(verify=False, follow_redirects=False, timeout=5.0) as client:
+            upstream = await client.get(target_url, auth=auth)
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="PTZ command timed out")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"PTZ command failed: {str(exc)[:120]}")
+
+    outcome = "success" if upstream.status_code < 500 else "error"
+    user = request.headers.get("X-User", "technician")
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO audit_log (ts, user, room_id, action_type, target, outcome, notes) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (_now(), user, room_id, "ptz_command", normalized, outcome, f"HTTP {upstream.status_code}"),
+    )
+    conn.commit()
+    conn.close()
+
+    return {
+        "status": "ok" if outcome == "success" else "error",
+        "room_id": room_id,
+        "command": normalized,
+        "http_status": upstream.status_code,
+    }
 
 
 @app.post("/api/rooms/{room_id}/action")

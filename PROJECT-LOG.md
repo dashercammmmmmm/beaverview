@@ -228,3 +228,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - When real credentials and hardware IPs are available, use the same admin connector test endpoint to validate one live connector at a time.
+
+## 2026-06-24 - PTZ command endpoint scaffold
+
+- Added `POST /api/rooms/{room_id}/ptz/{command}` for allowlisted PTZOptics CGI commands.
+- The endpoint uses existing backend-only `device_ips` lookup, PTZ credentials, proxyable-IP validation, and audit logging.
+- Expanded offline API contracts to cover unknown PTZ commands, missing PTZ credentials, and missing PTZ camera IP behavior without a live camera.
+- Updated connector docs to describe the implemented PTZ endpoint and its validation path.
+
+### Next
+
+- After real PTZ credentials and camera IPs are available, test one room with `home` and a preset command before wiring dashboard controls to the endpoint.

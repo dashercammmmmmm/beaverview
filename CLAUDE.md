@@ -46,6 +46,7 @@ scripts/check_data_migration.sh
 It rebuilds the ignored local SQLite inventory from `dashboard/data.js` and verifies non-empty campus, building, room, and device counts plus valid connector modes.
 
 The device web proxy at `/api/rooms/{room_id}/proxy/{tool}/{path}` performs server-side `device_ips` lookup for `xpanel`, `wattbox`, and `ptz`, injects backend-only credentials, and only proxies private/link-local IPs unless `DEVICE_PROXY_ALLOW_PUBLIC=true` is explicitly set after review. It supports GET only.
+PTZ camera commands also have an allowlisted backend endpoint at `/api/rooms/{room_id}/ptz/{command}`; it uses the same backend-only IP/credential path and logs each attempted command.
 
 Run this after changing `api/import_device_ips.py`, `docs/examples/hardware_ips.sample.csv`, or the secure local `api/hardware_ips.csv`:
 
@@ -76,7 +77,7 @@ Run this after changing API route, auth, connector fallback, or proxy behavior:
 scripts/check_api_contracts.py
 ```
 
-It exercises the FastAPI app in-process with deterministic mock connector settings: health, localhost dev auth, admin inventory, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, ServiceNow/chat fallbacks, `/api/chat`, and room incidents.
+It exercises the FastAPI app in-process with deterministic mock connector settings: health, localhost dev auth, admin inventory, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, PTZ command failure contracts, ServiceNow/chat fallbacks, `/api/chat`, and room incidents.
 
 Run this after changing runtime environment variables in `api/main.py`, connector modules, or readiness checks:
 
