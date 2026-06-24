@@ -237,6 +237,8 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.
 - `scripts/init_local_env.sh` creates ignored `api/.env` and sets `PROXY_SECRET` without printing it.
+- Azure/Entra setup checklist: `docs/examples/azure-entra-app-registration.md`.
+- The preflight validates the Azure redirect URI shape when configured.
 
 ### Deployment templates
 - `deploy/systemd/beaverview.service` is the checked-in systemd unit for the Ubuntu VM.
@@ -269,7 +271,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | Item | Notes |
 |---|---|
 | **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
-| **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, group object IDs |
+| **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, group object IDs |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
 | **Real inventory import** | `dashboard/data.js` now migrates cleanly into SQLite. Secure Hardware IP import from `hardware_ips.csv` still requires the real spreadsheet. |
 

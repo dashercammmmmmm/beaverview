@@ -26,6 +26,7 @@ HARDWARE_SAMPLE_PATH = ROOT / "docs" / "examples" / "hardware_ips.sample.csv"
 HARDWARE_REAL_PATH = API_DIR / "hardware_ips.csv"
 DEPLOY_SERVICE_PATH = ROOT / "deploy" / "systemd" / "beaverview.service"
 DEPLOY_NGINX_PATH = ROOT / "deploy" / "nginx" / "beaverview.conf.template"
+AZURE_CHECKLIST_PATH = ROOT / "docs" / "examples" / "azure-entra-app-registration.md"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
@@ -198,19 +199,61 @@ def check_deployment_assets() -> None:
         fail("deployment templates failed validation")
 
 
+def is_configured(value: str | None) -> bool:
+    if not value:
+        return False
+    lowered = value.strip().lower()
+    if not lowered:
+        return False
+    placeholder_markers = (
+        "your-",
+        "your_",
+        "<",
+        ">",
+        "object-id",
+        "tenant-id",
+        "client-id",
+        "client-secret",
+    )
+    return not any(marker in lowered for marker in placeholder_markers)
+
+
 def has_all(env: dict[str, str], keys: tuple[str, ...]) -> bool:
-    return all(bool(env.get(key)) for key in keys)
+    return all(is_configured(env.get(key)) for key in keys)
+
+
+def check_azure_template() -> None:
+    if AZURE_CHECKLIST_PATH.exists():
+        pass_("Azure/Entra app registration checklist exists")
+    else:
+        fail("Azure/Entra app registration checklist is missing")
+
+
+def check_azure_redirect(env: dict[str, str]) -> None:
+    redirect_uri = env.get("AZURE_REDIRECT_URI", "https://beaverview/auth/callback")
+    if not is_configured(redirect_uri):
+        pending("Azure redirect URI is not configured")
+        return
+    if not redirect_uri.startswith("https://"):
+        fail("Azure redirect URI must use https")
+        return
+    if not redirect_uri.endswith("/auth/callback"):
+        fail("Azure redirect URI must end with /auth/callback and must not have a trailing slash")
+        return
+    pass_(f"Azure redirect URI shape is valid: {redirect_uri}")
 
 
 def check_env_prereqs() -> None:
     env = parse_env(ENV_PATH)
+    check_azure_template()
     if not ENV_PATH.exists():
         pending("api/.env is not present; copy api/.env.example and fill deployment values")
         return
 
     pass_("api/.env exists")
+    check_azure_redirect(env)
 
-    if env.get("PROXY_SECRET"):
+    if is_configured(env.get("PROXY_SECRET")):
         pass_("PROXY_SECRET is set")
     else:
         pending("PROXY_SECRET is not set")

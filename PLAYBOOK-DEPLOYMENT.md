@@ -432,6 +432,8 @@ Entra SSO lets technicians log in with their OSU credentials. It adds real user 
 
 > **You need access to portal.azure.com with permission to create App Registrations.**
 
+A concise checklist is also committed at `docs/examples/azure-entra-app-registration.md`.
+
 ### Step 1 — Register BeaverView in the Azure portal
 
 1. Go to [portal.azure.com](https://portal.azure.com) → log in with OSU admin credentials
@@ -482,6 +484,7 @@ Fill in these lines (paste from your Notepad file):
 AZURE_TENANT_ID=your-directory-tenant-id
 AZURE_CLIENT_ID=your-application-client-id
 AZURE_CLIENT_SECRET=your-client-secret-value
+AZURE_REDIRECT_URI=https://beaverview/auth/callback
 AZURE_GROUP_TECHNICIAN=object-id-of-technicians-group
 AZURE_GROUP_ADMIN=object-id-of-admins-group
 ```

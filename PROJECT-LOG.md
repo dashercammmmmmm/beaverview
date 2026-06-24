@@ -103,3 +103,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Fill OSU Azure, connector, and device credentials in `api/.env` when they are available.
+
+## 2026-06-24 - Azure readiness checklist
+
+- Added `docs/examples/azure-entra-app-registration.md`.
+- Added `AZURE_REDIRECT_URI=https://beaverview/auth/callback` to `api/.env.example`.
+- Updated `scripts/check_pilot_readiness.py` to verify the Azure checklist exists and validate the redirect URI shape when configured.
+- Strengthened readiness checks so obvious placeholder values do not count as configured credentials.
+
+### Next
+
+- Have an OSU Entra admin create the app registration, client secret, and technician/admin groups, then fill the Azure values in ignored `api/.env`.

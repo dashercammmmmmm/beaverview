@@ -71,6 +71,8 @@ scripts/init_local_env.sh
 
 It does not print the generated secret.
 
+Azure/Entra setup has a committed checklist at `docs/examples/azure-entra-app-registration.md`. The preflight validates that the checklist exists and that `AZURE_REDIRECT_URI`, if configured, is an HTTPS `/auth/callback` URL.
+
 Run this after changing deployment templates:
 
 ```bash
