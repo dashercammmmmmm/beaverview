@@ -403,22 +403,14 @@ For WattBoxes on the local network without OvrC (uses the same `device_ips` tabl
    CRESTRON_PROXY_PASSWORD=your-crestron-admin-password
    PROXY_SECRET=your-random-secret-here
    ```
-2. In `api/main.py`, find the `device_proxy` endpoint and implement the `httpx` proxy:
-   ```python
-   # Replace the 501 stub with:
-   import httpx
-   device_ip = get_db().execute(
-       "SELECT ip_address FROM device_ips WHERE room_id=? AND device_type='xpanel'",
-       (room_id,)).fetchone()
-   if not device_ip:
-       raise HTTPException(404, f"No XPanel IP on record for {room_id}")
-   async with httpx.AsyncClient(verify=False) as client:
-       resp = await client.get(
-           f"https://{device_ip[0]}/{path}",
-           auth=(_CRESTRON_USER, _CRESTRON_PASS),
-           timeout=10,
-       )
-   return Response(content=resp.content, media_type=resp.headers.get("content-type"))
+2. Validate the proxy foundation locally:
+   ```bash
+   scripts/check_api_contracts.py
+   ```
+3. After real processor IPs are imported, open a room and launch XPanel. The browser should receive a BeaverView `/api/rooms/.../proxy/xpanel/` URL; the raw processor IP must stay server-side.
+4. Use the admin connector test button, or call:
+   ```bash
+   curl -X POST http://localhost:8000/api/admin/connectors/corvallis/crestron/test
    ```
 
 ---

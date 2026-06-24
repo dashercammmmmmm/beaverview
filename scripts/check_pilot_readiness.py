@@ -299,7 +299,6 @@ def check_env_prereqs() -> None:
         "XPanel proxy": ("CRESTRON_PROXY_USERNAME", "CRESTRON_PROXY_PASSWORD"),
         "WattBox direct proxy": ("WATTBOX_DIRECT_USERNAME", "WATTBOX_DIRECT_PASSWORD"),
         "PTZ proxy": ("PTZ_PROXY_USERNAME", "PTZ_PROXY_PASSWORD"),
-        "ServiceNow OAuth": ("SN_INSTANCE", "SN_CLIENT_ID", "SN_CLIENT_SECRET"),
         "25Live": ("LIVE25_BASE_URL", "LIVE25_USERNAME", "LIVE25_PASSWORD"),
     }
     for label, keys in connector_sets.items():
@@ -307,6 +306,13 @@ def check_env_prereqs() -> None:
             pass_(f"{label} credentials are present")
         else:
             pending(f"{label} credentials are not complete")
+
+    servicenow_oauth = has_all(env, ("SN_INSTANCE", "SN_CLIENT_ID", "SN_CLIENT_SECRET"))
+    servicenow_basic = has_all(env, ("SN_INSTANCE", "SN_USERNAME", "SN_PASSWORD"))
+    if servicenow_oauth or servicenow_basic:
+        pass_("ServiceNow credentials are present")
+    else:
+        pending("ServiceNow credentials are not complete")
 
 
 def main() -> int:

@@ -177,7 +177,13 @@ def _state_label(state_code: str) -> str:
     return state_map.get(state_code, "Unknown")
 
 
-async def test_servicenow_connection(instance: str) -> dict:
+async def test_servicenow_connection(
+    instance: str,
+    client_id: Optional[str] = None,
+    client_secret: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> dict:
     """
     Health check: can we reach ServiceNow?
     Returns: {status: "live"|"mock"|"error", latency_ms: int}
@@ -187,9 +193,27 @@ async def test_servicenow_connection(instance: str) -> dict:
 
     import time
     start = time.time()
+    headers = {}
+    auth = None
+    token = await get_servicenow_token(
+        instance,
+        client_id or SN_CLIENT_ID or "",
+        client_secret or SN_CLIENT_SECRET or "",
+    )
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    elif username and password:
+        auth = (username, password)
+    elif SN_USERNAME and SN_PASSWORD:
+        auth = (SN_USERNAME, SN_PASSWORD)
+
     try:
         async with httpx.AsyncClient(timeout=5, verify=False) as client:
-            resp = await client.get(f"https://{instance}/api/now/table/sys_user?sysparm_limit=0")
+            resp = await client.get(
+                f"https://{instance}/api/now/table/sys_user?sysparm_limit=0",
+                auth=auth,
+                headers=headers,
+            )
             latency_ms = int((time.time() - start) * 1000)
             if resp.status_code == 200:
                 return {"status": "live", "latency_ms": latency_ms}

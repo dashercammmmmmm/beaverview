@@ -224,7 +224,9 @@ if _WATTBOX_URL and _WATTBOX_KEY:
 _SN_INSTANCE = os.getenv("SN_INSTANCE") or os.getenv("SERVICENOW_INSTANCE", "")
 _SN_CLIENT   = os.getenv("SN_CLIENT_ID") or os.getenv("SERVICENOW_CLIENT_ID", "")
 _SN_SECRET   = os.getenv("SN_CLIENT_SECRET") or os.getenv("SERVICENOW_CLIENT_SECRET", "")
-if _SN_INSTANCE and _SN_CLIENT and _SN_SECRET:
+_SN_BASIC_USER = os.getenv("SN_USERNAME", "")
+_SN_BASIC_PASS = os.getenv("SN_PASSWORD", "")
+if _SN_INSTANCE and ((_SN_CLIENT and _SN_SECRET) or (_SN_BASIC_USER and _SN_BASIC_PASS)):
     for campus in CONNECTOR_REGISTRY.values():
         campus["servicenow"]["mode"] = "live"
 
@@ -322,6 +324,181 @@ def _proxy_auth(tool: str, config: dict):
             detail=f"{tool} proxy credentials are not configured in api/.env",
         )
     return (config["username"], config["password"])
+
+
+def _credential_presence() -> dict[str, bool]:
+    """Return connector credential presence without exposing secret values."""
+    return {
+        'crestron':      bool(_CRESTRON_POLL_USER and _CRESTRON_POLL_PASS),
+        'live25':        bool(_LIVE25_URL and _LIVE25_USER and _LIVE25_PASS),
+        'screenconnect': bool(os.getenv('SC_BASE_URL')),
+        'wattbox':       bool((_WATTBOX_URL and _WATTBOX_KEY) or (_WATTBOX_DIRECT_USER and _WATTBOX_DIRECT_PASS)),
+        'servicenow':    bool(_SN_INSTANCE and ((_SN_CLIENT and _SN_SECRET) or (_SN_BASIC_USER and _SN_BASIC_PASS))),
+        'sharepoint':    bool(os.getenv('SHAREPOINT_BASE_URL')),
+        'ptz':           bool(_PTZ_USER and _PTZ_PASS),
+    }
+
+
+def _campus_device_ip(campus_id: str, device_type: str) -> tuple[str, str] | None:
+    con = get_db()
+    row = con.execute(
+        "SELECT d.room_id, d.ip_address"
+        " FROM device_ips d"
+        " JOIN rooms r ON r.id = d.room_id"
+        " JOIN buildings b ON b.id = r.building_id"
+        " WHERE b.campus_id=? AND d.device_type=?"
+        " ORDER BY d.room_id LIMIT 1",
+        (campus_id, device_type),
+    ).fetchone()
+    con.close()
+    if not row:
+        return None
+    return row["room_id"], row["ip_address"]
+
+
+async def _http_connector_probe(
+    url: str,
+    *,
+    auth=None,
+    headers: dict[str, str] | None = None,
+    verify: bool = True,
+) -> dict:
+    try:
+        import httpx
+    except ImportError:
+        return {
+            'status': 'error',
+            'reachable': False,
+            'message': 'httpx is not installed in the API environment',
+        }
+
+    try:
+        async with httpx.AsyncClient(verify=verify, follow_redirects=False, timeout=5.0) as client:
+            resp = await client.get(url, auth=auth, headers=headers or {})
+    except httpx.TimeoutException:
+        return {'status': 'error', 'reachable': False, 'message': 'Connectivity test timed out'}
+    except httpx.RequestError as exc:
+        return {
+            'status': 'error',
+            'reachable': False,
+            'message': f'Connectivity test failed: {str(exc)[:120]}',
+        }
+
+    reachable = resp.status_code < 500
+    return {
+        'status': 'live' if reachable else 'error',
+        'reachable': reachable,
+        'http_status': resp.status_code,
+        'message': f'HTTP {resp.status_code}',
+    }
+
+
+async def _test_device_connector(
+    campus_id: str,
+    connector_name: str,
+    device_type: str,
+    scheme: str,
+    auth: tuple[str, str] | None,
+    path: str = "",
+    verify: bool = False,
+) -> dict:
+    if not auth or not all(auth):
+        return {
+            'status': 'pending',
+            'reachable': False,
+            'message': f'{connector_name} credentials are not configured',
+        }
+
+    target = _campus_device_ip(campus_id, device_type)
+    if not target:
+        return {
+            'status': 'pending',
+            'reachable': False,
+            'message': f'No {device_type} IP on record for {campus_id}',
+        }
+
+    _, ip_address = target
+    try:
+        ip_address = _validate_proxy_ip(ip_address)
+    except HTTPException as exc:
+        return {'status': 'error', 'reachable': False, 'message': str(exc.detail)}
+
+    checked_path = quote(path.lstrip("/"), safe="/:@!$&'()*+,;=-._~")
+    url = f"{scheme}://{ip_address}/{checked_path}"
+    result = await _http_connector_probe(url, auth=auth, verify=verify)
+    if result.get('message', '').startswith('HTTP'):
+        result['message'] = f'{connector_name} probe returned {result["message"]}'
+    return result
+
+
+async def _test_live_connector(campus_id: str, connector_name: str) -> dict:
+    if connector_name == 'crestron':
+        return await _test_device_connector(
+            campus_id,
+            connector_name,
+            'xpanel',
+            _CRESTRON_POLL_SCHEME,
+            (_CRESTRON_POLL_USER, _CRESTRON_POLL_PASS),
+            'Device/DeviceInfo',
+            verify=_CRESTRON_VERIFY_SSL,
+        )
+
+    if connector_name == 'live25':
+        if not (_LIVE25_URL and _LIVE25_USER and _LIVE25_PASS):
+            return {'status': 'pending', 'reachable': False, 'message': '25Live credentials are not configured'}
+        return await _http_connector_probe(_LIVE25_URL, auth=(_LIVE25_USER, _LIVE25_PASS))
+
+    if connector_name == 'screenconnect':
+        if not _SC_URL:
+            return {'status': 'pending', 'reachable': False, 'message': 'ScreenConnect base URL is not configured'}
+        return await _http_connector_probe(_SC_URL)
+
+    if connector_name == 'wattbox':
+        if _WATTBOX_URL and _WATTBOX_KEY:
+            return await _http_connector_probe(_WATTBOX_URL, headers={'Authorization': f'Bearer {_WATTBOX_KEY}'})
+        config = _device_proxy_config('wattbox')
+        return await _test_device_connector(
+            campus_id,
+            connector_name,
+            config['device_type'],
+            config['scheme'],
+            (config['username'], config['password']),
+        )
+
+    if connector_name == 'servicenow':
+        if not _SN_INSTANCE:
+            return {'status': 'pending', 'reachable': False, 'message': 'ServiceNow instance is not configured'}
+        from connectors.servicenow import test_servicenow_connection
+        result = await test_servicenow_connection(
+            _SN_INSTANCE,
+            client_id=_SN_CLIENT,
+            client_secret=_SN_SECRET,
+            username=_SN_BASIC_USER,
+            password=_SN_BASIC_PASS,
+        )
+        return {
+            'status': result.get('status', 'error'),
+            'reachable': result.get('status') == 'live',
+            'latency_ms': result.get('latency_ms'),
+            'message': result.get('reason', 'ServiceNow test completed'),
+        }
+
+    if connector_name == 'sharepoint':
+        if not _SP_URL:
+            return {'status': 'pending', 'reachable': False, 'message': 'SharePoint base URL is not configured'}
+        return await _http_connector_probe(_SP_URL)
+
+    if connector_name == 'ptz':
+        config = _device_proxy_config('ptz')
+        return await _test_device_connector(
+            campus_id,
+            connector_name,
+            config['device_type'],
+            config['scheme'],
+            (config['username'], config['password']),
+        )
+
+    return {'status': 'error', 'reachable': False, 'message': f'Unknown connector {connector_name}'}
 
 
 def _servicenow_base_url(instance: str) -> str:
@@ -760,7 +937,7 @@ async def room_incidents(room_id: str, request: Request = None):
     FERPA-safe: returns only incident number, short description, state.
     Falls back to mock data if ServiceNow unavailable.
     """
-    from connectors.servicenow import get_incidents_for_room
+    from connectors.servicenow import get_incidents_for_room, get_servicenow_token
 
     # Get room details for ServiceNow query
     conn = get_db()
@@ -777,12 +954,18 @@ async def room_incidents(room_id: str, request: Request = None):
     room_code = f"{building[0]} {room[1]}"  # "KA 101"
     building_name = building[1]             # "Kerr Hall"
 
+    token = None
+    if _SN_INSTANCE and _SN_CLIENT and _SN_SECRET:
+        token = await get_servicenow_token(_SN_INSTANCE, _SN_CLIENT, _SN_SECRET)
+
+    sn_live = _SN_INSTANCE and ((_SN_CLIENT and _SN_SECRET) or (_SN_BASIC_USER and _SN_BASIC_PASS))
     incidents = await get_incidents_for_room(
         room_id=room_id,
         room_code=room_code,
         building_name=building_name,
-        instance=os.getenv("SN_INSTANCE"),
-        mode="live" if os.getenv("SN_INSTANCE") else "mock"
+        instance=_SN_INSTANCE,
+        token=token,
+        mode="live" if sn_live else "mock"
     )
 
     return {
@@ -805,7 +988,13 @@ async def test_servicenow():
     """Health check for ServiceNow connector."""
     from connectors.servicenow import test_servicenow_connection
 
-    result = await test_servicenow_connection(os.getenv("SN_INSTANCE") or "")
+    result = await test_servicenow_connection(
+        _SN_INSTANCE,
+        client_id=_SN_CLIENT,
+        client_secret=_SN_SECRET,
+        username=_SN_BASIC_USER,
+        password=_SN_BASIC_PASS,
+    )
     return result
 
 
@@ -1455,15 +1644,7 @@ def admin_connectors(admin=Depends(require_admin)):
     rows = con.execute('SELECT * FROM connector_config ORDER BY campus_id, connector_name').fetchall()
     con.close()
     # Annotate credential presence without exposing values
-    cred_present = {
-        'crestron':      bool(os.getenv('CRESTRON_POLL_USERNAME')),
-        'live25':        bool(os.getenv('LIVE25_USERNAME')),
-        'screenconnect': bool(os.getenv('SC_BASE_URL')),
-        'wattbox':       bool(os.getenv('WATTBOX_OVRC_API_KEY') or os.getenv('WATTBOX_DIRECT_USERNAME')),
-        'servicenow':    bool(os.getenv('SN_CLIENT_ID') or os.getenv('SERVICENOW_CLIENT_ID')),
-        'sharepoint':    bool(os.getenv('SHAREPOINT_BASE_URL')),
-        'ptz':           bool(os.getenv('PTZ_PROXY_USERNAME')),
-    }
+    cred_present = _credential_presence()
     result = []
     for r in rows:
         d = dict(r)
@@ -1479,15 +1660,7 @@ def admin_set_connector_mode(
 ):
     if mode not in ('live', 'mock'):
         raise HTTPException(400, 'mode must be live or mock')
-    cred_check = {
-        'crestron':      bool(os.getenv('CRESTRON_POLL_USERNAME')),
-        'live25':        bool(os.getenv('LIVE25_USERNAME')),
-        'screenconnect': bool(os.getenv('SC_BASE_URL')),
-        'wattbox':       bool(os.getenv('WATTBOX_OVRC_API_KEY') or os.getenv('WATTBOX_DIRECT_USERNAME')),
-        'servicenow':    bool(os.getenv('SN_CLIENT_ID') or os.getenv('SERVICENOW_CLIENT_ID')),
-        'sharepoint':    bool(os.getenv('SHAREPOINT_BASE_URL')),
-        'ptz':           bool(os.getenv('PTZ_PROXY_USERNAME')),
-    }
+    cred_check = _credential_presence()
     if mode == 'live' and not cred_check.get(connector_name, False):
         return {'status': 'warning',
                 'message': 'No credentials found in .env for this connector.',
@@ -1511,7 +1684,7 @@ def admin_set_connector_mode(
 
 
 @app.post('/api/admin/connectors/{campus_id}/{connector_name}/test')
-def admin_test_connector(campus_id: str, connector_name: str, admin=Depends(require_admin)):
+async def admin_test_connector(campus_id: str, connector_name: str, admin=Depends(require_admin)):
     """Lightweight connectivity test for a connector."""
     con = get_db()
     row = con.execute(
@@ -1524,9 +1697,7 @@ def admin_test_connector(campus_id: str, connector_name: str, admin=Depends(requ
     # In mock mode, always return healthy
     if row['mode'] == 'mock':
         return {'status': 'mock', 'reachable': True, 'message': 'Mock mode — no real connection made'}
-    # In live mode, return a placeholder (real ping logic goes here per connector)
-    return {'status': 'live', 'reachable': None,
-            'message': 'Live connectivity test not yet implemented for this connector'}
+    return await _test_live_connector(campus_id, connector_name)
 
 
 # ---------------------------------------------------------------------------

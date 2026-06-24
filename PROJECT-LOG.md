@@ -138,3 +138,17 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Run `scripts/check_env_template.py` after adding, renaming, or removing any `.env` setting.
+
+## 2026-06-24 - Admin connector live probes
+
+- Replaced the placeholder live response in `POST /api/admin/connectors/{campus_id}/{connector_name}/test`.
+- Added connector-specific test behavior for Crestron, 25Live, ScreenConnect, WattBox, ServiceNow, SharePoint, and PTZ.
+- Tests return mock status locally, pending status for missing live prerequisites, and live/error status for configured HTTP probes without printing secrets or raw device IPs.
+- Tightened credential-presence checks so live mode requires complete credential sets where appropriate.
+- ServiceNow now honors both documented auth paths: OAuth client credentials and Basic Auth service accounts.
+- Updated the API contract check to clear local `.env` values deterministically and cover admin connector test behavior.
+- Cleaned stale handoff/playbook references to the old XPanel proxy 501 stub.
+
+### Next
+
+- After real OSU credentials and `hardware_ips.csv` are available, use the admin connector test endpoint to validate one connector at a time before enabling technician workflows.

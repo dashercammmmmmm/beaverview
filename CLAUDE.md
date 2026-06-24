@@ -101,9 +101,9 @@ There is no build step, bundler, or test suite. Frontend changes are visible imm
 
 ## Architecture
 
-### Backend — `api/main.py` (single file, ~1400 lines)
+### Backend — `api/main.py` (single file, ~1700 lines)
 
-FastAPI app. All routes, DB schema, auth logic, and connector stubs live here. Key sections:
+FastAPI app. All routes, DB schema, auth logic, connector scaffolding, and live connector probes live here. Key sections:
 
 - `init_db()` — creates all 9 SQLite tables on startup (`audit_log`, `campuses`, `buildings`, `rooms`, `devices`, `incidents`, `connector_config`, `user_roles`, `device_ips`). DB auto-created at `api/beaverview.db`.
 - `resolve_role()` / `require_admin()` — maps Entra group membership to `admin` / `technician` / `viewer`. Dev bypass in `GET /api/me` returns `role: admin` when `AZURE_CLIENT_ID` is unset and request is from localhost.

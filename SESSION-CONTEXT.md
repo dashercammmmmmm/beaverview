@@ -167,8 +167,8 @@ macOS Homebrew Python blocks system-wide pip installs. The venv command above is
 | GET | `/api/health` | ✅ Live |
 | GET | `/api/campus/{id}/connectors` | ✅ Live (mock) |
 | GET | `/api/campus/{id}/crestron/rooms` | ✅ Live (mock/live) |
-| GET | `/api/rooms/{room_id}/launch/{tool}` | ✅ Stub |
-| GET | `/api/rooms/{room_id}/proxy/{tool}/{path}` | ⚠️ 501 stub |
+| GET | `/api/rooms/{room_id}/launch/{tool}` | ✅ Live (mock/live launch metadata) |
+| GET | `/api/rooms/{room_id}/proxy/{tool}/{path}` | ✅ Live foundation (server-side IP lookup) |
 | POST | `/api/rooms/{room_id}/action` | ✅ Live |
 | GET | `/api/rooms/{room_id}/log` | ✅ Live |
 | GET | `/api/audit` | ✅ Live |
@@ -240,6 +240,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Safe sample CSV: `docs/examples/hardware_ips.sample.csv`.
 - `scripts/check_hardware_ip_import.sh` validates the sample and dry-runs the real ignored `api/hardware_ips.csv` when present.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
+
+### Admin connector testing
+- `POST /api/admin/connectors/{campus_id}/{connector_name}/test` now has connector-specific live probes instead of a placeholder response.
+- Mock-mode tests return local healthy status without network calls.
+- Live-mode tests return `pending`, `error`, or `live` using configured credentials and imported device IPs without exposing secrets or raw device IPs.
+- ServiceNow supports both documented auth paths: OAuth client credentials or Basic Auth service account.
 
 ### Pilot readiness preflight
 - `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, and deployment prerequisite status.
