@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Room diagnostics guard
+
+- Added a room Overview diagnostics card that summarizes likely causes from room status, health, display state, open incidents, stale inventory, and device types.
+- Added an "Open WattBox Auto-Fix" path that routes to WattBox outlet review, but stays disabled when the room appears occupied, when no WattBox is mapped, or when no fix is recommended.
+- Expanded `scripts/check_dashboard_browser.py` to verify the occupied-room Auto-Fix guard in headless Chromium.
+
+### Next
+
+- After live schedule and Hardware IP data are loaded, validate the empty-room guard against a non-critical room before allowing any real outlet cycle workflow.
+
 ## 2026-06-24 - Admin CSP hardening
 
 - Moved the admin dashboard, rooms, connectors, logs, and users page scripts out of inline `<script>` blocks into external `*-page.js` files.

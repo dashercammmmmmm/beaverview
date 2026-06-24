@@ -559,6 +559,105 @@ function renderRoom() {
   els.roomBody.innerHTML = renderers[state.activeTab](room);
 }
 
+function roomIsBusy(room) {
+  const eventText = (room.activeEvent || "").trim().toLowerCase();
+  return room.status === "in-use"
+    || (eventText && !eventText.startsWith("available") && !eventText.includes("no active"));
+}
+
+function roomDiagnostics(room) {
+  const devices = room.devices || [];
+  const openIncidents = room.incidents?.open || [];
+  const deviceTypes = devices.map((device) => (device[0] || "").toLowerCase());
+  const findings = [];
+
+  if (room.status === "offline" || room.processor === "offline") {
+    findings.push({
+      label: "Processor not reporting",
+      cause: "Control processor or room network path is offline.",
+      action: "Verify schedule, then check processor reachability through the backend proxy."
+    });
+  }
+  if (room.display === "standby" || room.display === "unknown" || room.display === "needs review") {
+    findings.push({
+      label: "Display state needs review",
+      cause: "Display power/source state does not match expected room readiness.",
+      action: "Open XPanel first; use WattBox only after confirming the room is empty."
+    });
+  }
+  if (openIncidents.length) {
+    findings.push({
+      label: "Open incident on file",
+      cause: openIncidents[0],
+      action: "Draft or update the ServiceNow ticket with current room context."
+    });
+  }
+  if (room.stale) {
+    findings.push({
+      label: "Inventory status is stale",
+      cause: "Last known device state may not reflect the current room.",
+      action: "Validate live connector status before taking disruptive action."
+    });
+  }
+  if (room.health < 80 && !findings.length) {
+    findings.push({
+      label: "Low health score",
+      cause: "Room health is below the pilot threshold.",
+      action: "Review devices and recent incidents before escalating."
+    });
+  }
+  if (deviceTypes.some((type) => type.includes("microphone"))) {
+    findings.push({
+      label: "Audio device present",
+      cause: "Intermittent audio reports often involve microphone receiver or DSP state.",
+      action: "Check room audio routing before considering power actions."
+    });
+  }
+
+  return findings.length ? findings.slice(0, 3) : [{
+    label: "No active diagnostic flags",
+    cause: "Room status and inventory do not indicate a current fault.",
+    action: "Use standard verification steps if a technician reports symptoms."
+  }];
+}
+
+function renderDiagnostics(room) {
+  const findings = roomDiagnostics(room);
+  const busy = roomIsBusy(room);
+  const canUseWattBox = room.wattbox && !busy && room.status !== "available";
+  const guardText = !room.wattbox
+    ? "No WattBox is mapped for this room."
+    : busy
+      ? "Auto-Fix disabled while the room appears occupied."
+      : room.status === "available"
+        ? "No Auto-Fix recommended while the room is available."
+        : "Room appears empty; open WattBox to review outlet status before cycling.";
+
+  return `
+    <section class="diagnostics-card" aria-label="Room diagnostics">
+      <div class="diagnostics-card__header">
+        <div>
+          <span>Diagnostics</span>
+          <strong>${findings[0].label}</strong>
+        </div>
+        <em>${busy ? "occupied guard" : "room appears empty"}</em>
+      </div>
+      <div class="diagnostics-list">
+        ${findings.map((item) => `
+          <div class="diagnostic-item">
+            <strong>${item.cause}</strong>
+            <span>${item.action}</span>
+          </div>
+        `).join("")}
+      </div>
+      <div class="diagnostics-actions">
+        <button type="button" data-action="diagnostic_wattbox_open" ${canUseWattBox ? "" : "disabled"}>Open WattBox Auto-Fix</button>
+        <small>${guardText}</small>
+      </div>
+    </section>
+  `;
+}
+
 function renderOverview(room) {
   const scheduleSource = room.scheduleMode === "live"
     ? "25Live"
@@ -572,6 +671,7 @@ function renderOverview(room) {
       <div><span>Remote</span><strong>${room.screenconnect ? "available" : "not listed"}</strong></div>
       <div><span>Schedule</span><strong>${room.activeEvent}</strong><em>${scheduleSource}</em></div>
     </div>
+    ${renderDiagnostics(room)}
     <h3>Devices</h3>
     <div class="device-list">
       ${room.devices.map((device) => `
@@ -1495,6 +1595,14 @@ els.roomBody.addEventListener("click", async (event) => {
   }
   if (action === "launch_tool") {
     await launchBackendTool(button);
+    return;
+  }
+  if (action === "diagnostic_wattbox_open") {
+    const room = selectedRoom();
+    if (!room || button.disabled) return;
+    addAudit("diagnostic_wattbox_opened", "guarded auto-fix review");
+    els.roomBody.innerHTML = renderWattBoxTool(room);
+    refreshWattBoxOutlets(room);
     return;
   }
 

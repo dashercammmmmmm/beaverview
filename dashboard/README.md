@@ -24,6 +24,7 @@ http://localhost:8000
 - Quick filters.
 - Tool actions with local feedback.
 - Local action logging, plus backend admin audit logging when served by FastAPI.
+- Room Overview diagnostics summarize likely causes and keep WattBox Auto-Fix disabled while a room appears occupied.
 - ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
 - PTZ and WattBox controls route through guarded backend endpoints and show prerequisite messages until Hardware IP records and credentials are loaded.

@@ -806,6 +806,95 @@ h1, h2, h3, p {
   color: var(--text-faint);
 }
 
+.diagnostics-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 11px 12px;
+  background: var(--status-warn-faint);
+  border: 1px solid rgba(180, 83, 9, .24);
+  border-left: 3px solid var(--status-warn);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.diagnostics-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.diagnostics-card__header span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.diagnostics-card__header strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text-strong);
+}
+.diagnostics-card__header em {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+.diagnostics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.diagnostic-item {
+  padding: 8px 9px;
+  background: rgba(255, 255, 255, .65);
+  border-radius: var(--radius-sm);
+}
+.diagnostic-item strong,
+.diagnostic-item span {
+  display: block;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.diagnostic-item strong { color: var(--text-strong); }
+.diagnostic-item span  { color: var(--text-muted); }
+.diagnostics-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.diagnostics-actions button {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: var(--bg-panel);
+  border: 1.5px solid var(--status-warn);
+  border-radius: var(--radius-sm);
+  color: var(--status-warn);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.diagnostics-actions button:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  cursor: default;
+  opacity: .62;
+}
+.diagnostics-actions small {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 /* Device list (Overview tab) */
 .device-list {
   display: flex;

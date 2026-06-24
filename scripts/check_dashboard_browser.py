@@ -53,6 +53,9 @@ def main() -> int:
             expect(page.locator("#roomHeader")).to_contain_text("No room selected", timeout=5_000)
 
             select_room(page, "KAd", "corvallis-kad-101")
+            expect(page.locator("#roomBody")).to_contain_text("Diagnostics", timeout=5_000)
+            expect(page.locator("#roomBody")).to_contain_text("Auto-Fix disabled while the room appears occupied", timeout=5_000)
+            expect(page.get_by_role("button", name=re.compile("Open WattBox Auto-Fix", re.I))).to_be_disabled()
             open_actions(page)
 
             click_tool(page, "Draft ServiceNow ticket")

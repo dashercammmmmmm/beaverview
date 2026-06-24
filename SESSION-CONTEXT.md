@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after admin CSP hardening.
+**Last updated:** 2026-06-24 after adding the room diagnostics guard.
 
 ---
 
@@ -265,6 +265,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard WattBox panel now checks backend outlet status on open and routes outlet cycle buttons through the backend with explicit confirmation.
 - The active dashboard XPanel, ScreenConnect, and SharePoint launch buttons now call `/api/rooms/{room_id}/launch/{tool}` and open only live backend-provided URLs.
 - The active dashboard Device web UIs panel now shows inventory only and keeps per-device launch disabled until Hardware IP records and approved proxy routes exist.
+- The active dashboard Overview tab now shows a diagnostics card with likely causes and keeps WattBox Auto-Fix disabled while the room appears occupied.
 - Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
 - `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
 - `import_device_ips.py --dry-run <csv>` validates Hardware IP CSV data without replacing the `device_ips` table.
@@ -368,7 +369,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | Live PTZ/WattBox validation | Frontend and backend paths exist; still requires real `hardware_ips.csv` plus PTZ/WattBox credentials before live room testing. |
 | Live launch validation | Frontend and backend launch paths exist for XPanel, ScreenConnect, and SharePoint; still requires `SC_BASE_URL`, `SHAREPOINT_BASE_URL`, XPanel credentials, and real Hardware IP records. |
 | Device web UI launch validation | Dashboard inventory state exists; add explicit backend proxy/launch coverage per approved device type after real Hardware IP data is imported. |
-| Device issue diagnostics card | In room Overview tab: show which device is failing, probable cause, "Auto-Fix" button (WattBox reboot). Auto-fix only when room is empty. Recommended but not yet built. |
+| Live diagnostics validation | Overview diagnostics card exists; still needs live schedule and Hardware IP validation in one non-critical room before any real Auto-Fix/WattBox cycle use. |
 
 ### 🟡 Nice to have
 | Item | Notes |
