@@ -117,6 +117,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilo
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
 ```
 
+**Deployment template validation:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_deployment_assets.sh
+```
+
 ### Step 3 — Open the site
 Open **Chrome** or **Safari** and go to: `http://localhost:8000`
 
@@ -225,6 +230,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, and deployment prerequisite status.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
+- It also validates reusable deployment templates under `deploy/`.
+
+### Deployment templates
+- `deploy/systemd/beaverview.service` is the checked-in systemd unit for the Ubuntu VM.
+- `deploy/nginx/beaverview.conf.template` is the checked-in nginx reverse-proxy template. Replace `__VM_IP__` with the VM IP before installing.
+- `scripts/check_deployment_assets.sh` validates these templates locally.
 
 ### Admin link in dashboard header
 - Orange-tinted "Admin" button appears in the top-right header
@@ -289,5 +300,6 @@ Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && so
 Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
 Hardware IP CSV check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
+Deployment asset check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_deployment_assets.sh
 Pilot readiness: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
 ```

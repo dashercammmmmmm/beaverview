@@ -80,3 +80,16 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - When the real secure spreadsheet is available, place it at `api/hardware_ips.csv`, run `scripts/check_hardware_ip_import.sh`, then run `api/venv/bin/python api/import_device_ips.py api/hardware_ips.csv`.
+
+## 2026-06-24 - Deployment template validation
+
+- Added reusable VM deployment assets under `deploy/`.
+- Added `deploy/systemd/beaverview.service`.
+- Added `deploy/nginx/beaverview.conf.template` with `__VM_IP__` placeholder.
+- Added `scripts/check_deployment_assets.sh` to validate the templates locally.
+- Wired deployment asset validation into `scripts/check_pilot_readiness.py`.
+- Updated `PLAYBOOK-DEPLOYMENT.md` to reference the checked-in templates instead of only manual paste blocks.
+
+### Next
+
+- On the Ubuntu VM, copy the systemd template and render the nginx template with the VM IP before running `systemctl`/`nginx -t`.

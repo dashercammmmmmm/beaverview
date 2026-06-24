@@ -63,6 +63,14 @@ scripts/check_pilot_readiness.py
 
 It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, and reports pending external prerequisites without printing secret values.
 
+Run this after changing deployment templates:
+
+```bash
+scripts/check_deployment_assets.sh
+```
+
+It validates the checked-in systemd and nginx templates under `deploy/`.
+
 There is no build step, bundler, or test suite. Frontend changes are visible immediately — `index.html` has a built-in live-reload poller (HEAD requests every 1.5s, localhost only).
 
 ## Architecture

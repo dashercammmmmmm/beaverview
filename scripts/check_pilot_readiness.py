@@ -24,6 +24,8 @@ DB_PATH = API_DIR / "beaverview.db"
 ENV_PATH = API_DIR / ".env"
 HARDWARE_SAMPLE_PATH = ROOT / "docs" / "examples" / "hardware_ips.sample.csv"
 HARDWARE_REAL_PATH = API_DIR / "hardware_ips.csv"
+DEPLOY_SERVICE_PATH = ROOT / "deploy" / "systemd" / "beaverview.service"
+DEPLOY_NGINX_PATH = ROOT / "deploy" / "nginx" / "beaverview.conf.template"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
@@ -177,6 +179,25 @@ def check_hardware_ip_csv_shape() -> None:
             fail("real api/hardware_ips.csv failed dry-run validation")
 
 
+def check_deployment_assets() -> None:
+    script = ROOT / "scripts" / "check_deployment_assets.sh"
+    if not DEPLOY_SERVICE_PATH.exists():
+        fail("systemd deployment template is missing")
+        return
+    if not DEPLOY_NGINX_PATH.exists():
+        fail("nginx deployment template is missing")
+        return
+    if not script.exists():
+        fail("deployment asset validator is missing")
+        return
+
+    result = run([str(script)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("deployment templates validate")
+    else:
+        fail("deployment templates failed validation")
+
+
 def has_all(env: dict[str, str], keys: tuple[str, ...]) -> bool:
     return all(bool(env.get(key)) for key in keys)
 
@@ -225,6 +246,7 @@ def main() -> int:
     check_python_env()
     check_db()
     check_hardware_ip_csv_shape()
+    check_deployment_assets()
     check_env_prereqs()
 
     print("BeaverView pilot-readiness preflight")

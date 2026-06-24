@@ -202,7 +202,13 @@ sudo chown beaverview:beaverview /home/beaverview/app/api/.env
 sudo nano /etc/systemd/system/beaverview.service
 ```
 
-Paste exactly:
+Paste exactly, or copy the checked-in template with:
+
+```bash
+sudo cp /home/beaverview/app/deploy/systemd/beaverview.service /etc/systemd/system/beaverview.service
+```
+
+Template contents:
 
 ```ini
 [Unit]
@@ -269,7 +275,15 @@ sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
 sudo nano /etc/nginx/sites-available/beaverview
 ```
 
-Paste the following (replace `192.168.1.50` with your VM's actual IP):
+Paste the following (replace `192.168.1.50` with your VM's actual IP), or generate it from the checked-in template:
+
+```bash
+sudo sed "s/__VM_IP__/192.168.1.50/g" \
+    /home/beaverview/app/deploy/nginx/beaverview.conf.template \
+    | sudo tee /etc/nginx/sites-available/beaverview >/dev/null
+```
+
+Template contents:
 
 ```nginx
 server {
