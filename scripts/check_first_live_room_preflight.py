@@ -166,9 +166,17 @@ def is_non_critical_candidate(room: sqlite3.Row) -> bool:
     return True
 
 
-def list_candidates(*, as_json: bool = False, limit: int = 12) -> int:
+def list_candidates(*, as_json: bool = False, limit: int = 12, connector: str = "") -> int:
     if not DB_PATH.exists():
         return emit("fail", "api/beaverview.db is missing; run scripts/check_data_migration.sh", as_json=as_json)
+    connector_filter = normalize_connector(connector) if connector else ""
+    if connector_filter and connector_filter not in CONNECTORS:
+        return emit(
+            "fail",
+            f"unknown FIRST_LIVE_CONNECTOR '{connector_filter}'",
+            details={"allowed_connectors": sorted(CONNECTORS)},
+            as_json=as_json,
+        )
 
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
@@ -200,6 +208,8 @@ def list_candidates(*, as_json: bool = False, limit: int = 12) -> int:
             continue
         room_counts = counts_by_room.get(row["id"], {})
         connectors = connector_hints(row, room_counts)
+        if connector_filter and connector_filter not in connectors:
+            continue
         candidates.append(
             {
                 "room_id": row["id"],
@@ -218,6 +228,7 @@ def list_candidates(*, as_json: bool = False, limit: int = 12) -> int:
     payload = {
         "status": "pass",
         "message": "first live-room candidates listed",
+        "connector_filter": connector_filter or None,
         "count": len(candidates),
         "candidates": candidates,
     }
@@ -228,10 +239,11 @@ def list_candidates(*, as_json: bool = False, limit: int = 12) -> int:
         if not candidates:
             print("No non-critical candidate rooms found in the current SQLite inventory.")
         for item in candidates:
+            scope = f" for {connector_filter}" if connector_filter else ""
             print(
                 f"- {item['room_id']} ({item['building_code']} {item['room_number']}): "
                 f"{item['status']}, health {item['health']}, "
-                f"connectors: {', '.join(item['eligible_connectors'])}"
+                f"connectors{scope}: {', '.join(item['eligible_connectors'])}"
             )
     return 0
 
@@ -258,7 +270,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.list_candidates:
-        return list_candidates(as_json=args.json, limit=max(args.limit, 1))
+        return list_candidates(as_json=args.json, limit=max(args.limit, 1), connector=args.connector or "")
 
     env = parse_env(ENV_PATH)
     room_id = (args.room_id or env.get("FIRST_LIVE_ROOM_ID", "")).strip().lower()

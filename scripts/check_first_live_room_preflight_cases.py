@@ -127,6 +127,25 @@ def expect_candidate_list(db_path: Path) -> None:
     expect("crestron_poll" in first.get("eligible_connectors", []), "candidate list did not include crestron_poll hint")
     expect("xpanel" in first.get("hardware_ip_device_types", []), "candidate list did not include sanitized Hardware IP device type")
 
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "xpanel")
+    expect(code == 0, f"xpanel candidate filter returned exit {code}: {payload}")
+    expect(payload.get("connector_filter") == "xpanel", f"xpanel filter was not echoed: {payload}")
+    expect(len(payload.get("candidates", [])) == 1, f"xpanel filter returned unexpected candidates: {payload}")
+
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "crestron")
+    expect(code == 0, f"crestron alias candidate filter returned exit {code}: {payload}")
+    expect(payload.get("connector_filter") == "crestron_poll", f"crestron alias did not normalize: {payload}")
+    expect(len(payload.get("candidates", [])) == 1, f"crestron alias filter returned unexpected candidates: {payload}")
+
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz")
+    expect(code == 0, f"ptz empty candidate filter returned exit {code}: {payload}")
+    expect(payload.get("connector_filter") == "ptz", f"ptz filter was not echoed: {payload}")
+    expect(payload.get("candidates") == [], f"ptz filter should return no candidates without a ptz Hardware IP row: {payload}")
+
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "not-a-connector")
+    expect(code == 1, f"invalid connector candidate filter returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"invalid connector candidate filter should fail: {payload}")
+
 
 def main() -> int:
     if not SCRIPT.exists():

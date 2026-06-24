@@ -82,6 +82,7 @@ List candidate room IDs and connector hints from sanitized SQLite data:
 
 ```bash
 scripts/check_first_live_room_preflight.py --list-candidates
+scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel
 ```
 
 Required `api/.env` values:
