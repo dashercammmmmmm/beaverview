@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding first live-room preflight case coverage.
+**Last updated:** 2026-06-24 after adding readiness pending-action output.
 
 ---
 
@@ -320,6 +320,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room target preflight case coverage, selected target preflight, first live-room validation runbook coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
+- Readiness JSON includes `pending_actions`; Markdown/text output includes `Pending Next Actions`, mapping each external pending item to the ignored file/key or runbook that closes it.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure credentials, connector credentials, ScreenConnect/SharePoint launch URLs, Hermes chat endpoint, and Hardware IP records are reported as pending external prerequisites.
 - It runs the data migration and hardware IP import validators directly before reporting DB/input readiness.

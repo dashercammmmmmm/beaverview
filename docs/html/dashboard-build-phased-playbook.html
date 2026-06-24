@@ -249,6 +249,7 @@ pre code { background: transparent; padding: 0; color: inherit; }
 <li>Hardware IP import validation rejects duplicate room/device mappings and unreviewed public IP rows before live proxy testing.</li>
 <li><code>scripts/check_first_live_room_preflight.py</code> validates the selected <code>FIRST_LIVE_ROOM_ID</code> / <code>FIRST_LIVE_CONNECTOR</code> target before first live-room testing.</li>
 <li><code>scripts/check_first_live_room_preflight_cases.py</code> verifies the selected-room preflight pass/pending/fail behavior against an isolated temporary DB.</li>
+<li><code>scripts/check_pilot_readiness.py --markdown</code> prints no-secrets pending next actions for the external input handoff.</li>
 <li>Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.</li>
 <li>Real external systems still require ignored <code>api/.env</code> values and ignored <code>api/hardware_ips.csv</code>.</li>
 <li>Entra SSO is scaffolded but still requires real Azure app and group configuration.</li>

@@ -55,6 +55,61 @@ LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
 PASSED: list[str] = []
 
+PENDING_ACTIONS = {
+    "hardware IP records are not loaded yet": {
+        "action": "Place the secure export at ignored api/hardware_ips.csv, run scripts/check_hardware_ip_import.sh, then import it from the api directory.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#hardware-ip-records",
+    },
+    "Azure app credentials are not complete": {
+        "action": "Fill AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and AZURE_REDIRECT_URI in ignored api/.env.",
+        "reference": "docs/examples/azure-entra-app-registration.md",
+    },
+    "Azure technician/admin group object IDs are not complete": {
+        "action": "Fill AZURE_GROUP_TECHNICIAN and AZURE_GROUP_ADMIN in ignored api/.env after assigning the Entra app groups.",
+        "reference": "docs/examples/azure-entra-app-registration.md",
+    },
+    "Crestron poll credentials are not complete": {
+        "action": "Fill CRESTRON_POLL_USERNAME and CRESTRON_POLL_PASSWORD in ignored api/.env for direct processor polling.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#crestron-poll-credentials",
+    },
+    "XPanel proxy credentials are not complete": {
+        "action": "Fill CRESTRON_PROXY_USERNAME and CRESTRON_PROXY_PASSWORD in ignored api/.env for XPanel proxy testing.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#xpanel-proxy-credentials",
+    },
+    "WattBox direct proxy credentials are not complete": {
+        "action": "Fill WATTBOX_DIRECT_USERNAME and WATTBOX_DIRECT_PASSWORD in ignored api/.env for direct WattBox access.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#wattbox-direct-proxy-credentials",
+    },
+    "PTZ proxy credentials are not complete": {
+        "action": "Fill PTZ_PROXY_USERNAME and PTZ_PROXY_PASSWORD in ignored api/.env before live PTZ command testing.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#ptz-proxy-credentials",
+    },
+    "25Live credentials are not complete": {
+        "action": "Fill LIVE25_BASE_URL, LIVE25_USERNAME, and LIVE25_PASSWORD in ignored api/.env for schedule validation.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#25live-credentials",
+    },
+    "ScreenConnect base URL is not configured": {
+        "action": "Fill SC_BASE_URL in ignored api/.env; no ScreenConnect service password is stored.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#screenconnect-launch-url",
+    },
+    "SharePoint base URL is not configured": {
+        "action": "Fill SHAREPOINT_BASE_URL in ignored api/.env; user auth stays in the browser session.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#sharepoint-launch-url",
+    },
+    "Hermes chat base URL is not configured": {
+        "action": "Fill CHAT_BASE_URL in ignored api/.env only after the approved local Hermes endpoint is available.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#hermes-chat-endpoint",
+    },
+    "ServiceNow credentials are not complete": {
+        "action": "Fill SN_INSTANCE plus either OAuth keys or service-account Basic Auth keys in ignored api/.env.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#servicenow-credentials",
+    },
+    "first live-room target and connector are not selected": {
+        "action": "After OSU selects the non-critical room and first connector, set FIRST_LIVE_ROOM_ID and FIRST_LIVE_CONNECTOR in ignored api/.env.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#first-live-room-target",
+    },
+}
+
 
 def run(cmd: list[str], cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, cwd=cwd, text=True, capture_output=True)
@@ -486,10 +541,24 @@ def run_checks() -> None:
 
 
 def readiness_result() -> dict:
+    pending_actions = [
+        {
+            "pending": item,
+            **PENDING_ACTIONS.get(
+                item,
+                {
+                    "action": "Review docs/examples/pilot-inputs-checklist.md and update ignored local deployment inputs.",
+                    "reference": "docs/examples/pilot-inputs-checklist.md",
+                },
+            ),
+        }
+        for item in PENDING
+    ]
     return {
         "status": "fail" if LOCAL_FAILURES else "pass",
         "passed": PASSED,
         "pending": PENDING,
+        "pending_actions": pending_actions,
         "failures": LOCAL_FAILURES,
         "passed_count": len(PASSED),
         "pending_count": len(PENDING),
@@ -506,6 +575,12 @@ def print_text_result(result: dict) -> None:
         print(f"PENDING {item}")
     for item in result["failures"]:
         print(f"FAIL    {item}")
+
+    if result["pending_actions"]:
+        print()
+        print("Next actions")
+        for item in result["pending_actions"]:
+            print(f"- {item['pending']}: {item['action']} See {item['reference']}.")
 
     print()
     if result["failures"]:
@@ -536,6 +611,14 @@ def print_markdown_result(result: dict) -> None:
     for item in result["pending"]:
         print(f"- {item}")
     if not result["pending"]:
+        print("- None")
+    print()
+
+    print("## Pending Next Actions")
+    print()
+    for item in result["pending_actions"]:
+        print(f"- **{item['pending']}**: {item['action']} See `{item['reference']}`.")
+    if not result["pending_actions"]:
         print("- None")
     print()
 

@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Readiness pending-action report
+
+- Extended `scripts/check_pilot_readiness.py` so each known pending external prerequisite includes a concrete next action and reference document.
+- Added `pending_actions` to JSON output and a `Pending Next Actions` section to Markdown/text output.
+- Kept the report no-secrets: it names ignored files and env keys, but does not print configured values.
+
+### Next
+
+- Use `python3 scripts/check_pilot_readiness.py --markdown` as the external-input handoff after every deployment-input update.
+
 ## 2026-06-24 - First live-room preflight case coverage
 
 - Added `scripts/check_first_live_room_preflight_cases.py` to exercise first live-room preflight pass, pending, and fail behavior against an isolated temporary SQLite DB.

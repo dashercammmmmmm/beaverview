@@ -8,6 +8,12 @@ After any update, restart BeaverView and run:
 python3 scripts/check_pilot_readiness.py
 ```
 
+For a handoff report with next actions for each remaining external input, run:
+
+```bash
+python3 scripts/check_pilot_readiness.py --markdown
+```
+
 ## Local Secret Baseline
 
 Create or update ignored `api/.env`:
