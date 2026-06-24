@@ -53,6 +53,8 @@ scripts/check_admin_browser.sh
 
 It starts uvicorn on `127.0.0.1:8028`, opens the admin panel in headless Chromium through Playwright, and verifies the summary, rooms, connectors, logs, and users pages. It is also part of `scripts/check_pilot_readiness.py`.
 
+Admin page behavior lives in external `dashboard/admin/*-page.js` files. Do not add inline `<script>` blocks or inline event handlers; the app CSP uses `script-src 'self' blob:`.
+
 Run this after changing `dashboard/data.js`, `api/migrate_data.py`, or DB schema:
 
 ```bash

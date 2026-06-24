@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding admin browser smoke coverage.
+**Last updated:** 2026-06-24 after admin CSP hardening.
 
 ---
 
@@ -315,6 +315,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/check_admin_browser.sh` starts a local FastAPI server and runs the Playwright admin smoke in headless Chromium.
 - It verifies `/admin/`, room listing and edit drawer rendering, connector management, audit logs, and user role pages under the local dev auth path.
 - This check is part of `scripts/check_pilot_readiness.py`.
+- Admin page behavior now lives in external `dashboard/admin/*-page.js` files. Do not add inline `<script>` blocks or inline event handlers; CSP is back to `script-src 'self' blob:`.
 
 ### Environment template consistency
 - `scripts/check_env_template.py` verifies `api/.env.example` matches runtime env vars used by `api/main.py`, connector modules, and readiness checks.

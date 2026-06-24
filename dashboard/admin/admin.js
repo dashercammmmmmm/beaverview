@@ -31,6 +31,7 @@
   const el = document.getElementById('nav-username');
   if (el) el.textContent = window._adminUser.name || window._adminUser.user || '';
 
+  window._adminReady = true;
   document.dispatchEvent(new Event('admin-ready'));
 })();
 
@@ -103,6 +104,14 @@ function toast(msg, type = 'success') {
   setTimeout(() => { t.classList.remove('toast--show'); setTimeout(() => t.remove(), 300); }, 3000);
 }
 
+function onAdminReady(callback) {
+  if (window._adminReady) {
+    callback();
+    return;
+  }
+  document.addEventListener('admin-ready', callback, { once: true });
+}
+
 // ---------------------------------------------------------------------------
 // Expose globals
 // ---------------------------------------------------------------------------
@@ -112,3 +121,4 @@ window.adminPost   = adminPost;
 window.adminPut    = adminPut;
 window.adminDelete = adminDelete;
 window.toast       = toast;
+window.onAdminReady = onAdminReady;
