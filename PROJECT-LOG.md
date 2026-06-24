@@ -46,7 +46,7 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 ### Next
 
-- GitHub sync is complete as of `8f91fac`; continue to run smoke checks before future pushes.
+- GitHub sync is complete; continue to run smoke checks before future pushes.
 - Load the real secure `hardware_ips.csv` and device credentials, then test one actual XPanel or WattBox path on the AV network.
 
 ## 2026-06-24 - GitHub sync completed
@@ -55,4 +55,5 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 - Ran `gh auth setup-git` to configure Git credential access.
 - Fetched `origin/main` and confirmed the remote had not advanced.
 - Pushed local `main` to `https://github.com/dashercammmmmmm/beaverview`.
-- Verified local `HEAD`, `origin/main`, and `origin/HEAD` all point to `8f91fac feat: add device proxy foundation`.
+- Verified local `HEAD`, `origin/main`, and `origin/HEAD` were synced after the push.
+- Added and pushed `docs: record github sync status` so the handoff docs also exist on GitHub.

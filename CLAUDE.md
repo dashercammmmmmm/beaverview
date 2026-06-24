@@ -25,7 +25,7 @@ You can also run `api/start.sh`; it installs/updates dependencies from `api/requ
 
 ## Source of truth and logging
 
-The canonical BeaverView v2 checkout on this Mac Mini is `/Users/benjaminfranklinautomation/projects/beaverview`. Keep `PROJECT-LOG.md` updated with dated entries for material code, environment, deployment, and documentation changes. The GitHub remote is `https://github.com/dashercammmmmmm/beaverview`; as of 2026-06-24, local `main` is synced with `origin/main` at `8f91fac feat: add device proxy foundation`.
+The canonical BeaverView v2 checkout on this Mac Mini is `/Users/benjaminfranklinautomation/projects/beaverview`. Keep `PROJECT-LOG.md` updated with dated entries for material code, environment, deployment, and documentation changes. The GitHub remote is `https://github.com/dashercammmmmmm/beaverview`; as of 2026-06-24, local `main` is synced with `origin/main`.
 
 ## Smoke checks
 

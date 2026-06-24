@@ -33,7 +33,7 @@ BeaverView is an OSU Presentation Support dashboard — a FastAPI backend + vani
 - Canonical local repo: `/Users/benjaminfranklinautomation/projects/beaverview`
 - GitHub remote: `https://github.com/dashercammmmmmm/beaverview`
 - Branch: `main`
-- Current sync state: local `main`, `origin/main`, and `origin/HEAD` point to `8f91fac feat: add device proxy foundation`
+- Current sync state: local `main`, `origin/main`, and `origin/HEAD` are synced.
 - GitHub push verified: 2026-06-24T02:30:07Z
 - `/Users/benjaminfranklinautomation/Documents/Beaverview` is not the active v2 repo; it has no commits and no remote.
 - Durable work log: update `PROJECT-LOG.md` for material changes.
@@ -189,6 +189,8 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `9a4cb4f` Relaxed CSP for MapLibre and OSM tiles
 - `82fbfa3` Source-of-truth handoff and smoke checks
 - Data migration repair: `fix: repair dashboard data migration`
+- Device proxy foundation: `feat: add device proxy foundation`
+- GitHub sync status docs: `docs: record github sync status`
 
 ### Data migration repaired
 - `migrate_data.py` now handles the JavaScript object literal shape in `dashboard/data.js` instead of assuming strict JSON.
