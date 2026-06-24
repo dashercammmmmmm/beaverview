@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+import sqlite3
 import sys
 import warnings
 from pathlib import Path
@@ -19,6 +20,16 @@ ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
 VENV_PYTHON = API_DIR / "venv" / "bin" / "python"
 ENV_EXAMPLE = API_DIR / ".env.example"
+DB_PATH = API_DIR / "beaverview.db"
+EXPECTED_CONNECTORS = {
+    "crestron",
+    "live25",
+    "ptz",
+    "screenconnect",
+    "servicenow",
+    "sharepoint",
+    "wattbox",
+}
 
 if (
     VENV_PYTHON.exists()
@@ -63,8 +74,44 @@ def json_response(response: Any, label: str) -> Any:
         fail(f"{label} did not return JSON: {exc}")
 
 
+def connector_mode_snapshot() -> list[tuple[str, str, str]]:
+    con = sqlite3.connect(DB_PATH)
+    try:
+        return con.execute(
+            "SELECT campus_id, connector_name, mode FROM connector_config"
+        ).fetchall()
+    finally:
+        con.close()
+
+
+def restore_connector_modes(snapshot: list[tuple[str, str, str]]) -> None:
+    if not snapshot:
+        return
+    con = sqlite3.connect(DB_PATH)
+    try:
+        con.executemany(
+            "UPDATE connector_config SET mode=? WHERE campus_id=? AND connector_name=?",
+            [(mode, campus_id, connector_name) for campus_id, connector_name, mode in snapshot],
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
+def set_connector_mode(campus_id: str, connector_name: str, mode: str) -> None:
+    con = sqlite3.connect(DB_PATH)
+    try:
+        con.execute(
+            "UPDATE connector_config SET mode=? WHERE campus_id=? AND connector_name=?",
+            (mode, campus_id, connector_name),
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
 def main() -> int:
-    if not (API_DIR / "beaverview.db").exists():
+    if not DB_PATH.exists():
         fail("api/beaverview.db is missing; run scripts/check_data_migration.sh")
 
     os.environ["PYTHON_DOTENV_DISABLED"] = "1"
@@ -86,6 +133,7 @@ def main() -> int:
         "groups": [],
     }
 
+    connector_snapshot = connector_mode_snapshot()
     client = TestClient(api.app, client=("127.0.0.1", 50000))
     try:
         health = client.get("/api/health")
@@ -108,12 +156,76 @@ def main() -> int:
         expect(connectors.status_code == 200, f"/api/admin/connectors returned {connectors.status_code}")
         connector_data = json_response(connectors, "/api/admin/connectors")
         expect(isinstance(connector_data, list) and connector_data, "/api/admin/connectors returned no rows")
+        campuses = {row.get("campus_id") for row in connector_data}
+        connector_names = {row.get("connector_name") for row in connector_data}
+        expect("corvallis" in campuses, "/api/admin/connectors is missing Corvallis")
+        expect(EXPECTED_CONNECTORS.issubset(connector_names), "/api/admin/connectors is missing expected connectors")
 
-        connector_test = client.post("/api/admin/connectors/corvallis/crestron/test")
-        expect(connector_test.status_code == 200, f"admin connector test returned {connector_test.status_code}")
-        connector_test_data = json_response(connector_test, "admin connector test")
-        expect(connector_test_data.get("status") == "mock", "admin connector test should stay mock offline")
-        expect(connector_test_data.get("reachable") is True, "mock admin connector test should be reachable")
+        corvallis_connectors = sorted(
+            row["connector_name"]
+            for row in connector_data
+            if row.get("campus_id") == "corvallis"
+        )
+        expect(
+            EXPECTED_CONNECTORS.issubset(set(corvallis_connectors)),
+            "Corvallis connector seed set is incomplete",
+        )
+
+        for connector_name in corvallis_connectors:
+            connector_test = client.post(f"/api/admin/connectors/corvallis/{connector_name}/test")
+            expect(
+                connector_test.status_code == 200,
+                f"{connector_name} mock connector test returned {connector_test.status_code}",
+            )
+            connector_test_data = json_response(connector_test, f"{connector_name} mock connector test")
+            expect(
+                connector_test_data.get("status") == "mock",
+                f"{connector_name} connector test should stay mock offline",
+            )
+            expect(
+                connector_test_data.get("reachable") is True,
+                f"{connector_name} mock connector test should be reachable",
+            )
+
+            live_toggle = client.put(f"/api/admin/connectors/corvallis/{connector_name}/mode?mode=live", json={})
+            expect(
+                live_toggle.status_code == 200,
+                f"{connector_name} live-mode warning returned {live_toggle.status_code}",
+            )
+            live_toggle_data = json_response(live_toggle, f"{connector_name} live-mode warning")
+            expect(
+                live_toggle_data.get("status") == "warning",
+                f"{connector_name} should not switch to live without offline credentials",
+            )
+            expect(
+                live_toggle_data.get("mode_set") is False,
+                f"{connector_name} live-mode warning should not change DB mode",
+            )
+
+        for connector_name in corvallis_connectors:
+            set_connector_mode("corvallis", connector_name, "live")
+            live_test = client.post(f"/api/admin/connectors/corvallis/{connector_name}/test")
+            expect(
+                live_test.status_code == 200,
+                f"{connector_name} live connector test returned {live_test.status_code}",
+            )
+            live_test_data = json_response(live_test, f"{connector_name} live connector test")
+            expect(
+                live_test_data.get("status") == "pending",
+                f"{connector_name} live connector test should be pending without prerequisites",
+            )
+            expect(
+                live_test_data.get("reachable") is False,
+                f"{connector_name} live connector test should not be reachable without prerequisites",
+            )
+            expect(
+                "message" in live_test_data and live_test_data["message"],
+                f"{connector_name} live connector test should explain pending state",
+            )
+            set_connector_mode("corvallis", connector_name, "mock")
+
+        missing_connector = client.post("/api/admin/connectors/corvallis/__missing__/test")
+        expect(missing_connector.status_code == 404, "missing connector test did not return 404")
 
         launch = client.get(f"/api/rooms/{room_id}/launch/xpanel")
         expect(launch.status_code == 200, f"xpanel launch returned {launch.status_code}")
@@ -145,6 +257,7 @@ def main() -> int:
         expect(isinstance(incidents_data.get("incidents"), list), "room incidents did not return a list")
     finally:
         client.close()
+        restore_connector_modes(connector_snapshot)
         api.app.dependency_overrides.clear()
 
     print("API contracts verified")

@@ -217,3 +217,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Keep using `python3 scripts/check_pilot_readiness.py` as the single local go/no-go command before push or deployment.
+
+## 2026-06-24 - Broader connector contract coverage
+
+- Expanded `scripts/check_api_contracts.py` to verify every seeded Corvallis connector returns a safe mock test result offline.
+- Added contract coverage for admin live-mode toggles without credentials; each connector must warn and avoid changing DB mode.
+- Added contract coverage for live-mode connector tests with prerequisites missing; each connector must return a pending, unreachable response with an explanatory message.
+- The contract restores connector modes after the run so the ignored local DB is not left in a live-test state.
+
+### Next
+
+- When real credentials and hardware IPs are available, use the same admin connector test endpoint to validate one live connector at a time.

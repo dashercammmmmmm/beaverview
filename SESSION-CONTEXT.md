@@ -277,7 +277,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
-- It validates health, localhost dev auth, admin inventory access, xpanel launch/proxy behavior, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+- It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, xpanel launch/proxy behavior, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
 
 ### Environment template consistency
 - `scripts/check_env_template.py` verifies `api/.env.example` matches runtime env vars used by `api/main.py`, connector modules, and readiness checks.
