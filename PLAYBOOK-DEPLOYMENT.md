@@ -262,15 +262,12 @@ nginx sits in front of BeaverView and handles HTTPS encryption.
 Replace `192.168.1.50` with your VM's actual IP address:
 
 ```bash
-sudo mkdir -p /etc/ssl/beaverview
-sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-    -keyout /etc/ssl/beaverview/beaverview.key \
-    -out /etc/ssl/beaverview/beaverview.crt \
-    -subj "/CN=beaverview" \
-    -addext "subjectAltName=DNS:beaverview,IP:192.168.1.50"
+cd /home/beaverview/app
+sudo scripts/generate_self_signed_cert.sh 192.168.1.50
 ```
 
 `-days 3650` = 10 years before renewal is needed.
+If you are intentionally replacing an existing certificate, add `--force` before the IP address.
 
 ### Step 2 — Configure nginx
 

@@ -196,3 +196,13 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - On the Ubuntu VM, render nginx with the actual VM IP before running `nginx -t`.
+
+## 2026-06-24 - Self-signed certificate helper
+
+- Added `scripts/generate_self_signed_cert.sh` to validate a VM IP and generate the BeaverView self-signed cert/key pair.
+- Updated `scripts/check_deployment_assets.sh` to generate a sample cert locally and verify both DNS and IP subject alternative names.
+- Updated deployment docs to use the helper instead of a raw multi-line `openssl` command.
+
+### Next
+
+- On the Ubuntu VM, generate the cert with the actual VM IP before copying the rendered nginx config into place.

@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SERVICE="$ROOT/deploy/systemd/beaverview.service"
 NGINX="$ROOT/deploy/nginx/beaverview.conf.template"
 RENDER="$ROOT/scripts/render_nginx_config.sh"
+CERT="$ROOT/scripts/generate_self_signed_cert.sh"
 
 fail() {
   echo "FAIL $*" >&2
@@ -25,6 +26,7 @@ require_text() {
 require_file "$SERVICE"
 require_file "$NGINX"
 require_file "$RENDER"
+require_file "$CERT"
 
 require_text "$SERVICE" "User=beaverview"
 require_text "$SERVICE" "WorkingDirectory=/home/beaverview/app/api"
@@ -43,11 +45,19 @@ require_text "$NGINX" "proxy_pass         http://127.0.0.1:8000;"
 require_text "$NGINX" 'proxy_set_header   X-Forwarded-Proto $scheme;'
 
 rendered="$(mktemp)"
-trap 'rm -f "$rendered"' EXIT
+cert_dir="$(mktemp -d)"
+trap 'rm -f "$rendered"; rm -rf "$cert_dir"' EXIT
 "$RENDER" "192.0.2.50" "$rendered" >/dev/null
 require_text "$rendered" "server_name beaverview 192.0.2.50;"
 if grep -Fq "__VM_IP__" "$rendered"; then
   fail "rendered nginx config still contains __VM_IP__"
 fi
+
+"$CERT" "192.0.2.50" "$cert_dir" >/dev/null
+require_file "$cert_dir/beaverview.key"
+require_file "$cert_dir/beaverview.crt"
+cert_text="$(openssl x509 -in "$cert_dir/beaverview.crt" -noout -text)"
+printf '%s\n' "$cert_text" | grep -Fq "DNS:beaverview" || fail "certificate missing DNS SAN"
+printf '%s\n' "$cert_text" | grep -Fq "IP Address:192.0.2.50" || fail "certificate missing IP SAN"
 
 echo "Deployment assets verified"

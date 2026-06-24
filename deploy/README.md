@@ -7,6 +7,7 @@ Reusable deployment templates for the Ubuntu VM target.
 - `systemd/beaverview.service` — systemd unit for uvicorn on `127.0.0.1:8000`.
 - `nginx/beaverview.conf.template` — nginx HTTPS reverse proxy template. Replace `__VM_IP__` with the VM IP before installing.
 - `../scripts/render_nginx_config.sh` — validates a VM IP and renders the nginx template.
+- `../scripts/generate_self_signed_cert.sh` — validates a VM IP and generates the self-signed TLS cert/key pair.
 
 ## Validate Locally
 
@@ -22,6 +23,7 @@ From `/home/beaverview/app` on the Ubuntu VM:
 
 ```bash
 sudo cp deploy/systemd/beaverview.service /etc/systemd/system/beaverview.service
+sudo scripts/generate_self_signed_cert.sh 192.168.1.50
 scripts/render_nginx_config.sh 192.168.1.50 /tmp/beaverview.nginx
 sudo cp /tmp/beaverview.nginx /etc/nginx/sites-available/beaverview
 ```
