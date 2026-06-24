@@ -120,6 +120,7 @@ Current guarded implementation state:
 - Public OSU map data provides building/location records, not Presentation Support room inventory.
 - FastAPI backend endpoints now exist for health, auth/session checks, sanitized SQLite campus inventory, admin inventory, audit logging, connector tests, 25Live schedule fallback, ServiceNow draft/create, XPanel launch/proxy, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ commands.
 - `scripts/check_inventory_parity.py` verifies the static seed data and sanitized backend inventory match before the browser uses the SQLite read path.
+- Hardware IP import validation rejects duplicate room/device mappings and unreviewed public IP rows before live proxy testing.
 - Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.
 - Real external systems still require ignored `api/.env` values and ignored `api/hardware_ips.csv`.
 - Entra SSO is scaffolded but still requires real Azure app and group configuration.

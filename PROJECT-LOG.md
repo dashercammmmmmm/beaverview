@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Hardware IP import guardrails
+
+- Hardened `api/import_device_ips.py` so Hardware IP validation rejects missing required fields, duplicate `room_id`/`device_type` mappings, and public IP addresses unless `--allow-public` is explicitly supplied after review.
+- Changed IP validation errors to report CSV row numbers without echoing raw IP values.
+- Expanded `scripts/check_hardware_ip_import.sh` with negative fixtures for duplicate mappings and unreviewed public IPs.
+
+### Next
+
+- When the real secure `api/hardware_ips.csv` arrives, run `scripts/check_hardware_ip_import.sh` before import; any failure should be corrected in the source export before first live-room validation.
+
 ## 2026-06-24 - Dashboard backend inventory read path
 
 - Added `scripts/check_inventory_parity.py` to compare `dashboard/data.js` with `GET /api/campus/{campus_id}/inventory` for every seeded campus.

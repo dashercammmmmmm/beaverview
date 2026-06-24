@@ -12,6 +12,8 @@ Expected CSV columns (header row required):
 
 Safe to re-run — clears and reloads the device_ips table on each run.
 Does NOT touch any other table.
+Private/link-local IP addresses are required by default. Use --allow-public
+only after explicit network review.
 """
 import argparse
 import csv
@@ -24,19 +26,22 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'beaverview.db')
 SUPPORTED_PROXY_TYPES = {'xpanel', 'wattbox', 'ptz'}
 
 
-def validate_ip(ip_address: str) -> str:
+def validate_ip(ip_address: str, row_number: int, allow_public: bool = False) -> str:
     try:
         parsed = ipaddress.ip_address(ip_address)
     except ValueError:
-        print(f'Error: invalid IP address: {ip_address}')
+        print(f'Error: invalid IP address in CSV row {row_number}')
         sys.exit(1)
     if parsed.is_loopback or parsed.is_unspecified or parsed.is_multicast:
-        print(f'Error: non-proxyable IP address: {ip_address}')
+        print(f'Error: non-proxyable IP address in CSV row {row_number}')
+        sys.exit(1)
+    if not allow_public and not (parsed.is_private or parsed.is_link_local):
+        print(f'Error: public IP address in CSV row {row_number}; use --allow-public only after network review')
         sys.exit(1)
     return str(parsed)
 
 
-def load_rows(csv_path: str) -> list[tuple[str, str, str]]:
+def load_rows(csv_path: str, allow_public: bool = False) -> list[tuple[str, str, str]]:
     if not os.path.exists(csv_path):
         print(f'Error: file not found: {csv_path}')
         sys.exit(1)
@@ -50,17 +55,49 @@ def load_rows(csv_path: str) -> list[tuple[str, str, str]]:
             print(f'Error: CSV missing required columns: {missing}')
             sys.exit(1)
         for line in reader:
+            row_number = reader.line_num
             room_id     = line['room_id'].strip().lower()
             device_type = line['device_type'].strip().lower()
-            ip_address  = validate_ip(line['ip_address'].strip())
-            if room_id and device_type and ip_address:
-                rows.append((room_id, device_type, ip_address))
+            ip_raw      = line['ip_address'].strip()
+            missing_fields = [
+                field
+                for field, value in (
+                    ('room_id', room_id),
+                    ('device_type', device_type),
+                    ('ip_address', ip_raw),
+                )
+                if not value
+            ]
+            if missing_fields:
+                print(f'Error: CSV row {row_number} missing required field(s): {", ".join(missing_fields)}')
+                sys.exit(1)
+            ip_address = validate_ip(ip_raw, row_number, allow_public=allow_public)
+            rows.append((room_id, device_type, ip_address))
 
     if not rows:
         print('Error: CSV contains no importable rows')
         sys.exit(1)
 
+    validate_unique_device_targets(rows)
     return rows
+
+
+def validate_unique_device_targets(rows: list[tuple[str, str, str]]) -> None:
+    seen: set[tuple[str, str]] = set()
+    duplicates: list[str] = []
+    for room_id, device_type, _ in rows:
+        key = (room_id, device_type)
+        if key in seen:
+            duplicates.append(f'{room_id}/{device_type}')
+        seen.add(key)
+
+    if duplicates:
+        preview = ', '.join(sorted(set(duplicates))[:8])
+        if len(set(duplicates)) > 8:
+            preview += f', ... ({len(set(duplicates))} total)'
+        print(f'Error: duplicate room/device mapping in CSV: {preview}')
+        print('Each room_id/device_type pair must resolve to exactly one device IP.')
+        sys.exit(1)
 
 
 def validate_room_ids(con: sqlite3.Connection, rows: list[tuple[str, str, str]]) -> None:
@@ -83,8 +120,8 @@ def validate_room_ids(con: sqlite3.Connection, rows: list[tuple[str, str, str]])
         sys.exit(1)
 
 
-def import_ips(csv_path: str, dry_run: bool = False) -> None:
-    rows = load_rows(csv_path)
+def import_ips(csv_path: str, dry_run: bool = False, allow_public: bool = False) -> None:
+    rows = load_rows(csv_path, allow_public=allow_public)
 
     from main import init_db
     init_db()
@@ -116,6 +153,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Import or validate BeaverView hardware IP CSV data.')
     parser.add_argument('csv_path', nargs='?', default=os.path.join(os.path.dirname(__file__), 'hardware_ips.csv'))
     parser.add_argument('--dry-run', action='store_true', help='Validate only; do not replace device_ips rows.')
+    parser.add_argument(
+        '--allow-public',
+        action='store_true',
+        help='Allow public IP addresses after explicit network review. Private/link-local is required by default.',
+    )
     args = parser.parse_args()
 
     if not os.path.exists(args.csv_path):
@@ -123,4 +165,4 @@ if __name__ == '__main__':
         print(f'Error: file not found: {args.csv_path}')
         sys.exit(1)
 
-    import_ips(args.csv_path, dry_run=args.dry_run)
+    import_ips(args.csv_path, dry_run=args.dry_run, allow_public=args.allow_public)

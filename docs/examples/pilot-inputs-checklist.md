@@ -44,6 +44,14 @@ Required pilot device types:
 - `wattbox`
 - `ptz`
 
+CSV rules enforced by validation:
+
+- Each `room_id` must already exist in the migrated SQLite room inventory.
+- Each `room_id` / `device_type` pair must appear only once.
+- Device IP addresses must be private or link-local by default.
+- `--allow-public` may be used only after explicit network review.
+- Validation errors identify CSV rows without printing raw IP values.
+
 Import after validation:
 
 ```bash

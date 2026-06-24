@@ -21,6 +21,8 @@ Complete these fields in a private deployment note, not in this committed file:
 - Azure/Entra login works for one technician and one admin.
 - Ignored `api/.env` has the connector values for the first connector only.
 - Ignored `api/hardware_ips.csv` contains the selected room and the first connector device type.
+- Ignored `api/hardware_ips.csv` has exactly one row for each selected `room_id` / `device_type` pair.
+- Device IP rows are private or link-local unless public addressing has been explicitly reviewed and `--allow-public` is intentionally used.
 - VLAN route from the Ubuntu VM to the AV device network is confirmed.
 - Room is empty or the test is explicitly read-only.
 - `python3 scripts/check_pilot_readiness.py` passes locally before live testing.
@@ -37,7 +39,7 @@ sudo systemctl status beaverview --no-pager
 sudo nginx -t
 ```
 
-Expected result: local checks pass, imported Hardware IP records include the selected non-critical room, and only unrelated external prerequisites remain pending.
+Expected result: local checks pass, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
 
 ## Connector Order
 

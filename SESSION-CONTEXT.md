@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after switching the dashboard to backend inventory when FastAPI is online.
+**Last updated:** 2026-06-24 after hardening Hardware IP import guardrails.
 
 ---
 
@@ -284,10 +284,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard Device web UIs panel now shows inventory only and keeps per-device launch disabled until Hardware IP records and approved proxy routes exist.
 - The active dashboard Overview tab now shows a diagnostics card with likely causes and keeps WattBox Auto-Fix disabled while the room appears occupied.
 - Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
-- `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
+- `import_device_ips.py` now initializes the DB schema and validates Hardware IP CSV rows before import.
+- Import validation rejects empty required fields, duplicate `room_id`/`device_type` mappings, and public IP addresses unless `--allow-public` is explicitly supplied after review.
+- IP validation errors report CSV row numbers without echoing raw IP values.
 - `import_device_ips.py --dry-run <csv>` validates Hardware IP CSV data without replacing the `device_ips` table.
 - Safe sample CSV: `docs/examples/hardware_ips.sample.csv`.
-- `scripts/check_hardware_ip_import.sh` validates the sample and dry-runs the real ignored `api/hardware_ips.csv` when present.
+- `scripts/check_hardware_ip_import.sh` validates the sample, asserts duplicate/public-IP negative fixtures fail, and dry-runs the real ignored `api/hardware_ips.csv` when present.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
 
 ### Admin connector testing
@@ -387,7 +389,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | Windows hosts file entries | `192.168.x.x beaverview` on each Windows PC |
 | nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
-| Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `python3 import_device_ips.py hardware_ips.csv`, then verify proxy lookup with a real room/device. |
+| Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `scripts/check_hardware_ip_import.sh`, then run `python3 import_device_ips.py hardware_ips.csv` only after validation passes. |
 | Live PTZ/WattBox validation | Frontend and backend paths exist; still requires real `hardware_ips.csv` plus PTZ/WattBox credentials before live room testing. |
 | Live launch validation | Frontend and backend launch paths exist for XPanel, ScreenConnect, and SharePoint; still requires `SC_BASE_URL`, `SHAREPOINT_BASE_URL`, XPanel credentials, and real Hardware IP records. |
 | Device web UI launch validation | Dashboard inventory state exists; add explicit backend proxy/launch coverage per approved device type after real Hardware IP data is imported. |
