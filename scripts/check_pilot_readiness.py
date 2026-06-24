@@ -44,6 +44,7 @@ BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_dashboard_browser.sh"
 ADMIN_BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_admin_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
+FIRST_LIVE_ROOM_CASES_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight_cases.py"
 FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
@@ -344,6 +345,18 @@ def check_first_live_room_preflight(env: dict[str, str]) -> None:
         fail(message)
 
 
+def check_first_live_room_preflight_cases() -> None:
+    if not FIRST_LIVE_ROOM_CASES_SCRIPT.exists():
+        fail("first live-room preflight case validator is missing")
+        return
+
+    result = run([sys.executable, str(FIRST_LIVE_ROOM_CASES_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("first live-room preflight pass/pending/fail cases validate")
+    else:
+        fail("first live-room preflight case validation failed")
+
+
 def is_configured(value: str | None) -> bool:
     if not value:
         return False
@@ -468,6 +481,7 @@ def run_checks() -> None:
     check_env_template()
     check_pilot_inputs_doc()
     check_live_validation_doc()
+    check_first_live_room_preflight_cases()
     check_env_prereqs()
 
 

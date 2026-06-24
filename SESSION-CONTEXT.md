@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding first live-room target preflight.
+**Last updated:** 2026-06-24 after adding first live-room preflight case coverage.
 
 ---
 
@@ -303,6 +303,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/check_first_live_room_preflight.py` checks the selected room exists, the connector is allowlisted, required credential keys are present, and any device-backed connector has exactly one matching `device_ips` row.
 - The script exits `0` for pass, `2` for pending external prerequisites, and `1` for local/configuration failures; it does not print secrets or raw IPs.
 - `scripts/check_pilot_readiness.py` reports the target as pending until those two `.env` values are set.
+- `scripts/check_first_live_room_preflight_cases.py` validates pass/pending/fail behavior against a temporary SQLite DB using the test-only `BEAVERVIEW_DB_PATH` override, without touching ignored local project data.
 
 ### ServiceNow incident creation
 - `POST /api/rooms/{room_id}/servicenow/incident` returns a mock draft when ServiceNow credentials are missing.
@@ -316,7 +317,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room target preflight, first live-room validation runbook coverage, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room target preflight case coverage, selected target preflight, first live-room validation runbook coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.

@@ -26,6 +26,7 @@ REQUIRED_TERMS = (
     "FIRST_LIVE_ROOM_ID",
     "FIRST_LIVE_CONNECTOR",
     "scripts/check_first_live_room_preflight.py",
+    "scripts/check_first_live_room_preflight_cases.py",
     "crestron_poll",
     "AZURE_TENANT_ID",
     "AZURE_CLIENT_ID",

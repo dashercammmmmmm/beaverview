@@ -217,6 +217,7 @@ scripts/check_data_migration.sh
 scripts/check_hardware_ip_import.sh
 scripts/check_deployment_assets.sh
 scripts/check_api_contracts.py
+scripts/check_first_live_room_preflight_cases.py
 python3 scripts/check_env_template.py
 python3 scripts/check_live_validation_doc.py
 python3 scripts/check_pilot_readiness.py

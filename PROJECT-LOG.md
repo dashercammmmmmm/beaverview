@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room preflight case coverage
+
+- Added `scripts/check_first_live_room_preflight_cases.py` to exercise first live-room preflight pass, pending, and fail behavior against an isolated temporary SQLite DB.
+- Added a test-only `BEAVERVIEW_DB_PATH` override for the preflight script so validator coverage does not touch ignored local project data.
+- Wired the case validator into `scripts/check_pilot_readiness.py` as a local gate.
+
+### Next
+
+- Keep using `scripts/check_first_live_room_preflight.py` for the real selected room; the case validator only proves the preflight logic itself still behaves safely.
+
 ## 2026-06-24 - First live-room target preflight
 
 - Added `scripts/check_first_live_room_preflight.py` to validate a selected first live-room target without printing secrets or raw IPs.

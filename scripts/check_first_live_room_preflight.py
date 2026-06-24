@@ -14,7 +14,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
-DB_PATH = API_DIR / "beaverview.db"
+DB_PATH = Path(os.environ.get("BEAVERVIEW_DB_PATH", API_DIR / "beaverview.db"))
 ENV_PATH = API_DIR / ".env"
 VENV_PYTHON = API_DIR / "venv" / "bin" / "python"
 
