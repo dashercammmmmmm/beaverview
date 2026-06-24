@@ -47,4 +47,16 @@ if [ "$proxy_status" = "501" ]; then
   exit 1
 fi
 
+wattbox_status="$(curl -sS -o /tmp/beaverview-wattbox.json -w "%{http_code}" "$BASE_URL/api/rooms/corvallis-kad-101/wattbox/outlets")"
+if [ "$wattbox_status" != "400" ] || ! grep -q "WattBox OvrC credentials are not configured" /tmp/beaverview-wattbox.json; then
+  echo "WattBox offline guardrail changed unexpectedly" >&2
+  exit 1
+fi
+
+ptz_status="$(curl -sS -o /tmp/beaverview-ptz.json -w "%{http_code}" -X POST "$BASE_URL/api/rooms/corvallis-kad-101/ptz/home")"
+if [ "$ptz_status" != "400" ] || ! grep -q "ptz proxy credentials are not configured" /tmp/beaverview-ptz.json; then
+  echo "PTZ offline guardrail changed unexpectedly" >&2
+  exit 1
+fi
+
 echo "BeaverView smoke checks passed at $BASE_URL"

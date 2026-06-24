@@ -796,26 +796,27 @@ function renderPTZTool(room) {
       <div class="ptz-controls">
         <div class="ptz-dpad">
           <span></span>
-          <button class="ptz-btn" type="button" title="Tilt up">▲</button>
+          <button class="ptz-btn" type="button" title="Tilt up" data-action="ptz_command" data-command="up">▲</button>
           <span></span>
-          <button class="ptz-btn" type="button" title="Pan left">◄</button>
-          <button class="ptz-btn ptz-btn-home" type="button" title="Go to home">HOME</button>
-          <button class="ptz-btn" type="button" title="Pan right">►</button>
+          <button class="ptz-btn" type="button" title="Pan left" data-action="ptz_command" data-command="left">◄</button>
+          <button class="ptz-btn ptz-btn-home" type="button" title="Go to home" data-action="ptz_command" data-command="home">HOME</button>
+          <button class="ptz-btn" type="button" title="Pan right" data-action="ptz_command" data-command="right">►</button>
           <span></span>
-          <button class="ptz-btn" type="button" title="Tilt down">▼</button>
+          <button class="ptz-btn" type="button" title="Tilt down" data-action="ptz_command" data-command="down">▼</button>
           <span></span>
         </div>
         <div class="ptz-zoom">
-          <button class="ptz-btn" type="button" title="Zoom in"  style="width:48px">Z +</button>
-          <button class="ptz-btn" type="button" title="Zoom out" style="width:48px">Z −</button>
+          <button class="ptz-btn" type="button" title="Zoom in"  style="width:48px" data-action="ptz_command" data-command="zoom_in">Z +</button>
+          <button class="ptz-btn" type="button" title="Zoom out" style="width:48px" data-action="ptz_command" data-command="zoom_out">Z −</button>
         </div>
         <div class="ptz-presets">
           <p class="eyebrow">Presets</p>
-          ${presets.map(p => `<button class="ptz-preset" type="button">${p}</button>`).join("")}
+          ${presets.map((p, i) => `<button class="ptz-preset" type="button" data-action="ptz_command" data-command="preset_${i + 1}">${p}</button>`).join("")}
         </div>
       </div>
+      <div class="tool-status" data-tool-status aria-live="polite"></div>
     </div>
-  `, `Mock UI — in production controls the ${cam ? `${cam[1]} ${cam[2]}` : "PTZ camera"} via its HTTP API`);
+  `, `Commands route through the BeaverView backend. PTZ credentials and Hardware IP records must be loaded before live camera movement works.`);
 }
 
 // WattBox — outlet status + per-outlet cycle button
@@ -833,19 +834,20 @@ function renderWattBoxTool(room) {
       <p class="eyebrow" style="margin-bottom:6px">
         ${room.building.code} ${room.number} — ${outlets.length - 1} device outlet${outlets.length - 1 !== 1 ? "s" : ""}
       </p>
+      <div class="tool-status" data-tool-status aria-live="polite">Checking backend WattBox status...</div>
       ${outlets.map(o => `
-        <div class="wb-outlet">
+        <div class="wb-outlet" data-outlet-row="${o.num}">
           <span class="wb-outlet-num">${o.num}</span>
           <div class="wb-outlet-name">
             <strong>${o.label}</strong>
             <span>${o.type}</span>
           </div>
           <span class="wb-status ${o.on ? "on" : "off"}">${o.on ? "On" : "Off"}</span>
-          <button class="wb-cycle" type="button" ${!o.on && o.label === "(spare)" ? "disabled" : ""}>Cycle</button>
+          <button class="wb-cycle" type="button" data-action="wattbox_outlet_cycle" data-outlet="${o.num}" ${!o.on && o.label === "(spare)" ? "disabled" : ""}>Cycle</button>
         </div>
       `).join("")}
     </div>
-  `, "Mock UI — in production cycles specific outlets via the WattBox REST API. Each cycle is logged in the audit trail.");
+  `, "Status and cycle requests route through the BeaverView backend. Without OvrC credentials, the local outlet list remains a mock fallback.");
 }
 
 // Device Web UI — inventory list with per-device launch buttons
@@ -1087,6 +1089,98 @@ function addAudit(action, outcome = "success") {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action_type: action, outcome })
     }).catch(() => {});
+  }
+}
+
+function apiDetail(data, fallback) {
+  if (typeof data?.detail === "string") return data.detail;
+  if (Array.isArray(data?.detail)) return data.detail.map((item) => item.msg || String(item)).join("; ");
+  return fallback;
+}
+
+async function refreshWattBoxOutlets(room) {
+  const panel = document.querySelector(".wb-panel");
+  const statusEl = panel?.querySelector("[data-tool-status]");
+  if (!room || !panel || !statusEl) return;
+
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(room.id)}/wattbox/outlets`, {
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(apiDetail(data, `HTTP ${response.status}`));
+    }
+
+    const outlets = Array.isArray(data.outlets) ? data.outlets : [];
+    statusEl.textContent = outlets.length
+      ? `Backend reported ${outlets.length} WattBox outlet${outlets.length === 1 ? "" : "s"} from ${data.source || "OvrC"}.`
+      : "Backend reached OvrC, but no outlet rows were returned.";
+    addAudit("wattbox_status_checked", "backend status loaded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "request failed";
+    statusEl.textContent = `Using mock outlet list: ${message}`;
+    addAudit("wattbox_status_unavailable", message);
+  }
+}
+
+async function submitPTZCommand(button) {
+  const room = selectedRoom();
+  const command = button.dataset.command;
+  const panel = button.closest(".ptz-panel");
+  const statusEl = panel?.querySelector("[data-tool-status]");
+  if (!room || !command) return;
+
+  button.disabled = true;
+  if (statusEl) statusEl.textContent = `Sending PTZ command: ${command.replaceAll("_", " ")}.`;
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(room.id)}/ptz/${encodeURIComponent(command)}`, {
+      method: "POST"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(apiDetail(data, `HTTP ${response.status}`));
+    }
+    const outcome = data.http_status ? `HTTP ${data.http_status}` : "sent";
+    addAudit("ptz_command", `${command}: ${outcome}`);
+    if (statusEl) statusEl.textContent = `PTZ command sent: ${command.replaceAll("_", " ")}.`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "request failed";
+    addAudit("ptz_command_failed", `${command}: ${message}`);
+    if (statusEl) statusEl.textContent = `PTZ command unavailable: ${message}`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function cycleWattBoxOutlet(button) {
+  const room = selectedRoom();
+  const outlet = button.dataset.outlet;
+  const panel = button.closest(".wb-panel");
+  const statusEl = panel?.querySelector("[data-tool-status]");
+  if (!room || !outlet) return;
+
+  if (!confirm(`Cycle WattBox outlet ${outlet}? This is a last-resort action and will be logged.`)) return;
+
+  button.disabled = true;
+  if (statusEl) statusEl.textContent = `Requesting WattBox outlet ${outlet} cycle.`;
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(room.id)}/wattbox/outlets/${encodeURIComponent(outlet)}/cycle`, {
+      method: "POST"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(apiDetail(data, `HTTP ${response.status}`));
+    }
+    const outcome = data.http_status ? `outlet ${outlet}: HTTP ${data.http_status}` : `outlet ${outlet}: requested`;
+    addAudit("wattbox_outlet_cycle", outcome);
+    if (statusEl) statusEl.textContent = `WattBox outlet ${outlet} cycle requested.`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "request failed";
+    addAudit("wattbox_outlet_cycle_failed", `outlet ${outlet}: ${message}`);
+    if (statusEl) statusEl.textContent = `WattBox cycle unavailable: ${message}`;
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -1345,6 +1439,14 @@ els.roomBody.addEventListener("click", async (event) => {
     await submitServiceNowIncident(button);
     return;
   }
+  if (action === "ptz_command") {
+    await submitPTZCommand(button);
+    return;
+  }
+  if (action === "wattbox_outlet_cycle") {
+    await cycleWattBoxOutlet(button);
+    return;
+  }
 
   // Power cycle needs an explicit confirmation before proceeding
   if (action.includes("power") && !confirm("Power cycling is a last-resort action. Confirm? This will be logged.")) return;
@@ -1367,6 +1469,7 @@ els.roomBody.addEventListener("click", async (event) => {
   if (PANELS[tool] && room) {
     // Replace room body with the tool panel (back button is inside the panel)
     els.roomBody.innerHTML = PANELS[tool](room);
+    if (tool === "wattbox") refreshWattBoxOutlets(room);
   } else {
     // Fallback: go to log tab
     state.activeTab = "log";

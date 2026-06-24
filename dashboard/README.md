@@ -26,6 +26,7 @@ http://localhost:8000
 - Local action logging, plus backend admin audit logging when served by FastAPI.
 - ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
+- PTZ and WattBox controls route through guarded backend endpoints and show prerequisite messages until Hardware IP records and credentials are loaded.
 - First-run guided tour.
 
 ## What This Version Does Not Do Yet
@@ -34,7 +35,7 @@ http://localhost:8000
 - Generated room entries are placeholders and must be replaced by the secure inventory import.
 - Public `map.oregonstate.edu` provides building/location data, not the internal Presentation Support room inventory.
 - No Microsoft Entra SSO.
-- No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls.
+- No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls until credentials and Hardware IP records are loaded.
 - Static file mode cannot call backend APIs; use `http://localhost:8000` for API-backed workflows.
 
 ## Version Archive

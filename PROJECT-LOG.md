@@ -2,6 +2,19 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Dashboard PTZ and WattBox guarded controls
+
+- Wired PTZ dashboard controls to `POST /api/rooms/{room_id}/ptz/{command}` for pan, tilt, zoom, home, and preset recall commands.
+- Wired WattBox cycle buttons to `POST /api/rooms/{room_id}/wattbox/outlets/{outlet_num}/cycle` with an explicit browser confirmation.
+- The WattBox panel now checks `GET /api/rooms/{room_id}/wattbox/outlets` on open and keeps the local mock outlet list when OvrC credentials are missing.
+- PTZ and WattBox panels now show inline backend status/prerequisite messages instead of acting as silent mock controls.
+- Expanded `scripts/smoke_check.sh` to verify the offline PTZ and WattBox guardrails in addition to the existing backend smoke endpoints.
+
+### Next
+
+- Load the real secure `api/hardware_ips.csv`, configure PTZ/WattBox credentials in `api/.env`, and test one real non-critical room before enabling pilot use.
+- Once one room validates live, replace mock WattBox outlet labels with normalized OvrC outlet data.
+
 ## 2026-06-24 - Dashboard 25Live schedule overlay
 
 - Wired the active dashboard to fetch `GET /api/campus/{campus_id}/schedule` when the backend is reachable.

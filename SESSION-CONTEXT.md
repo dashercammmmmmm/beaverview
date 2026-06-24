@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after wiring the dashboard ServiceNow form and 25Live schedule overlay to the backend.
+**Last updated:** 2026-06-24 after wiring dashboard ServiceNow, 25Live, PTZ, and WattBox flows to guarded backend endpoints.
 
 ---
 
@@ -251,6 +251,8 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Credentials are read from `.env`: `CRESTRON_PROXY_*`, `WATTBOX_DIRECT_*`, `PTZ_PROXY_*`.
 - WattBox OvrC outlet status/cycle endpoints use `WATTBOX_OVRC_*` server-side and log outlet-cycle attempts.
 - PTZ camera commands use `/api/rooms/{room_id}/ptz/{command}` with an allowlist, backend-only credentials, proxyable-IP validation, and audit logging.
+- The active dashboard PTZ controls now call the backend command endpoint and show inline prerequisite/error status.
+- The active dashboard WattBox panel now checks backend outlet status on open and routes outlet cycle buttons through the backend with explicit confirmation.
 - Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
 - `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
 - `import_device_ips.py --dry-run <csv>` validates Hardware IP CSV data without replacing the `device_ips` table.
@@ -340,7 +342,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
 | Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `python3 import_device_ips.py hardware_ips.csv`, then verify proxy lookup with a real room/device. |
-| Frontend PTZ/WattBox wiring | Backend endpoints exist; active dashboard PTZ and WattBox panels still need guarded fetch calls after real device IP records are loaded. |
+| Live PTZ/WattBox validation | Frontend and backend paths exist; still requires real `hardware_ips.csv` plus PTZ/WattBox credentials before live room testing. |
 | Device issue diagnostics card | In room Overview tab: show which device is failing, probable cause, "Auto-Fix" button (WattBox reboot). Auto-fix only when room is empty. Recommended but not yet built. |
 
 ### 🟡 Nice to have

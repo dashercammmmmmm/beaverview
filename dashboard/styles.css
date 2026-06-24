@@ -1463,6 +1463,11 @@ h1, h2, h3, p {
 }
 .ptz-btn:hover  { background: var(--bg-page); }
 .ptz-btn:active { background: var(--border-default); }
+.ptz-btn:disabled,
+.ptz-preset:disabled {
+  cursor: wait;
+  opacity: .55;
+}
 .ptz-btn-home { font-size: 9px; font-weight: 700; letter-spacing: .04em; color: var(--text-muted); }
 
 .ptz-preset {
@@ -1479,6 +1484,13 @@ h1, h2, h3, p {
   transition: border-color .1s, color .1s;
 }
 .ptz-preset:hover { border-color: var(--osu-orange); color: var(--osu-orange); }
+
+.tool-status {
+  min-height: 18px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
 
 /* ── WattBox ── */
 .wb-panel { display: flex; flex-direction: column; gap: 6px; }

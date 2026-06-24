@@ -35,7 +35,7 @@ Run this before pushing or after changing backend/auth/connector behavior:
 scripts/smoke_check.sh
 ```
 
-It compiles active Python modules, verifies required imports, checks `dashboard/app.js` syntax, starts uvicorn on `127.0.0.1:8017`, then checks `/api/health`, `/api/me`, 25Live mock fallback, ServiceNow mock fallback, and chat mock fallback.
+It compiles active Python modules, verifies required imports, checks `dashboard/app.js` syntax, starts uvicorn on `127.0.0.1:8017`, then checks `/api/health`, `/api/me`, 25Live mock fallback, ServiceNow/chat mock fallbacks, and PTZ/WattBox offline guardrails.
 
 Run this after changing `dashboard/data.js`, `api/migrate_data.py`, or DB schema:
 
