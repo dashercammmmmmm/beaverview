@@ -1,0 +1,155 @@
+# BeaverView Pilot Inputs Checklist
+
+Use this checklist to collect the external inputs that stay out of Git. Do not paste real secrets into this file. Put deployment values only in ignored `api/.env`, and put real hardware IP data only in ignored `api/hardware_ips.csv`.
+
+After any update, restart BeaverView and run:
+
+```bash
+python3 scripts/check_pilot_readiness.py
+```
+
+## Local Secret Baseline
+
+Create or update ignored `api/.env`:
+
+```bash
+bash scripts/init_local_env.sh
+```
+
+Required generated values:
+
+- `PROXY_SECRET`
+- `SESSION_SECRET_KEY`
+
+## Hardware IP Records
+
+Target file: ignored `api/hardware_ips.csv`
+
+Validate before import:
+
+```bash
+scripts/check_hardware_ip_import.sh
+```
+
+Required CSV columns:
+
+- `room_id`
+- `device_type`
+- `ip_address`
+- `notes`
+
+Required pilot device types:
+
+- `xpanel`
+- `wattbox`
+- `ptz`
+
+Import after validation:
+
+```bash
+cd api && venv/bin/python import_device_ips.py hardware_ips.csv
+```
+
+## Azure / Entra App
+
+Detailed setup: `docs/examples/azure-entra-app-registration.md`
+
+Required `api/.env` values:
+
+- `AZURE_TENANT_ID`
+- `AZURE_CLIENT_ID`
+- `AZURE_CLIENT_SECRET`
+- `AZURE_REDIRECT_URI`
+
+Redirect URI:
+
+- `https://beaverview/auth/callback`
+
+## Azure / Entra Groups
+
+Required `api/.env` values:
+
+- `AZURE_GROUP_TECHNICIAN`
+- `AZURE_GROUP_ADMIN`
+
+## Crestron Poll Credentials
+
+Required `api/.env` values:
+
+- `CRESTRON_POLL_USERNAME`
+- `CRESTRON_POLL_PASSWORD`
+
+Optional `api/.env` values:
+
+- `CRESTRON_POLL_INTERVAL_SECONDS`
+- `CRESTRON_POLL_SCHEME`
+- `CRESTRON_VERIFY_SSL`
+
+## XPanel Proxy Credentials
+
+Required `api/.env` values:
+
+- `CRESTRON_PROXY_USERNAME`
+- `CRESTRON_PROXY_PASSWORD`
+- `CRESTRON_PROXY_SCHEME`
+
+## WattBox Direct Proxy Credentials
+
+Required `api/.env` values:
+
+- `WATTBOX_DIRECT_USERNAME`
+- `WATTBOX_DIRECT_PASSWORD`
+- `WATTBOX_PROXY_SCHEME`
+
+Optional OvrC values:
+
+- `WATTBOX_OVRC_BASE_URL`
+- `WATTBOX_OVRC_API_KEY`
+
+## PTZ Proxy Credentials
+
+Required `api/.env` values:
+
+- `PTZ_PROXY_USERNAME`
+- `PTZ_PROXY_PASSWORD`
+- `PTZ_PROXY_SCHEME`
+
+## 25Live Credentials
+
+Required `api/.env` values:
+
+- `LIVE25_BASE_URL`
+- `LIVE25_USERNAME`
+- `LIVE25_PASSWORD`
+
+## ServiceNow Credentials
+
+Required instance value:
+
+- `SN_INSTANCE`
+
+OAuth option:
+
+- `SN_CLIENT_ID`
+- `SN_CLIENT_SECRET`
+
+Basic Auth option:
+
+- `SN_USERNAME`
+- `SN_PASSWORD`
+
+## Final Verification
+
+Run all local gates:
+
+```bash
+scripts/smoke_check.sh
+scripts/check_data_migration.sh
+scripts/check_hardware_ip_import.sh
+scripts/check_deployment_assets.sh
+scripts/check_api_contracts.py
+python3 scripts/check_env_template.py
+python3 scripts/check_pilot_readiness.py
+```
+
+Expected result before external inputs are available: local checks pass, and the preflight lists pending external prerequisites. Expected result after external inputs are available: local checks pass and pending prerequisite count drops as each input is filled.

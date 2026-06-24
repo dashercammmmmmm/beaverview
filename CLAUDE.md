@@ -61,7 +61,7 @@ Run this for a broader local readiness snapshot before deployment work:
 python3 scripts/check_pilot_readiness.py
 ```
 
-It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, offline API contracts, env-template consistency, and reports pending external prerequisites without printing secret values.
+It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, offline API contracts, env-template consistency, the pilot input checklist, and reports pending external prerequisites without printing secret values.
 
 Run this after changing API route, auth, connector fallback, or proxy behavior:
 
@@ -88,6 +88,8 @@ bash scripts/init_local_env.sh
 It does not print generated secret values.
 
 Azure/Entra setup has a committed checklist at `docs/examples/azure-entra-app-registration.md`. The preflight validates that the checklist exists and that `AZURE_REDIRECT_URI`, if configured, is an HTTPS `/auth/callback` URL.
+
+The non-secret external input collection packet is `docs/examples/pilot-inputs-checklist.md`. It maps the remaining preflight pending items to `api/.env` keys and the ignored `api/hardware_ips.csv` file.
 
 Run this after changing deployment templates:
 

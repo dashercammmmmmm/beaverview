@@ -52,5 +52,5 @@ AZURE_GROUP_ADMIN=<Admins group object ID>
 After updating `api/.env`, restart BeaverView and run:
 
 ```bash
-scripts/check_pilot_readiness.py
+python3 scripts/check_pilot_readiness.py
 ```

@@ -164,3 +164,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Keep Azure and connector credentials out of Git; fill them only in ignored `api/.env` when OSU provides them.
+
+## 2026-06-24 - Pilot input checklist
+
+- Added `docs/examples/pilot-inputs-checklist.md` as the non-secret collection packet for remaining OSU pilot inputs.
+- Added `scripts/check_pilot_inputs_doc.py` to validate the checklist still covers the preflight external prerequisite categories.
+- Wired the pilot input checklist validator into `scripts/check_pilot_readiness.py`.
+- Updated `docs/examples/azure-entra-app-registration.md` to use the reliable `python3 scripts/check_pilot_readiness.py` command.
+
+### Next
+
+- Use the checklist to collect external values, then enter them only into ignored `api/.env` or ignored `api/hardware_ips.csv`.

@@ -112,6 +112,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_pilot_readiness.py
 ```
 
+**Non-secret pilot input checklist:**
+```
+docs/examples/pilot-inputs-checklist.md
+```
+
 **Offline API contract check after route/auth/connector changes:**
 ```
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_api_contracts.py
@@ -248,11 +253,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - ServiceNow supports both documented auth paths: OAuth client credentials or Basic Auth service account.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.
 - `scripts/init_local_env.sh` creates/updates ignored `api/.env` and sets `PROXY_SECRET` plus `SESSION_SECRET_KEY` without printing them.
+- `docs/examples/pilot-inputs-checklist.md` is the non-secret collection packet for external OSU inputs.
 - Azure/Entra setup checklist: `docs/examples/azure-entra-app-registration.md`.
 - The preflight validates the Azure redirect URI shape when configured.
 
