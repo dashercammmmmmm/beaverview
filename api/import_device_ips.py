@@ -12,10 +12,25 @@ Expected CSV columns (header row required):
 Safe to re-run — clears and reloads the device_ips table on each run.
 Does NOT touch any other table.
 """
-import csv, os, sqlite3, sys
-from datetime import datetime
+import csv
+import ipaddress
+import os
+import sqlite3
+import sys
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'beaverview.db')
+
+
+def validate_ip(ip_address: str) -> str:
+    try:
+        parsed = ipaddress.ip_address(ip_address)
+    except ValueError:
+        print(f'Error: invalid IP address: {ip_address}')
+        sys.exit(1)
+    if parsed.is_loopback or parsed.is_unspecified or parsed.is_multicast:
+        print(f'Error: non-proxyable IP address: {ip_address}')
+        sys.exit(1)
+    return str(parsed)
 
 
 def import_ips(csv_path: str) -> None:
@@ -34,9 +49,12 @@ def import_ips(csv_path: str) -> None:
         for line in reader:
             room_id     = line['room_id'].strip().lower()
             device_type = line['device_type'].strip().lower()
-            ip_address  = line['ip_address'].strip()
+            ip_address  = validate_ip(line['ip_address'].strip())
             if room_id and device_type and ip_address:
                 rows.append((room_id, device_type, ip_address))
+
+    from main import init_db
+    init_db()
 
     con = sqlite3.connect(DB_PATH)
     con.execute('DELETE FROM device_ips')

@@ -33,3 +33,18 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 - Import real device IP data with `api/import_device_ips.py` after the secure `hardware_ips.csv` is available locally.
 - Replace the `/api/rooms/{room_id}/proxy/{tool}/{path}` 501 placeholder with Hardware IP lookup and safe proxying for the first device class.
+
+## 2026-06-24 - Device proxy foundation
+
+- Attempted `git push origin main`; remote had not advanced, but push failed because this environment has no GitHub HTTPS credentials configured.
+- Replaced the `/api/rooms/{room_id}/proxy/{tool}/{path}` 501 stub with a conservative GET-only proxy foundation for `xpanel`, `wattbox`, and `ptz`.
+- Proxy now looks up device IPs from `device_ips`, validates proxyable IP addresses, injects backend-only credentials, disables redirects, sets a short timeout, and returns `Cache-Control: no-store`.
+- Added private/link-local IP enforcement by default; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
+- Fixed ServiceNow env compatibility so `SN_INSTANCE`, `SN_CLIENT_ID`, and `SN_CLIENT_SECRET` from `.env.example` are honored by `main.py`.
+- Fixed ServiceNow launch URL construction for documented full instance domains such as `oregonstate.service-now.com`.
+- Hardened `api/import_device_ips.py` to initialize schema and reject invalid/non-proxyable IP rows.
+
+### Next
+
+- Configure GitHub credentials or switch the remote to SSH, then push local `main`.
+- Load the real secure `hardware_ips.csv` and device credentials, then test one actual XPanel or WattBox path on the AV network.

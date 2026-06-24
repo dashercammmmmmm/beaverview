@@ -173,7 +173,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Git repository initialized
 - `git init` + initial commit (ec60a6f) — all project files committed
 - GitHub remote exists at `https://github.com/dashercammmmmmm/beaverview`
-- Current local repo is seven commits ahead of GitHub `origin/main`: five BeaverView v2 commits plus source-of-truth stabilization and data-migration repair
+- Current local repo is ahead of GitHub `origin/main`; run `git status --short --branch` for the exact count before pushing.
 - Remaining step: push local v2 to GitHub after smoke checks and approval
 
 ### Python venv required (macOS)
@@ -196,6 +196,15 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - It preserves either `processor` or legacy `crestron` room fields into `rooms.processor`.
 - It normalizes connector config values to valid admin modes: `mock` or `live`.
 - `scripts/check_data_migration.sh` reruns the migration and verifies inventory counts.
+
+### First live-connector gap: device proxy foundation
+- `/api/rooms/{room_id}/proxy/{tool}/{path}` is no longer a 501 stub.
+- Supported proxy tools: `xpanel`, `wattbox`, `ptz`.
+- Device IPs are looked up server-side from `device_ips`; browser responses never include the raw IP.
+- Credentials are read from `.env`: `CRESTRON_PROXY_*`, `WATTBOX_DIRECT_*`, `PTZ_PROXY_*`.
+- Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
+- `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
+- Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
 
 ### Admin link in dashboard header
 - Orange-tinted "Admin" button appears in the top-right header
@@ -222,7 +231,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### 🔴 Blocking — must do before production
 | Item | Notes |
 |---|---|
-| **Push local v2 to GitHub** | GitHub remote exists. Local `main` is seven commits ahead of `origin/main`; push after smoke checks and approval. |
+| **Push local v2 to GitHub** | GitHub remote exists. Local `main` is ahead of `origin/main`; push after smoke checks and GitHub credentials are available. |
 | **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
 | **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, group object IDs |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
@@ -234,6 +243,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | Windows hosts file entries | `192.168.x.x beaverview` on each Windows PC |
 | nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
+| Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `python3 import_device_ips.py hardware_ips.csv`, then verify proxy lookup with a real room/device. |
 | Device issue diagnostics card | In room Overview tab: show which device is failing, probable cause, "Auto-Fix" button (WattBox reboot). Auto-fix only when room is empty. Recommended but not yet built. |
 
 ### 🟡 Nice to have

@@ -39,4 +39,10 @@ curl -fsS "$BASE_URL/api/me" | grep -q '"role":"admin"'
 curl -fsS "$BASE_URL/api/connectors/servicenow/test" | grep -q '"status":"mock"'
 curl -fsS "$BASE_URL/api/connectors/chat/test" | grep -q '"status":"mock"'
 
+proxy_status="$(curl -sS -o /tmp/beaverview-proxy.json -w "%{http_code}" "$BASE_URL/api/rooms/corvallis-kad-101/proxy/xpanel/")"
+if [ "$proxy_status" = "501" ]; then
+  echo "Device proxy is still the old 501 stub" >&2
+  exit 1
+fi
+
 echo "BeaverView smoke checks passed at $BASE_URL"

@@ -8,6 +8,7 @@ import asyncio
 import csv
 import datetime
 import io
+import ipaddress
 import os
 import re
 import sqlite3
@@ -15,10 +16,11 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -208,14 +210,16 @@ if _SC_URL:
 # Pattern 1+2 — WattBox / OvrC
 _WATTBOX_URL = os.getenv("WATTBOX_OVRC_BASE_URL", "")
 _WATTBOX_KEY = os.getenv("WATTBOX_OVRC_API_KEY", "")
+_WATTBOX_DIRECT_USER = os.getenv("WATTBOX_DIRECT_USERNAME", "")
+_WATTBOX_DIRECT_PASS = os.getenv("WATTBOX_DIRECT_PASSWORD", "")
 if _WATTBOX_URL and _WATTBOX_KEY:
     for campus in CONNECTOR_REGISTRY.values():
         campus["wattbox"]["mode"] = "live"
 
 # Pattern 1 — ServiceNow OAuth
-_SN_INSTANCE = os.getenv("SERVICENOW_INSTANCE", "")
-_SN_CLIENT   = os.getenv("SERVICENOW_CLIENT_ID", "")
-_SN_SECRET   = os.getenv("SERVICENOW_CLIENT_SECRET", "")
+_SN_INSTANCE = os.getenv("SN_INSTANCE") or os.getenv("SERVICENOW_INSTANCE", "")
+_SN_CLIENT   = os.getenv("SN_CLIENT_ID") or os.getenv("SERVICENOW_CLIENT_ID", "")
+_SN_SECRET   = os.getenv("SN_CLIENT_SECRET") or os.getenv("SERVICENOW_CLIENT_SECRET", "")
 if _SN_INSTANCE and _SN_CLIENT and _SN_SECRET:
     for campus in CONNECTOR_REGISTRY.values():
         campus["servicenow"]["mode"] = "live"
@@ -231,6 +235,8 @@ _CRESTRON_PASS = os.getenv("CRESTRON_PROXY_PASSWORD", "")
 _PTZ_USER = os.getenv("PTZ_PROXY_USERNAME", "")
 _PTZ_PASS = os.getenv("PTZ_PROXY_PASSWORD", "")
 
+_ALLOW_PUBLIC_DEVICE_PROXY = os.getenv("DEVICE_PROXY_ALLOW_PUBLIC", "").lower() in ("1", "true", "yes")
+
 
 def _now() -> str:
     return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
@@ -243,6 +249,84 @@ def _stamp_connectors() -> None:
         for connector in campus.values():
             if connector["last_synced"] is None:
                 connector["last_synced"] = ts
+
+
+def _device_proxy_config(tool: str) -> dict:
+    """Return backend-only proxy settings for supported device web tools."""
+    configs = {
+        "xpanel": {
+            "device_type": "xpanel",
+            "username": _CRESTRON_USER,
+            "password": _CRESTRON_PASS,
+            "scheme": os.getenv("CRESTRON_PROXY_SCHEME", "http"),
+        },
+        "wattbox": {
+            "device_type": "wattbox",
+            "username": _WATTBOX_DIRECT_USER,
+            "password": _WATTBOX_DIRECT_PASS,
+            "scheme": os.getenv("WATTBOX_PROXY_SCHEME", "http"),
+        },
+        "ptz": {
+            "device_type": "ptz",
+            "username": _PTZ_USER,
+            "password": _PTZ_PASS,
+            "scheme": os.getenv("PTZ_PROXY_SCHEME", "http"),
+        },
+    }
+    if tool not in configs:
+        raise HTTPException(status_code=404, detail=f"Unknown proxy tool '{tool}'")
+    return configs[tool]
+
+
+def _lookup_device_ip(room_id: str, device_type: str) -> str:
+    con = get_db()
+    row = con.execute(
+        "SELECT ip_address FROM device_ips WHERE room_id=? AND device_type=?",
+        (room_id, device_type),
+    ).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No {device_type} IP on record for {room_id}. Import hardware_ips.csv first.",
+        )
+    return row["ip_address"]
+
+
+def _validate_proxy_ip(ip_address: str) -> str:
+    try:
+        parsed = ipaddress.ip_address(ip_address)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Stored device IP is invalid")
+
+    if parsed.is_loopback or parsed.is_unspecified or parsed.is_multicast:
+        raise HTTPException(status_code=400, detail="Stored device IP is not proxyable")
+
+    if not _ALLOW_PUBLIC_DEVICE_PROXY and not (parsed.is_private or parsed.is_link_local):
+        raise HTTPException(
+            status_code=400,
+            detail="Stored device IP is not private/link-local; set DEVICE_PROXY_ALLOW_PUBLIC=true only after review.",
+        )
+
+    return str(parsed)
+
+
+def _proxy_auth(tool: str, config: dict):
+    if not config["username"] or not config["password"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{tool} proxy credentials are not configured in api/.env",
+        )
+    return (config["username"], config["password"])
+
+
+def _servicenow_base_url(instance: str) -> str:
+    if not instance:
+        return ""
+    cleaned = instance.removeprefix("https://").removeprefix("http://").strip("/")
+    if "." not in cleaned:
+        cleaned = f"{cleaned}.service-now.com"
+    return f"https://{cleaned}"
 
 
 # ---------------------------------------------------------------------------
@@ -551,8 +635,9 @@ def room_launch(room_id: str, tool: str, request: Request):
         if _SN_INSTANCE and _SN_CLIENT:
             # Real: open SN with pre-filled fields in the URL
             desc = f"AV issue in room {room_id}"
+            base_url = _servicenow_base_url(_SN_INSTANCE)
             url = (
-                f"https://{_SN_INSTANCE}.service-now.com/nav_to.do?"
+                f"{base_url}/nav_to.do?"
                 f"uri=incident.do?sys_id=-1"
                 f"%26sysparm_query=short_description={desc}"
             )
@@ -572,7 +657,7 @@ def room_launch(room_id: str, tool: str, request: Request):
         proxy_path = f"/api/rooms/{room_id}/proxy/{tool}/"
         mode = "mock"
         if tool == "xpanel"  and _CRESTRON_USER: mode = "live"
-        if tool == "wattbox" and _WATTBOX_KEY:   mode = "live"
+        if tool == "wattbox" and _WATTBOX_DIRECT_USER: mode = "live"
         if tool == "ptz"     and _PTZ_USER:      mode = "live"
         return {
             "tool": tool, "room_id": room_id,
@@ -590,26 +675,51 @@ async def device_proxy(room_id: str, tool: str, path: str, request: Request):
 
     Pattern 2 — device IP is looked up from the Hardware IP database.
     Credentials are injected server-side. Browser never sees the IP or password.
-
-    Requires: pip install httpx
-    Requires: Hardware IP database or mapping from room_id → device IP
     """
-    # TODO (Phase 6): look up device IP from Hardware IP database
-    #   device_ip = hardware_ip_lookup(room_id, tool)
-    # TODO: fetch the device page with credentials:
-    #   import httpx
-    #   async with httpx.AsyncClient() as client:
-    #       resp = await client.get(
-    #           f"http://{device_ip}/{path}",
-    #           auth=(_CRESTRON_USER, _CRESTRON_PASS),
-    #           headers={"X-Forwarded-For": request.client.host},
-    #       )
-    #   return Response(content=resp.content, media_type=resp.headers["content-type"])
-    raise HTTPException(
-        status_code=501,
-        detail=f"Device proxy for '{tool}' not yet implemented. "
-               f"Set {tool.upper()}_PROXY_USERNAME/PASSWORD in .env and implement "
-               f"the Hardware IP lookup in this endpoint.",
+    if request.method != "GET":
+        raise HTTPException(status_code=405, detail="Device proxy supports GET only")
+
+    config = _device_proxy_config(tool)
+    device_ip = _validate_proxy_ip(_lookup_device_ip(room_id, config["device_type"]))
+    auth = _proxy_auth(tool, config)
+    scheme = config["scheme"].lower()
+    if scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail=f"Invalid proxy scheme for {tool}")
+
+    quoted_path = quote(path or "", safe="/:@!$&'()*+,;=-._~")
+    query = request.url.query
+    target_url = f"{scheme}://{device_ip}/{quoted_path}"
+    if query:
+        target_url = f"{target_url}?{query}"
+
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx is not installed in the API environment")
+
+    forwarded_for = request.client.host if request.client else ""
+    headers = {
+        "Accept": request.headers.get("accept", "*/*"),
+        "User-Agent": "BeaverViewDeviceProxy/1.0",
+    }
+    if forwarded_for:
+        headers["X-Forwarded-For"] = forwarded_for
+
+    try:
+        async with httpx.AsyncClient(verify=False, follow_redirects=False, timeout=10.0) as client:
+            upstream = await client.get(target_url, auth=auth, headers=headers)
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail=f"{tool} device proxy timed out")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"{tool} device proxy failed: {str(exc)[:120]}")
+
+    content_type = upstream.headers.get("content-type", "application/octet-stream")
+    response_headers = {"Cache-Control": "no-store"}
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        media_type=content_type,
+        headers=response_headers,
     )
 
 
@@ -1346,7 +1456,7 @@ def admin_connectors(admin=Depends(require_admin)):
         'live25':        bool(os.getenv('LIVE25_USERNAME')),
         'screenconnect': bool(os.getenv('SC_BASE_URL')),
         'wattbox':       bool(os.getenv('WATTBOX_OVRC_API_KEY') or os.getenv('WATTBOX_DIRECT_USERNAME')),
-        'servicenow':    bool(os.getenv('SERVICENOW_CLIENT_ID')),
+        'servicenow':    bool(os.getenv('SN_CLIENT_ID') or os.getenv('SERVICENOW_CLIENT_ID')),
         'sharepoint':    bool(os.getenv('SHAREPOINT_BASE_URL')),
         'ptz':           bool(os.getenv('PTZ_PROXY_USERNAME')),
     }
@@ -1370,7 +1480,7 @@ def admin_set_connector_mode(
         'live25':        bool(os.getenv('LIVE25_USERNAME')),
         'screenconnect': bool(os.getenv('SC_BASE_URL')),
         'wattbox':       bool(os.getenv('WATTBOX_OVRC_API_KEY') or os.getenv('WATTBOX_DIRECT_USERNAME')),
-        'servicenow':    bool(os.getenv('SERVICENOW_CLIENT_ID')),
+        'servicenow':    bool(os.getenv('SN_CLIENT_ID') or os.getenv('SERVICENOW_CLIENT_ID')),
         'sharepoint':    bool(os.getenv('SHAREPOINT_BASE_URL')),
         'ptz':           bool(os.getenv('PTZ_PROXY_USERNAME')),
     }
