@@ -44,6 +44,7 @@ BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_dashboard_browser.sh"
 ADMIN_BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_admin_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
+FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
@@ -309,6 +310,40 @@ def check_live_validation_doc() -> None:
         fail("first live-room validation runbook validation failed")
 
 
+def check_first_live_room_preflight(env: dict[str, str]) -> None:
+    if not FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT.exists():
+        fail("first live-room preflight validator is missing")
+        return
+
+    room_id = env.get("FIRST_LIVE_ROOM_ID", "")
+    connector = env.get("FIRST_LIVE_CONNECTOR", "")
+    if not is_configured(room_id) or not is_configured(connector):
+        pending("first live-room target and connector are not selected")
+        return
+
+    result = run([
+        sys.executable,
+        str(FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT),
+        "--room-id",
+        room_id,
+        "--connector",
+        connector,
+        "--json",
+    ], cwd=ROOT)
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+
+    message = payload.get("message") or "first live-room preflight did not return a message"
+    if result.returncode == 0:
+        pass_("first live-room preflight validates selected room and connector")
+    elif result.returncode == 2:
+        pending(message)
+    else:
+        fail(message)
+
+
 def is_configured(value: str | None) -> bool:
     if not value:
         return False
@@ -414,6 +449,8 @@ def check_env_prereqs() -> None:
         pass_("ServiceNow credentials are present")
     else:
         pending("ServiceNow credentials are not complete")
+
+    check_first_live_room_preflight(env)
 
 
 def run_checks() -> None:

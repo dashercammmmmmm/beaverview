@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after hardening Hardware IP import guardrails.
+**Last updated:** 2026-06-24 after adding first live-room target preflight.
 
 ---
 
@@ -298,6 +298,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Live-mode tests return `pending`, `error`, or `live` using configured credentials and imported device IPs without exposing secrets or raw device IPs.
 - ServiceNow supports both documented auth paths: OAuth client credentials or Basic Auth service account.
 
+### First live-room target preflight
+- `api/.env.example` documents `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` for the first non-critical room validation target.
+- `scripts/check_first_live_room_preflight.py` checks the selected room exists, the connector is allowlisted, required credential keys are present, and any device-backed connector has exactly one matching `device_ips` row.
+- The script exits `0` for pass, `2` for pending external prerequisites, and `1` for local/configuration failures; it does not print secrets or raw IPs.
+- `scripts/check_pilot_readiness.py` reports the target as pending until those two `.env` values are set.
+
 ### ServiceNow incident creation
 - `POST /api/rooms/{room_id}/servicenow/incident` returns a mock draft when ServiceNow credentials are missing.
 - With `SN_INSTANCE` plus OAuth or Basic Auth credentials, the endpoint creates the incident server-side and returns only number, sys_id, and state.
@@ -310,7 +316,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room validation runbook coverage, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room target preflight, first live-room validation runbook coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.
@@ -390,6 +396,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
 | Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `scripts/check_hardware_ip_import.sh`, then run `python3 import_device_ips.py hardware_ips.csv` only after validation passes. |
+| First live-room target | Set `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` in ignored `api/.env`, then run `scripts/check_first_live_room_preflight.py`. |
 | Live PTZ/WattBox validation | Frontend and backend paths exist; still requires real `hardware_ips.csv` plus PTZ/WattBox credentials before live room testing. |
 | Live launch validation | Frontend and backend launch paths exist for XPanel, ScreenConnect, and SharePoint; still requires `SC_BASE_URL`, `SHAREPOINT_BASE_URL`, XPanel credentials, and real Hardware IP records. |
 | Device web UI launch validation | Dashboard inventory state exists; add explicit backend proxy/launch coverage per approved device type after real Hardware IP data is imported. |

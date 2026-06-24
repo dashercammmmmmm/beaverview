@@ -20,6 +20,7 @@ Complete these fields in a private deployment note, not in this committed file:
 - Windows test client can open `https://beaverview`.
 - Azure/Entra login works for one technician and one admin.
 - Ignored `api/.env` has the connector values for the first connector only.
+- Ignored `api/.env` has `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` set for this validation target.
 - Ignored `api/hardware_ips.csv` contains the selected room and the first connector device type.
 - Ignored `api/hardware_ips.csv` has exactly one row for each selected `room_id` / `device_type` pair.
 - Device IP rows are private or link-local unless public addressing has been explicitly reviewed and `--allow-public` is intentionally used.
@@ -34,12 +35,13 @@ Run from `/home/beaverview/app` on the VM unless noted:
 ```bash
 python3 scripts/check_pilot_readiness.py --markdown
 scripts/check_hardware_ip_import.sh
+scripts/check_first_live_room_preflight.py
 cd api && venv/bin/python import_device_ips.py hardware_ips.csv
 sudo systemctl status beaverview --no-pager
 sudo nginx -t
 ```
 
-Expected result: local checks pass, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
+Expected result: local checks pass, the selected non-critical room and first connector pass preflight, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
 
 ## Connector Order
 

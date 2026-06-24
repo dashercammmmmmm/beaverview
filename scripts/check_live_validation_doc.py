@@ -13,10 +13,13 @@ RUNBOOK = ROOT / "docs" / "examples" / "first-live-room-validation.md"
 REQUIRED_TERMS = (
     "non-critical room",
     "api/.env",
+    "FIRST_LIVE_ROOM_ID",
+    "FIRST_LIVE_CONNECTOR",
     "api/hardware_ips.csv",
     "VLAN route",
     "python3 scripts/check_pilot_readiness.py",
     "scripts/check_hardware_ip_import.sh",
+    "scripts/check_first_live_room_preflight.py",
     "import_device_ips.py",
     "XPanel",
     "25Live",

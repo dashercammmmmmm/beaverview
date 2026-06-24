@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room target preflight
+
+- Added `scripts/check_first_live_room_preflight.py` to validate a selected first live-room target without printing secrets or raw IPs.
+- Added `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` to `api/.env.example` and pilot input docs.
+- Wired the preflight into `scripts/check_pilot_readiness.py`: unset target selection is pending, selected-but-incomplete prerequisites remain pending, and invalid selected room/connector data fails locally.
+
+### Next
+
+- After OSU picks the non-critical first room and connector, set the two ignored `.env` values and rerun pilot readiness before importing Hardware IP rows or changing connector mode.
+
 ## 2026-06-24 - Hardware IP import guardrails
 
 - Hardened `api/import_device_ips.py` so Hardware IP validation rejects missing required fields, duplicate `room_id`/`device_type` mappings, and public IP addresses unless `--allow-public` is explicitly supplied after review.

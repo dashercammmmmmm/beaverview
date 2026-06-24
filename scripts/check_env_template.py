@@ -14,6 +14,7 @@ SCAN_PATHS = [
     ROOT / "api" / "main.py",
     ROOT / "api" / "connectors" / "chat.py",
     ROOT / "api" / "connectors" / "servicenow.py",
+    ROOT / "scripts" / "check_first_live_room_preflight.py",
     ROOT / "scripts" / "check_pilot_readiness.py",
 ]
 
@@ -26,6 +27,7 @@ ENV_ASSIGNMENT_RE = re.compile(r"^\s*#?\s*([A-Z][A-Z0-9_]*)\s*=")
 # the canonical template so new deployments use the current SN_* names.
 ALLOWED_CODE_ONLY = {
     "BEAVERVIEW_PILOT_READINESS_REEXEC",
+    "BEAVERVIEW_FIRST_ROOM_PREFLIGHT_REEXEC",
     "SERVICENOW_INSTANCE",
     "SERVICENOW_CLIENT_ID",
     "SERVICENOW_CLIENT_SECRET",

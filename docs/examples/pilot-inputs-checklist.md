@@ -58,6 +58,32 @@ Import after validation:
 cd api && venv/bin/python import_device_ips.py hardware_ips.csv
 ```
 
+## First Live-Room Target
+
+Set only after OSU selects the non-critical room and first connector.
+
+Required `api/.env` values:
+
+- `FIRST_LIVE_ROOM_ID`
+- `FIRST_LIVE_CONNECTOR`
+
+Allowed connector values:
+
+- `xpanel`
+- `crestron_poll`
+- `wattbox`
+- `ptz`
+- `25live`
+- `screenconnect`
+- `sharepoint`
+- `servicenow`
+
+Validate the selected room and connector prerequisites:
+
+```bash
+scripts/check_first_live_room_preflight.py
+```
+
 ## Azure / Entra App
 
 Detailed setup: `docs/examples/azure-entra-app-registration.md`
