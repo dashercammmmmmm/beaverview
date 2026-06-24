@@ -68,3 +68,15 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 - Run this preflight after any environment, deployment, or connector change.
 - When secure `api/.env` and `api/hardware_ips.csv` are available, rerun the preflight and use the pending list as the pilot-readiness punch list.
+
+## 2026-06-24 - Hardware IP import validation
+
+- Added `--dry-run` support to `api/import_device_ips.py`.
+- The importer now validates that referenced `room_id` values exist in the seeded rooms table before replacing `device_ips`.
+- Added safe committed sample data at `docs/examples/hardware_ips.sample.csv`.
+- Added `scripts/check_hardware_ip_import.sh` to dry-run the sample and dry-run the real ignored `api/hardware_ips.csv` when present.
+- Wired the hardware IP sample validation into `scripts/check_pilot_readiness.py`.
+
+### Next
+
+- When the real secure spreadsheet is available, place it at `api/hardware_ips.csv`, run `scripts/check_hardware_ip_import.sh`, then run `api/venv/bin/python api/import_device_ips.py api/hardware_ips.csv`.

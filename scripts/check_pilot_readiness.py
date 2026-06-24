@@ -22,6 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
 DB_PATH = API_DIR / "beaverview.db"
 ENV_PATH = API_DIR / ".env"
+HARDWARE_SAMPLE_PATH = ROOT / "docs" / "examples" / "hardware_ips.sample.csv"
+HARDWARE_REAL_PATH = API_DIR / "hardware_ips.csv"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
@@ -152,6 +154,29 @@ def check_db() -> None:
         pending("hardware IP records are not loaded yet")
 
 
+def check_hardware_ip_csv_shape() -> None:
+    py = API_DIR / "venv" / "bin" / "python"
+    if not py.exists():
+        return
+
+    if not HARDWARE_SAMPLE_PATH.exists():
+        fail("hardware IP sample CSV is missing")
+        return
+
+    sample = run([str(py), "import_device_ips.py", "--dry-run", str(HARDWARE_SAMPLE_PATH)], cwd=API_DIR)
+    if sample.returncode == 0:
+        pass_("hardware IP sample CSV validates")
+    else:
+        fail("hardware IP sample CSV does not validate")
+
+    if HARDWARE_REAL_PATH.exists():
+        real = run([str(py), "import_device_ips.py", "--dry-run", str(HARDWARE_REAL_PATH)], cwd=API_DIR)
+        if real.returncode == 0:
+            pass_("real api/hardware_ips.csv validates in dry-run mode")
+        else:
+            fail("real api/hardware_ips.csv failed dry-run validation")
+
+
 def has_all(env: dict[str, str], keys: tuple[str, ...]) -> bool:
     return all(bool(env.get(key)) for key in keys)
 
@@ -199,6 +224,7 @@ def main() -> int:
     check_sensitive_paths()
     check_python_env()
     check_db()
+    check_hardware_ip_csv_shape()
     check_env_prereqs()
 
     print("BeaverView pilot-readiness preflight")

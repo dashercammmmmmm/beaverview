@@ -47,6 +47,14 @@ It rebuilds the ignored local SQLite inventory from `dashboard/data.js` and veri
 
 The device web proxy at `/api/rooms/{room_id}/proxy/{tool}/{path}` performs server-side `device_ips` lookup for `xpanel`, `wattbox`, and `ptz`, injects backend-only credentials, and only proxies private/link-local IPs unless `DEVICE_PROXY_ALLOW_PUBLIC=true` is explicitly set after review. It supports GET only.
 
+Run this after changing `api/import_device_ips.py`, `docs/examples/hardware_ips.sample.csv`, or the secure local `api/hardware_ips.csv`:
+
+```bash
+scripts/check_hardware_ip_import.sh
+```
+
+It dry-runs the committed sample and dry-runs the real ignored CSV if present, without replacing `device_ips`.
+
 Run this for a broader local readiness snapshot before deployment work:
 
 ```bash

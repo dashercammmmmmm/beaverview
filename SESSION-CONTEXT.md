@@ -112,6 +112,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
 ```
 
+**Hardware IP CSV dry-run before real import:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
+```
+
 ### Step 3 — Open the site
 Open **Chrome** or **Safari** and go to: `http://localhost:8000`
 
@@ -211,6 +216,9 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Credentials are read from `.env`: `CRESTRON_PROXY_*`, `WATTBOX_DIRECT_*`, `PTZ_PROXY_*`.
 - Proxy defaults to private/link-local IPs only; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
 - `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
+- `import_device_ips.py --dry-run <csv>` validates Hardware IP CSV data without replacing the `device_ips` table.
+- Safe sample CSV: `docs/examples/hardware_ips.sample.csv`.
+- `scripts/check_hardware_ip_import.sh` validates the sample and dry-runs the real ignored `api/hardware_ips.csv` when present.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
 
 ### Pilot readiness preflight
@@ -280,5 +288,6 @@ Project root: /Users/benjaminfranklinautomation/projects/beaverview/
 Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
 Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
+Hardware IP CSV check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
 Pilot readiness: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
 ```

@@ -1,0 +1,6 @@
+room_id,device_type,ip_address,notes
+corvallis-kad-101,xpanel,10.20.1.45,Sample Crestron processor
+corvallis-kad-101,wattbox,10.20.1.46,Sample WattBox
+corvallis-kad-105,xpanel,10.20.1.47,Sample Crestron processor
+corvallis-linc-100,xpanel,10.20.2.10,Sample Crestron processor
+corvallis-linc-100,ptz,10.20.2.11,Sample PTZ camera

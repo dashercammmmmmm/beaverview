@@ -600,6 +600,26 @@ corvallis-linc-100,ptz,10.20.2.11,PTZOptics 20X-SDI
 
 > **Never commit this file to Git.** Add `hardware_ips.csv` to `.gitignore`.
 
+A safe sample is committed at `docs/examples/hardware_ips.sample.csv`. Validate the sample and, if present, the real local `api/hardware_ips.csv` without changing the database:
+
+```bash
+scripts/check_hardware_ip_import.sh
+```
+
+Dry-run a specific file manually:
+
+```bash
+cd api
+venv/bin/python import_device_ips.py --dry-run hardware_ips.csv
+```
+
+Only after the dry run passes, import the real secure CSV:
+
+```bash
+cd api
+venv/bin/python import_device_ips.py hardware_ips.csv
+```
+
 ---
 
 ## Rollback (revert to mock)
