@@ -43,6 +43,7 @@ API_CONTRACTS_SCRIPT = ROOT / "scripts" / "check_api_contracts.py"
 BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_dashboard_browser.sh"
 ADMIN_BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_admin_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
+DEPLOYMENT_PLAYBOOK_SCRIPT = ROOT / "scripts" / "check_deployment_playbook.py"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
 FIRST_LIVE_ROOM_CASES_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight_cases.py"
 FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
@@ -302,6 +303,18 @@ def check_deployment_assets() -> None:
         pass_("deployment templates validate")
     else:
         fail("deployment templates failed validation")
+
+
+def check_deployment_playbook() -> None:
+    if not DEPLOYMENT_PLAYBOOK_SCRIPT.exists():
+        fail("deployment playbook validator is missing")
+        return
+
+    result = run([sys.executable, str(DEPLOYMENT_PLAYBOOK_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("deployment playbook validates")
+    else:
+        fail("deployment playbook validation failed")
 
 
 def check_api_contracts() -> None:
@@ -589,6 +602,7 @@ def run_checks() -> None:
     check_db()
     check_hardware_ip_import()
     check_deployment_assets()
+    check_deployment_playbook()
     check_api_contracts()
     check_inventory_parity()
     check_dashboard_browser()

@@ -2,6 +2,17 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Deployment playbook validation
+
+- Updated `PLAYBOOK-DEPLOYMENT.md` so VM dependency verification uses the committed venv and `api/requirements.txt` instead of installing MSAL ad hoc and appending to requirements on the VM.
+- Added a required pilot-readiness command before login-flow testing in the deployment playbook.
+- Added `scripts/check_deployment_playbook.py` to validate core VM setup, nginx/systemd, CORS, Azure redirect, dependency, and readiness commands.
+- Wired the deployment playbook validator into `scripts/check_pilot_readiness.py`.
+
+### Next
+
+- Keep deployment command changes in the repository and rerun `python3 scripts/check_deployment_playbook.py` before updating VM-facing instructions.
+
 ## 2026-06-24 - Production safety guardrails
 
 - Replaced hardcoded wildcard CORS middleware config with `BEAVERVIEW_CORS_ORIGINS`, preserving wildcard behavior only as the local default.

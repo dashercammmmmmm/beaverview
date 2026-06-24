@@ -495,14 +495,32 @@ Save, then restart:
 sudo systemctl restart beaverview
 ```
 
-### Step 6 — Install the MSAL library
+### Step 6 — Verify Python dependencies
 
 ```bash
-sudo -u beaverview /home/beaverview/app/api/venv/bin/pip install msal
-echo 'msal>=1.28.0' | sudo tee -a /home/beaverview/app/api/requirements.txt
+sudo -u beaverview /home/beaverview/app/api/venv/bin/python -c "import fastapi, httpx, msal, starlette_sessions, itsdangerous"
 ```
 
-### Step 7 — Test the login flow
+Dependencies are owned by `/home/beaverview/app/api/requirements.txt` and were installed in Part 3, Step 5. If this import check fails, rerun:
+
+```bash
+cd /home/beaverview/app/api
+sudo -u beaverview venv/bin/pip install -r requirements.txt
+sudo systemctl restart beaverview
+```
+
+Do not append packages directly to `requirements.txt` on the VM. Update the repository copy, commit it, then pull the change on the VM.
+
+### Step 7 — Run pilot readiness
+
+```bash
+cd /home/beaverview/app
+sudo -u beaverview python3 scripts/check_pilot_readiness.py
+```
+
+The command must report `Local readiness passed` before pilot use. Remaining `PENDING` items are external credentials, Hardware IP records, or the selected first live-room target.
+
+### Step 8 — Test the login flow
 
 From a Windows computer, open `https://beaverview`. You should be redirected to the OSU Microsoft login page. After logging in, you return to the BeaverView dashboard.
 

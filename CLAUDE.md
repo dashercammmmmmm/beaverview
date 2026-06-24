@@ -139,6 +139,14 @@ scripts/check_deployment_assets.sh
 
 It validates the checked-in systemd and nginx templates under `deploy/`, including a sample nginx render with `scripts/render_nginx_config.sh` and a sample self-signed certificate with `scripts/generate_self_signed_cert.sh`.
 
+Run this after changing `PLAYBOOK-DEPLOYMENT.md`, VM setup commands, dependency install guidance, nginx/systemd install steps, or Azure login setup instructions:
+
+```bash
+python3 scripts/check_deployment_playbook.py
+```
+
+It verifies the human deployment playbook still points at committed helper scripts, installs dependencies from `api/requirements.txt`, avoids VM-local package edits, and runs pilot readiness before login testing. It is also part of `scripts/check_pilot_readiness.py`.
+
 Run this after changing production safety behavior, CORS, deployment playbook security guidance, or dashboard dev-only browser helpers:
 
 ```bash

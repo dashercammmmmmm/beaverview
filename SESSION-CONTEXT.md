@@ -238,6 +238,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `dashboard/app.js` creates `window._dev` only on `localhost`, `127.0.0.1`, or `::1`.
 - `scripts/check_production_safety.py` validates CORS configurability, localhost-only browser dev helpers/live reload, and deployment playbook security guidance. It is part of pilot readiness.
 
+### Deployment playbook validation
+- `PLAYBOOK-DEPLOYMENT.md` now verifies Python dependencies from the committed virtualenv instead of telling operators to install MSAL and append to `requirements.txt` on the VM.
+- The playbook runs `python3 scripts/check_pilot_readiness.py` before login-flow testing so local failures are caught before pilot use.
+- `scripts/check_deployment_playbook.py` validates key VM setup, nginx/systemd, CORS, Azure redirect, dependency, and readiness commands. It is part of pilot readiness.
+
 ### Readiness pending-action coverage
 - `scripts/check_pilot_readiness.py` now has explicit `PENDING_ACTIONS` entries for missing `api/.env`, `PROXY_SECRET`, `SESSION_SECRET_KEY`, and Azure redirect URI pending states.
 - `scripts/check_readiness_actions.py` validates that every literal `pending(...)` call in readiness has a mapped next action.
@@ -372,6 +377,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/generate_self_signed_cert.sh <vm-ip> [output-dir] [dns-name]` validates the VM IP and generates the self-signed cert/key pair.
 - `scripts/render_nginx_config.sh <vm-ip> [output-path]` validates the VM IP and renders the nginx template before installing.
 - `scripts/check_deployment_assets.sh` validates these templates locally.
+- `scripts/check_deployment_playbook.py` validates the human VM deployment runbook against committed helper scripts and dependency ownership.
 - `scripts/check_production_safety.py` validates that production safety stays environment-controlled, including `BEAVERVIEW_CORS_ORIGINS` and localhost-only browser dev helpers.
 
 ### Admin link in dashboard header
@@ -399,7 +405,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### 🔴 Blocking — must do before production
 | Item | Notes |
 |---|---|
-| **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
+| **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 6, Steps 1–4. Requires Application Administrator role. |
 | **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, group object IDs, and `BEAVERVIEW_CORS_ORIGINS=https://beaverview` |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
 | **Real inventory import** | `dashboard/data.js` now migrates cleanly into SQLite. Secure Hardware IP import from `hardware_ips.csv` still requires the real spreadsheet. |
@@ -408,7 +414,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 | Item | Notes |
 |---|---|
 | Windows hosts file entries | `192.168.x.x beaverview` on each Windows PC |
-| nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 7–8 |
+| nginx + SSL + systemd setup | `PLAYBOOK-DEPLOYMENT.md` Parts 3–4 |
 | VLAN routing on Ubuntu VM | AV devices on separate subnet need static route |
 | Real Hardware IP import | Place secure `hardware_ips.csv` under `api/`, run `scripts/check_hardware_ip_import.sh`, then run `python3 import_device_ips.py hardware_ips.csv` only after validation passes. |
 | First live-room target | Set `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` in ignored `api/.env`, then run `scripts/check_first_live_room_preflight.py`. |
