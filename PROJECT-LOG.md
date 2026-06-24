@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Readiness pending-action coverage
+
+- Added explicit `PENDING_ACTIONS` entries for missing `api/.env`, `PROXY_SECRET`, `SESSION_SECRET_KEY`, and Azure redirect URI readiness states.
+- Strengthened `scripts/check_readiness_actions.py` so literal `pending(...)` calls must have mapped next actions.
+- The validator now also expands known loop-generated credential and launch URL pending messages and fails if any generated message is missing an action.
+
+### Next
+
+- Any new dynamic readiness pending pattern must be added to `ALLOWED_DYNAMIC_PENDING` with a matching coverage rule before it can pass readiness.
+
 ## 2026-06-24 - Readiness action reference validation
 
 - Added `scripts/check_readiness_actions.py` to statically validate `PENDING_ACTIONS` in `scripts/check_pilot_readiness.py`.

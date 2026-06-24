@@ -57,9 +57,25 @@ PENDING: list[str] = []
 PASSED: list[str] = []
 
 PENDING_ACTIONS = {
+    "api/.env is not present; copy api/.env.example and fill deployment values": {
+        "action": "Run bash scripts/init_local_env.sh, then fill deployment-only values in ignored api/.env.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#local-secret-baseline",
+    },
+    "PROXY_SECRET is not set": {
+        "action": "Run bash scripts/init_local_env.sh to generate PROXY_SECRET in ignored api/.env.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#local-secret-baseline",
+    },
+    "SESSION_SECRET_KEY is not set": {
+        "action": "Run bash scripts/init_local_env.sh to generate SESSION_SECRET_KEY in ignored api/.env.",
+        "reference": "docs/examples/pilot-inputs-checklist.md#local-secret-baseline",
+    },
     "hardware IP records are not loaded yet": {
         "action": "Place the secure export at ignored api/hardware_ips.csv, run scripts/check_hardware_ip_import.sh, then import it from the api directory.",
         "reference": "docs/examples/pilot-inputs-checklist.md#hardware-ip-records",
+    },
+    "Azure redirect URI is not configured": {
+        "action": "Set AZURE_REDIRECT_URI=https://beaverview/auth/callback in ignored api/.env.",
+        "reference": "docs/examples/azure-entra-app-registration.md#app-registration",
     },
     "Azure app credentials are not complete": {
         "action": "Fill AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and AZURE_REDIRECT_URI in ignored api/.env.",

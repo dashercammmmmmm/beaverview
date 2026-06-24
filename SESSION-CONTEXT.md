@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding readiness action reference validation.
+**Last updated:** 2026-06-24 after adding readiness pending-action coverage validation.
 
 ---
 
@@ -232,6 +232,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ## What was just changed (latest sessions)
 
+### Readiness pending-action coverage
+- `scripts/check_pilot_readiness.py` now has explicit `PENDING_ACTIONS` entries for missing `api/.env`, `PROXY_SECRET`, `SESSION_SECRET_KEY`, and Azure redirect URI pending states.
+- `scripts/check_readiness_actions.py` validates that every literal `pending(...)` call in readiness has a mapped next action.
+- The validator also expands the known credential and launch URL loop-generated pending messages, so adding a connector or launch URL requires a matching pending action before readiness can pass.
+
 ### Backend inventory endpoint
 - `GET /api/campus/{campus_id}/inventory` returns SQLite campus, building, room, device, and incident data.
 - The endpoint intentionally omits `device_ips` and raw `ip_address` fields; device web access still goes through approved backend routes.
@@ -321,7 +326,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - Readiness JSON includes `pending_actions`; Markdown/text output includes `Pending Next Actions`, mapping each external pending item to the ignored file/key or runbook that closes it.
-- `scripts/check_readiness_actions.py` validates that those pending-action references point to existing files and Markdown anchors.
+- `scripts/check_readiness_actions.py` validates that pending-action references point to existing files and Markdown anchors, and that literal plus supported loop-generated `pending(...)` readiness messages have mapped actions.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure credentials, connector credentials, ScreenConnect/SharePoint launch URLs, Hermes chat endpoint, and Hardware IP records are reported as pending external prerequisites.
 - It runs the data migration and hardware IP import validators directly before reporting DB/input readiness.
