@@ -112,6 +112,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
 ```
 
+**Offline API contract check after route/auth/connector changes:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_api_contracts.py
+```
+
 **Initialize local `.env` with generated `PROXY_SECRET`:**
 ```
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/init_local_env.sh
@@ -232,13 +237,17 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, and deployment prerequisite status.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.
 - `scripts/init_local_env.sh` creates ignored `api/.env` and sets `PROXY_SECRET` without printing it.
 - Azure/Entra setup checklist: `docs/examples/azure-entra-app-registration.md`.
 - The preflight validates the Azure redirect URI shape when configured.
+
+### Offline API contracts
+- `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
+- It validates health, localhost dev auth, admin inventory access, xpanel launch/proxy behavior, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
 
 ### Deployment templates
 - `deploy/systemd/beaverview.service` is the checked-in systemd unit for the Ubuntu VM.

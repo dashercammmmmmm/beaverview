@@ -114,3 +114,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Have an OSU Entra admin create the app registration, client secret, and technician/admin groups, then fill the Azure values in ignored `api/.env`.
+
+## 2026-06-24 - API contract validation
+
+- Added `scripts/check_api_contracts.py`.
+- The contract check runs the FastAPI app in-process with deterministic mock connector settings and no secret output.
+- It verifies health, localhost dev auth, admin inventory, xpanel launch/proxy behavior, ServiceNow/chat mock fallbacks, `/api/chat`, and room incidents.
+- Wired the API contract check into `scripts/check_pilot_readiness.py`.
+
+### Next
+
+- Run `scripts/check_api_contracts.py` after API route, auth, connector fallback, or device proxy changes.

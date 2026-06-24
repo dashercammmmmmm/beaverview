@@ -27,6 +27,7 @@ HARDWARE_REAL_PATH = API_DIR / "hardware_ips.csv"
 DEPLOY_SERVICE_PATH = ROOT / "deploy" / "systemd" / "beaverview.service"
 DEPLOY_NGINX_PATH = ROOT / "deploy" / "nginx" / "beaverview.conf.template"
 AZURE_CHECKLIST_PATH = ROOT / "docs" / "examples" / "azure-entra-app-registration.md"
+API_CONTRACTS_SCRIPT = ROOT / "scripts" / "check_api_contracts.py"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
@@ -199,6 +200,18 @@ def check_deployment_assets() -> None:
         fail("deployment templates failed validation")
 
 
+def check_api_contracts() -> None:
+    if not API_CONTRACTS_SCRIPT.exists():
+        fail("API contract validator is missing")
+        return
+
+    result = run([str(API_CONTRACTS_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("offline API contracts validate")
+    else:
+        fail("offline API contracts failed validation")
+
+
 def is_configured(value: str | None) -> bool:
     if not value:
         return False
@@ -290,6 +303,7 @@ def main() -> int:
     check_db()
     check_hardware_ip_csv_shape()
     check_deployment_assets()
+    check_api_contracts()
     check_env_prereqs()
 
     print("BeaverView pilot-readiness preflight")
