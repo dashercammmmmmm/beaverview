@@ -175,3 +175,13 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Use the checklist to collect external values, then enter them only into ignored `api/.env` or ignored `api/hardware_ips.csv`.
+
+## 2026-06-24 - Machine-readable readiness output
+
+- Added `--json` support to `scripts/check_pilot_readiness.py`.
+- JSON output includes status, pass/pending/failure arrays, and counts without printing secret values.
+- Documented the JSON mode for future reporting or automation.
+
+### Next
+
+- Use `python3 scripts/check_pilot_readiness.py --json` when another tool needs to consume readiness state.

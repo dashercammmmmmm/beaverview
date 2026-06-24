@@ -11,6 +11,8 @@ It prints no secret values.
 
 from __future__ import annotations
 
+import argparse
+import json
 import os
 import sqlite3
 import subprocess
@@ -345,7 +347,7 @@ def check_env_prereqs() -> None:
         pending("ServiceNow credentials are not complete")
 
 
-def main() -> int:
+def run_checks() -> None:
     check_git()
     check_sensitive_paths()
     check_python_env()
@@ -357,20 +359,51 @@ def main() -> int:
     check_pilot_inputs_doc()
     check_env_prereqs()
 
+
+def readiness_result() -> dict:
+    return {
+        "status": "fail" if LOCAL_FAILURES else "pass",
+        "passed": PASSED,
+        "pending": PENDING,
+        "failures": LOCAL_FAILURES,
+        "passed_count": len(PASSED),
+        "pending_count": len(PENDING),
+        "failure_count": len(LOCAL_FAILURES),
+    }
+
+
+def print_text_result(result: dict) -> None:
     print("BeaverView pilot-readiness preflight")
     print()
-    for item in PASSED:
+    for item in result["passed"]:
         print(f"PASS    {item}")
-    for item in PENDING:
+    for item in result["pending"]:
         print(f"PENDING {item}")
-    for item in LOCAL_FAILURES:
+    for item in result["failures"]:
         print(f"FAIL    {item}")
 
     print()
-    if LOCAL_FAILURES:
-        print(f"Local readiness failed: {len(LOCAL_FAILURES)} issue(s)")
+    if result["failures"]:
+        print(f"Local readiness failed: {result['failure_count']} issue(s)")
+        return
+    print(f"Local readiness passed with {result['pending_count']} external prerequisite(s) pending")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run BeaverView local pilot-readiness checks.")
+    parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    args = parser.parse_args()
+
+    run_checks()
+    result = readiness_result()
+
+    if args.json:
+        print(json.dumps(result, indent=2, sort_keys=True))
+    else:
+        print_text_result(result)
+
+    if result["failures"]:
         return 1
-    print(f"Local readiness passed with {len(PENDING)} external prerequisite(s) pending")
     return 0
 
 

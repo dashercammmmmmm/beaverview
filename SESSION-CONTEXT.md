@@ -112,6 +112,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_pilot_readiness.py
 ```
 
+**Machine-readable pilot readiness:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_pilot_readiness.py --json
+```
+
 **Non-secret pilot input checklist:**
 ```
 docs/examples/pilot-inputs-checklist.md
@@ -254,6 +259,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Pilot readiness preflight
 - `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
+- `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.

@@ -63,6 +63,12 @@ python3 scripts/check_pilot_readiness.py
 
 It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, offline API contracts, env-template consistency, the pilot input checklist, and reports pending external prerequisites without printing secret values.
 
+For automation or reports, use:
+
+```bash
+python3 scripts/check_pilot_readiness.py --json
+```
+
 Run this after changing API route, auth, connector fallback, or proxy behavior:
 
 ```bash
