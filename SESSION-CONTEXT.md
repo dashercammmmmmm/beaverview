@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** After git init, admin link, search fixes, HCIC placeholder, CLAUDE.md.
+**Last updated:** 2026-06-24 after source-of-truth stabilization on the Mac Mini v2 checkout.
 
 ---
 
@@ -22,21 +22,30 @@ BeaverView is an OSU Presentation Support dashboard — a FastAPI backend + vani
 ---
 
 ## Local dev environment (Mac)
-- Project root: `/Users/cam/Documents/New project/`
-- API folder:   `/Users/cam/Documents/New project/api/`
-- Dashboard:    `/Users/cam/Documents/New project/dashboard/`
+- Project root: `/Users/benjaminfranklinautomation/projects/beaverview/`
+- API folder:   `/Users/benjaminfranklinautomation/projects/beaverview/api/`
+- Dashboard:    `/Users/benjaminfranklinautomation/projects/beaverview/dashboard/`
 - **To run locally:** Open Terminal → paste the dev server command in the "How to start the server" section below
 - **Local URL:** `http://localhost:8000`
 - **Admin panel (dev):** `http://localhost:8000/admin/` — works without login when AZURE_CLIENT_ID is NOT set in .env
+
+## Source-of-truth status
+- Canonical local repo: `/Users/benjaminfranklinautomation/projects/beaverview`
+- GitHub remote: `https://github.com/dashercammmmmmm/beaverview`
+- Branch: `main`
+- Current state before this stabilization pass: clean worktree, local `main` five commits ahead of `origin/main`
+- Latest local commit before this stabilization pass: `9a4cb4f fix: allow maplibre and osm tiles via relaxed CSP header`
+- `/Users/benjaminfranklinautomation/Documents/Beaverview` is not the active v2 repo; it has no commits and no remote.
+- Durable work log: update `PROJECT-LOG.md` for material changes.
 
 ---
 
 ## Repository layout (active files only)
 ```
-New project/
+beaverview/
 ├── .gitignore               ← excludes .env, beaverview.db, hardware_ips.csv, *.pdf
-├── .env.example             ← credential template (safe to commit)
 ├── CLAUDE.md                ← AI assistant guidance (architecture, dev commands)
+├── PROJECT-LOG.md           ← durable local work log
 ├── SESSION-CONTEXT.md       ← this file
 ├── api/
 │   ├── main.py              ← FastAPI app (~1400 lines) — ALL backend code
@@ -75,12 +84,22 @@ Press **Command + Space**, type **Terminal**, press **Enter**.
 
 **First time only** (creates the virtual environment and installs packages):
 ```
-cd "/Users/cam/Documents/New project/api" && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --reload --port 8000
+cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --reload --port 8000
 ```
 
 **Every time after that** (venv already exists):
 ```
-cd "/Users/cam/Documents/New project/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
+cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
+```
+
+**Convenience startup script** (also refreshes dependencies from `requirements.txt`):
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && api/start.sh
+```
+
+**Smoke check before pushes or connector/auth changes:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 ```
 
 ### Step 3 — Open the site
@@ -141,11 +160,21 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Git repository initialized
 - `git init` + initial commit (ec60a6f) — all project files committed
-- Remaining step: create repo on GitHub and `git remote add origin …` + `git push -u origin main`
+- GitHub remote exists at `https://github.com/dashercammmmmmm/beaverview`
+- Current local repo is six commits ahead of GitHub `origin/main`: five BeaverView v2 commits plus this stabilization commit
+- Remaining step: push local v2 to GitHub after smoke checks and approval
 
 ### Python venv required (macOS)
 - macOS Homebrew Python blocks system-wide `pip install` (PEP 668)
 - Fixed: `api/venv/` created, `starlette-sessions` version corrected to `>=0.3.0` in `requirements.txt`
+- 2026-06-24 finding: local venv was missing `httpx`, disabling Crestron polling and connector modules. `api/start.sh` now installs from `requirements.txt`; run it or `pip install -r requirements.txt` to repair the venv.
+
+### BeaverView v2 local commits not yet on GitHub
+- `a4b259e` BeaverView v2 — Phase 1 & 2 visual redesign, ServiceNow, map UX improvements
+- `b9fd9fe` Phase 4 — Hermes chat agent integration
+- `a51006e` Map crash fix when search/filters match zero buildings
+- `c1f98ea` `/api/me` unsafe session access fix
+- `9a4cb4f` Relaxed CSP for MapLibre and OSM tiles
 
 ### Admin link in dashboard header
 - Orange-tinted "Admin" button appears in the top-right header
@@ -172,7 +201,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### 🔴 Blocking — must do before production
 | Item | Notes |
 |---|---|
-| **Push to GitHub** | `git init` done locally (commit ec60a6f). Create repo on GitHub, then `git remote add origin …` + `git push -u origin main` |
+| **Push local v2 to GitHub** | GitHub remote exists. Local `main` is six commits ahead of `origin/main`; push after smoke checks and approval. |
 | **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
 | **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, group object IDs |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |
@@ -201,10 +230,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ```
 I'm continuing work on the BeaverView OSU Presentation Support Dashboard.
-Read SESSION-CONTEXT.md at /Users/cam/Documents/New project/SESSION-CONTEXT.md first —
+Read SESSION-CONTEXT.md at /Users/benjaminfranklinautomation/projects/beaverview/SESSION-CONTEXT.md first —
 it has the full project state.
 
 Key files: api/main.py, dashboard/app.js, dashboard/index.html, dashboard/styles.css
-Project root: /Users/cam/Documents/New project/
-Dev server: cd "/Users/cam/Documents/New project/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
+Project root: /Users/benjaminfranklinautomation/projects/beaverview/
+Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
+Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 ```

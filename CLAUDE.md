@@ -21,6 +21,22 @@ cd api && source venv/bin/activate && uvicorn main:app --reload --port 8000
 - Dashboard: `http://localhost:8000`
 - Admin panel (no login needed on localhost when `AZURE_CLIENT_ID` is unset): `http://localhost:8000/admin/`
 
+You can also run `api/start.sh`; it installs/updates dependencies from `api/requirements.txt` before starting uvicorn.
+
+## Source of truth and logging
+
+The canonical BeaverView v2 checkout on this Mac Mini is `/Users/benjaminfranklinautomation/projects/beaverview`. Keep `PROJECT-LOG.md` updated with dated entries for material code, environment, deployment, and documentation changes. The GitHub remote is `https://github.com/dashercammmmmmm/beaverview`; as of 2026-06-24, local `main` is ahead of `origin/main` with the BeaverView v2 commits.
+
+## Smoke checks
+
+Run this before pushing or after changing backend/auth/connector behavior:
+
+```bash
+scripts/smoke_check.sh
+```
+
+It compiles active Python modules, verifies required imports, starts uvicorn on `127.0.0.1:8017`, then checks `/api/health`, `/api/me`, ServiceNow mock fallback, and chat mock fallback.
+
 There is no build step, bundler, or test suite. Frontend changes are visible immediately — `index.html` has a built-in live-reload poller (HEAD requests every 1.5s, localhost only).
 
 ## Architecture

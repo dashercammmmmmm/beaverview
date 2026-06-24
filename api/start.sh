@@ -8,8 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ ! -d "$SCRIPT_DIR/venv" ]; then
   echo "Creating virtual environment..."
   python3 -m venv "$SCRIPT_DIR/venv"
-  "$SCRIPT_DIR/venv/bin/pip" install -q fastapi "uvicorn[standard]" python-dotenv
 fi
+
+echo "Installing/updating Python dependencies from requirements.txt..."
+"$SCRIPT_DIR/venv/bin/pip" install -q -r "$SCRIPT_DIR/requirements.txt"
 
 echo "Starting BeaverView API on http://localhost:8000/"
 echo "Dashboard: http://localhost:8000/"
