@@ -93,3 +93,13 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - On the Ubuntu VM, copy the systemd template and render the nginx template with the VM IP before running `systemctl`/`nginx -t`.
+
+## 2026-06-24 - Local env initialization
+
+- Added `scripts/init_local_env.sh`.
+- The script creates ignored `api/.env` from `api/.env.example` when missing, appends a generated `PROXY_SECRET`, sets file mode `600`, and does not print the secret.
+- Documented the initializer in `CLAUDE.md`, `SESSION-CONTEXT.md`, and `PLAYBOOK-DEPLOYMENT.md`.
+
+### Next
+
+- Fill OSU Azure, connector, and device credentials in `api/.env` when they are available.

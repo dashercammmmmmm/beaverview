@@ -63,6 +63,14 @@ scripts/check_pilot_readiness.py
 
 It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, and reports pending external prerequisites without printing secret values.
 
+Run this once on a local checkout or VM to create ignored `api/.env` with a generated `PROXY_SECRET`:
+
+```bash
+scripts/init_local_env.sh
+```
+
+It does not print the generated secret.
+
 Run this after changing deployment templates:
 
 ```bash

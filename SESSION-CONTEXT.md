@@ -112,6 +112,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
 ```
 
+**Initialize local `.env` with generated `PROXY_SECRET`:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/init_local_env.sh
+```
+
 **Hardware IP CSV dry-run before real import:**
 ```
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
@@ -231,6 +236,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.
+- `scripts/init_local_env.sh` creates ignored `api/.env` and sets `PROXY_SECRET` without printing it.
 
 ### Deployment templates
 - `deploy/systemd/beaverview.service` is the checked-in systemd unit for the Ubuntu VM.
@@ -297,6 +303,7 @@ it has the full project state.
 Key files: api/main.py, dashboard/app.js, dashboard/index.html, dashboard/styles.css
 Project root: /Users/benjaminfranklinautomation/projects/beaverview/
 Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
+Initialize env: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/init_local_env.sh
 Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
 Hardware IP CSV check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh
