@@ -2,6 +2,18 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Dashboard browser smoke coverage
+
+- Added `scripts/check_dashboard_browser.py` and `scripts/check_dashboard_browser.sh`.
+- The browser smoke starts BeaverView locally, opens the active dashboard in headless Chromium, selects real seeded rooms, and verifies UI-level guarded flows for ServiceNow, XPanel, ScreenConnect, SharePoint, WattBox, and PTZ.
+- The check verifies that backend-wired dashboard controls show pending/prerequisite messages instead of silently acting as mock controls when credentials and Hardware IP records are absent.
+- Wired the browser smoke into `scripts/check_pilot_readiness.py` so pilot readiness now includes a UI workflow gate, not only backend API contracts.
+
+### Next
+
+- Keep `scripts/smoke_check.sh` as the fast backend gate and use `scripts/check_dashboard_browser.sh` or `scripts/check_pilot_readiness.py` before pilot-facing UI changes.
+- After real credentials are loaded, extend the browser smoke with a live-mode test for one non-critical room.
+
 ## 2026-06-24 - Dashboard launch endpoint wiring
 
 - Wired XPanel, ScreenConnect, and SharePoint launch buttons to `GET /api/rooms/{room_id}/launch/{tool}`.

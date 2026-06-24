@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after wiring dashboard ServiceNow, 25Live, PTZ, WattBox, and launch flows to guarded backend endpoints.
+**Last updated:** 2026-06-24 after adding browser smoke coverage for guarded dashboard workflows.
 
 ---
 
@@ -279,7 +279,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard browser smoke coverage, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.
@@ -294,6 +294,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
 - It validates health, localhost dev auth, admin inventory access, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow incident read/create fallbacks, chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+
+### Dashboard browser smoke
+- `scripts/check_dashboard_browser.sh` starts a local FastAPI server and runs the Playwright browser smoke in headless Chromium.
+- It selects seeded rooms and verifies guarded UI flows for ServiceNow draft submission, XPanel launch, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ command feedback.
+- This check is part of `scripts/check_pilot_readiness.py`.
 
 ### Environment template consistency
 - `scripts/check_env_template.py` verifies `api/.env.example` matches runtime env vars used by `api/main.py`, connector modules, and readiness checks.

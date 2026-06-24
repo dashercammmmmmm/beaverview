@@ -40,6 +40,7 @@ DEPLOY_SERVICE_PATH = ROOT / "deploy" / "systemd" / "beaverview.service"
 DEPLOY_NGINX_PATH = ROOT / "deploy" / "nginx" / "beaverview.conf.template"
 AZURE_CHECKLIST_PATH = ROOT / "docs" / "examples" / "azure-entra-app-registration.md"
 API_CONTRACTS_SCRIPT = ROOT / "scripts" / "check_api_contracts.py"
+BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_dashboard_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
@@ -233,6 +234,18 @@ def check_api_contracts() -> None:
         fail("offline API contracts failed validation")
 
 
+def check_dashboard_browser() -> None:
+    if not BROWSER_SMOKE_SCRIPT.exists():
+        fail("dashboard browser smoke validator is missing")
+        return
+
+    result = run([str(BROWSER_SMOKE_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("dashboard browser smoke validates guarded workflows")
+    else:
+        fail("dashboard browser smoke failed validation")
+
+
 def check_env_template() -> None:
     if not ENV_TEMPLATE_SCRIPT.exists():
         fail("environment template validator is missing")
@@ -362,6 +375,7 @@ def run_checks() -> None:
     check_hardware_ip_import()
     check_deployment_assets()
     check_api_contracts()
+    check_dashboard_browser()
     check_env_template()
     check_pilot_inputs_doc()
     check_env_prereqs()

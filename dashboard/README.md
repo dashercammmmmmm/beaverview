@@ -39,6 +39,14 @@ http://localhost:8000
 - No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls until credentials and Hardware IP records are loaded.
 - Static file mode cannot call backend APIs; use `http://localhost:8000` for API-backed workflows.
 
+## Browser Smoke
+
+```text
+scripts/check_dashboard_browser.sh
+```
+
+This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, ScreenConnect, SharePoint, WattBox, and PTZ workflows in headless Chromium.
+
 ## Version Archive
 
 - `archive/v1-static-clickable-mock` - first static clickable dashboard mock.
