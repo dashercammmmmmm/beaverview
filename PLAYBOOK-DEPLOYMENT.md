@@ -281,9 +281,9 @@ sudo nano /etc/nginx/sites-available/beaverview
 Paste the following (replace `192.168.1.50` with your VM's actual IP), or generate it from the checked-in template:
 
 ```bash
-sudo sed "s/__VM_IP__/192.168.1.50/g" \
-    /home/beaverview/app/deploy/nginx/beaverview.conf.template \
-    | sudo tee /etc/nginx/sites-available/beaverview >/dev/null
+cd /home/beaverview/app
+scripts/render_nginx_config.sh 192.168.1.50 /tmp/beaverview.nginx
+sudo cp /tmp/beaverview.nginx /etc/nginx/sites-available/beaverview
 ```
 
 Template contents:

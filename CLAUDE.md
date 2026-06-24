@@ -104,7 +104,7 @@ Run this after changing deployment templates:
 scripts/check_deployment_assets.sh
 ```
 
-It validates the checked-in systemd and nginx templates under `deploy/`.
+It validates the checked-in systemd and nginx templates under `deploy/`, including a sample render with `scripts/render_nginx_config.sh`.
 
 There is no build step, bundler, or test suite. Frontend changes are visible immediately — `index.html` has a built-in live-reload poller (HEAD requests every 1.5s, localhost only).
 

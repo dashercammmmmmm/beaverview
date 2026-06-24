@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SERVICE="$ROOT/deploy/systemd/beaverview.service"
 NGINX="$ROOT/deploy/nginx/beaverview.conf.template"
+RENDER="$ROOT/scripts/render_nginx_config.sh"
 
 fail() {
   echo "FAIL $*" >&2
@@ -23,6 +24,7 @@ require_text() {
 
 require_file "$SERVICE"
 require_file "$NGINX"
+require_file "$RENDER"
 
 require_text "$SERVICE" "User=beaverview"
 require_text "$SERVICE" "WorkingDirectory=/home/beaverview/app/api"
@@ -39,5 +41,13 @@ require_text "$NGINX" "add_header X-Frame-Options DENY always;"
 require_text "$NGINX" "add_header X-Content-Type-Options nosniff always;"
 require_text "$NGINX" "proxy_pass         http://127.0.0.1:8000;"
 require_text "$NGINX" 'proxy_set_header   X-Forwarded-Proto $scheme;'
+
+rendered="$(mktemp)"
+trap 'rm -f "$rendered"' EXIT
+"$RENDER" "192.0.2.50" "$rendered" >/dev/null
+require_text "$rendered" "server_name beaverview 192.0.2.50;"
+if grep -Fq "__VM_IP__" "$rendered"; then
+  fail "rendered nginx config still contains __VM_IP__"
+fi
 
 echo "Deployment assets verified"

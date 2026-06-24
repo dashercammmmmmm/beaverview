@@ -186,3 +186,13 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Use `python3 scripts/check_pilot_readiness.py --json` when another tool needs to consume readiness state, or `--markdown` when a person needs a paste-ready report.
+
+## 2026-06-24 - Nginx render helper
+
+- Added `scripts/render_nginx_config.sh` to validate a VM IP and render `deploy/nginx/beaverview.conf.template`.
+- Updated `scripts/check_deployment_assets.sh` to render a sample nginx config and fail if `__VM_IP__` remains.
+- Updated deployment docs to use the renderer instead of a raw `sed` pipeline.
+
+### Next
+
+- On the Ubuntu VM, render nginx with the actual VM IP before running `nginx -t`.

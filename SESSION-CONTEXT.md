@@ -284,7 +284,8 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### Deployment templates
 - `deploy/systemd/beaverview.service` is the checked-in systemd unit for the Ubuntu VM.
-- `deploy/nginx/beaverview.conf.template` is the checked-in nginx reverse-proxy template. Replace `__VM_IP__` with the VM IP before installing.
+- `deploy/nginx/beaverview.conf.template` is the checked-in nginx reverse-proxy template.
+- `scripts/render_nginx_config.sh <vm-ip> [output-path]` validates the VM IP and renders the nginx template before installing.
 - `scripts/check_deployment_assets.sh` validates these templates locally.
 
 ### Admin link in dashboard header
