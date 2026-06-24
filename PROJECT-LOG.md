@@ -2,6 +2,18 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Dashboard 25Live schedule overlay
+
+- Wired the active dashboard to fetch `GET /api/campus/{campus_id}/schedule` when the backend is reachable.
+- Added a campus-level schedule cache keyed by `room_id` so room overview schedule text and campus active-room counts can use backend schedule data instead of only static `dashboard/data.js` values.
+- The overview Schedule metric now shows whether the value came from 25Live, backend mock fallback, or static inventory.
+- Added the campus schedule endpoint to `scripts/smoke_check.sh` so the fast local gate verifies the offline 25Live mock fallback.
+
+### Next
+
+- When real 25Live credentials are available, compare one live room payload with the expected room identifiers and add a normalizer if OSU's 25Live response shape differs from the current mock fallback event shape.
+- After the real Hardware IP import is loaded, wire PTZ and WattBox panels to their guarded backend endpoints.
+
 ## 2026-06-24 - Dashboard ServiceNow backend wiring
 
 - Wired the active dashboard ServiceNow draft form to `POST /api/rooms/{room_id}/servicenow/incident`.

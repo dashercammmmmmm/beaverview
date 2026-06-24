@@ -25,6 +25,7 @@ http://localhost:8000
 - Tool actions with local feedback.
 - Local action logging, plus backend admin audit logging when served by FastAPI.
 - ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
+- Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
 - First-run guided tour.
 
 ## What This Version Does Not Do Yet

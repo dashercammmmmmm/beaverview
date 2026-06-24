@@ -794,8 +794,16 @@ h1, h2, h3, p {
   margin-bottom: 3px;
 }
 .metric-grid strong {
+  display: block;
   font-size: 13px;
   color: var(--text-strong);
+}
+.metric-grid em {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-style: normal;
+  color: var(--text-faint);
 }
 
 /* Device list (Overview tab) */

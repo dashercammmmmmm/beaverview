@@ -12,6 +12,7 @@ const state = {
   compact: false,
   backendOnline: false,
   connectorOverrides: {},  // campus_id -> connector health object from /api
+  scheduleOverrides: {},   // campus_id -> {mode, ts, eventsByRoomId} from /api/campus/{id}/schedule
   lastSynced: null,         // ISO timestamp of last successful connector fetch
   chatHistory: {}           // room_id -> [{role, content}, ...]
 };
@@ -103,11 +104,19 @@ function generatedRoomsForBuilding(building) {
 
 function allRooms(campus = currentCampus()) {
   return campusBuildings(campus).flatMap((building) =>
-    supportRoomsForBuilding(building, campus).map((room) => ({
-      ...room,
-      id: `${campus.id}-${building.code}-${room.number}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      building
-    }))
+    supportRoomsForBuilding(building, campus).map((room) => {
+      const id = `${campus.id}-${building.code}-${room.number}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const scheduleSource = state.scheduleOverrides[campus.id];
+      const scheduleEvent = scheduleSource?.eventsByRoomId?.[id];
+      return {
+        ...room,
+        id,
+        building,
+        activeEvent: scheduleEvent?.active_event || room.activeEvent,
+        scheduleMode: scheduleEvent ? scheduleSource.mode : null,
+        scheduleSynced: scheduleEvent ? scheduleSource.ts : null
+      };
+    })
   );
 }
 
@@ -551,12 +560,17 @@ function renderRoom() {
 }
 
 function renderOverview(room) {
+  const scheduleSource = room.scheduleMode === "live"
+    ? "25Live"
+    : room.scheduleMode === "mock"
+      ? "backend mock fallback"
+      : "static inventory";
   return `
     <div class="metric-grid">
       <div><span>Processor</span><strong>${room.processor}</strong></div>
       <div><span>Display</span><strong>${room.display}</strong></div>
       <div><span>Remote</span><strong>${room.screenconnect ? "available" : "not listed"}</strong></div>
-      <div><span>Schedule</span><strong>${room.activeEvent}</strong></div>
+      <div><span>Schedule</span><strong>${room.activeEvent}</strong><em>${scheduleSource}</em></div>
     </div>
     <h3>Devices</h3>
     <div class="device-list">
@@ -1225,7 +1239,7 @@ els.campusTabs.addEventListener("click", (event) => {
   void els.campusFrame.offsetWidth;
   els.campusFrame.classList.add("fold");
   renderAll();
-  refreshConnectors();
+  if (state.backendOnline) refreshBackendCampusData();
 });
 
 els.filters.addEventListener("change", (event) => {
@@ -1420,10 +1434,17 @@ async function checkBackend() {
     state.backendOnline = false;
   }
   if (state.backendOnline) {
-    await refreshConnectors();
+    await refreshBackendCampusData();
   } else {
     renderConnectorList();
   }
+}
+
+async function refreshBackendCampusData() {
+  await Promise.all([
+    refreshConnectors(),
+    refreshSchedule()
+  ]);
 }
 
 async function refreshConnectors() {
@@ -1438,6 +1459,30 @@ async function refreshConnectors() {
     renderConnectorList();
   } catch {
     // backend unreachable; keep showing mock data
+  }
+}
+
+async function refreshSchedule() {
+  try {
+    const res = await fetch(`/api/campus/${state.campusId}/schedule`, {
+      signal: AbortSignal.timeout(3000)
+    });
+    if (!res.ok) return;
+    const body = await res.json();
+    if (!Array.isArray(body.events)) return;
+
+    state.scheduleOverrides[state.campusId] = {
+      mode: body.mode || "unknown",
+      ts: body.ts || null,
+      eventsByRoomId: Object.fromEntries(
+        body.events
+          .filter((event) => event && event.room_id && event.active_event)
+          .map((event) => [event.room_id, event])
+      )
+    };
+    renderAll();
+  } catch {
+    // backend unreachable or 25Live unavailable; keep static schedule text
   }
 }
 

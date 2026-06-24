@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after wiring the dashboard ServiceNow draft form to the backend.
+**Last updated:** 2026-06-24 after wiring the dashboard ServiceNow form and 25Live schedule overlay to the backend.
 
 ---
 
@@ -273,6 +273,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### 25Live schedule endpoint
 - `GET /api/campus/{campus_id}/schedule` returns seeded mock schedule data from `rooms.active_event` when 25Live credentials are missing.
 - With `LIVE25_BASE_URL`, `LIVE25_USERNAME`, and `LIVE25_PASSWORD`, the endpoint calls 25Live server-side with Basic Auth and returns the upstream schedule payload without exposing credentials.
+- The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
 - `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.

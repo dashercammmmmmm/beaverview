@@ -37,6 +37,7 @@ done
 
 curl -fsS "$BASE_URL/api/health" | grep -q '"status":"ok"'
 curl -fsS "$BASE_URL/api/me" | grep -q '"role":"admin"'
+curl -fsS "$BASE_URL/api/campus/corvallis/schedule" | grep -q '"mode":"mock"'
 curl -fsS "$BASE_URL/api/connectors/servicenow/test" | grep -q '"status":"mock"'
 curl -fsS "$BASE_URL/api/connectors/chat/test" | grep -q '"status":"mock"'
 
