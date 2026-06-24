@@ -124,6 +124,7 @@ Current guarded implementation state:
 - `scripts/check_first_live_room_preflight.py` validates the selected `FIRST_LIVE_ROOM_ID` / `FIRST_LIVE_CONNECTOR` target before first live-room testing.
 - `scripts/check_first_live_room_preflight_cases.py` verifies the selected-room preflight pass/pending/fail behavior against an isolated temporary DB.
 - `scripts/check_pilot_readiness.py --markdown` prints no-secrets pending next actions for the external input handoff.
+- `scripts/check_readiness_actions.py` verifies those pending-action report references still resolve.
 - Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.
 - Real external systems still require ignored `api/.env` values and ignored `api/hardware_ips.csv`.
 - Entra SSO is scaffolded but still requires real Azure app and group configuration.

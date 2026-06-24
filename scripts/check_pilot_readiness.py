@@ -50,6 +50,7 @@ HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
+READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
@@ -354,6 +355,18 @@ def check_pilot_inputs_doc() -> None:
         fail("pilot input checklist validation failed")
 
 
+def check_readiness_actions() -> None:
+    if not READINESS_ACTIONS_SCRIPT.exists():
+        fail("readiness pending-action validator is missing")
+        return
+
+    result = run([sys.executable, str(READINESS_ACTIONS_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("readiness pending-action references validate")
+    else:
+        fail("readiness pending-action reference validation failed")
+
+
 def check_live_validation_doc() -> None:
     if not LIVE_VALIDATION_SCRIPT.exists():
         fail("first live-room validation doc validator is missing")
@@ -535,6 +548,7 @@ def run_checks() -> None:
     check_admin_browser()
     check_env_template()
     check_pilot_inputs_doc()
+    check_readiness_actions()
     check_live_validation_doc()
     check_first_live_room_preflight_cases()
     check_env_prereqs()

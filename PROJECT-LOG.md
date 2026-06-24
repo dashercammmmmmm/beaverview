@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Readiness action reference validation
+
+- Added `scripts/check_readiness_actions.py` to statically validate `PENDING_ACTIONS` in `scripts/check_pilot_readiness.py`.
+- The validator checks that each pending action has text, references an existing file, and that Markdown anchors resolve.
+- Wired the validator into `scripts/check_pilot_readiness.py` as a local gate.
+
+### Next
+
+- When adding or renaming readiness pending messages, update `PENDING_ACTIONS` and run `scripts/check_readiness_actions.py` before push.
+
 ## 2026-06-24 - Readiness pending-action report
 
 - Extended `scripts/check_pilot_readiness.py` so each known pending external prerequisite includes a concrete next action and reference document.
