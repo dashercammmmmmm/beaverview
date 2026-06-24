@@ -27,6 +27,7 @@ REQUIRED_TERMS = (
     "FIRST_LIVE_ROOM_ID",
     "FIRST_LIVE_CONNECTOR",
     "scripts/check_first_live_room_preflight.py",
+    "--list-candidates",
     "scripts/check_first_live_room_preflight_cases.py",
     "scripts/check_readiness_actions.py",
     "crestron_poll",

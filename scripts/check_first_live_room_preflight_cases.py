@@ -34,7 +34,18 @@ def create_db(path: Path, *, duplicate: bool = False, screenconnect: bool = True
             """
             CREATE TABLE rooms (
                 id TEXT PRIMARY KEY,
-                screenconnect INTEGER DEFAULT 0
+                building_id INTEGER NOT NULL,
+                number TEXT,
+                type TEXT,
+                status TEXT,
+                health INTEGER DEFAULT 0,
+                screenconnect INTEGER DEFAULT 0,
+                wattbox INTEGER DEFAULT 0
+            );
+            CREATE TABLE buildings (
+                id INTEGER PRIMARY KEY,
+                code TEXT NOT NULL,
+                name TEXT NOT NULL
             );
             CREATE TABLE device_ips (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,8 +56,12 @@ def create_db(path: Path, *, duplicate: bool = False, screenconnect: bool = True
             """
         )
         con.execute(
-            "INSERT INTO rooms(id, screenconnect) VALUES(?, ?)",
-            ("corvallis-kad-101", int(screenconnect)),
+            "INSERT INTO buildings(id, code, name) VALUES(?, ?, ?)",
+            (1, "KAd", "Kearney Addition"),
+        )
+        con.execute(
+            "INSERT INTO rooms(id, building_id, number, type, status, health, screenconnect, wattbox) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+            ("corvallis-kad-101", 1, "101", "Presentation Classroom", "available", 91, int(screenconnect), 1),
         )
         con.execute(
             "INSERT INTO device_ips(room_id, device_type, ip_address) VALUES(?, ?, ?)",
@@ -100,6 +115,19 @@ def expect_case(db_path: Path, expected_code: int, expected_status: str, *args: 
     expect(payload.get("message"), "preflight response did not include a message")
 
 
+def expect_candidate_list(db_path: Path) -> None:
+    code, payload = run_case(db_path, "--list-candidates")
+    expect(code == 0, f"candidate list returned exit {code}: {payload}")
+    expect(payload.get("status") == "pass", f"candidate list status changed: {payload}")
+    candidates = payload.get("candidates")
+    expect(isinstance(candidates, list) and candidates, "candidate list returned no candidates")
+    first = candidates[0]
+    expect(first.get("room_id") == "corvallis-kad-101", f"candidate room changed: {first}")
+    expect("xpanel" in first.get("eligible_connectors", []), "candidate list did not include xpanel hint")
+    expect("crestron_poll" in first.get("eligible_connectors", []), "candidate list did not include crestron_poll hint")
+    expect("xpanel" in first.get("hardware_ip_device_types", []), "candidate list did not include sanitized Hardware IP device type")
+
+
 def main() -> int:
     if not SCRIPT.exists():
         fail("first live-room preflight script is missing")
@@ -132,6 +160,7 @@ def main() -> int:
             "screenconnect",
             env_extra={"SC_BASE_URL": "https://screenconnect.example.test"},
         )
+        expect_candidate_list(db_path)
 
         duplicate_db = Path(tmp) / "beaverview.duplicate.db"
         create_db(duplicate_db, duplicate=True)

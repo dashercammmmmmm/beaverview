@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding production safety guardrails.
+**Last updated:** 2026-06-24 after adding first live-room candidate listing.
 
 ---
 
@@ -232,6 +232,12 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ## What was just changed (latest sessions)
 
+### First live-room candidate listing
+- `scripts/check_first_live_room_preflight.py --list-candidates` lists non-critical candidate room IDs and eligible connector hints from sanitized SQLite inventory.
+- Candidate output includes building code, room number, status, health, eligible connector names, and Hardware IP device types only; it does not print raw IP addresses.
+- `scripts/check_first_live_room_preflight_cases.py` now verifies candidate-list JSON behavior against an isolated temp DB.
+- The pilot input checklist and first live-room validation runbook now include the shortlist command before setting `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR`.
+
 ### Production safety guardrails
 - `api/main.py` reads CORS origins from `BEAVERVIEW_CORS_ORIGINS`; unset still defaults to `*` for isolated local development.
 - `scripts/check_pilot_readiness.py` now reports `CORS allowed origins are not restricted` as pending until ignored `api/.env` sets an HTTPS origin such as `https://beaverview`.
@@ -316,6 +322,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 
 ### First live-room target preflight
 - `api/.env.example` documents `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` for the first non-critical room validation target.
+- `scripts/check_first_live_room_preflight.py --list-candidates` lists sanitized candidate rooms and connector hints before OSU selects the target.
 - `scripts/check_first_live_room_preflight.py` checks the selected room exists, the connector is allowlisted, required credential keys are present, and any device-backed connector has exactly one matching `device_ips` row.
 - The script exits `0` for pass, `2` for pending external prerequisites, and `1` for local/configuration failures; it does not print secrets or raw IPs.
 - `scripts/check_pilot_readiness.py` reports the target as pending until those two `.env` values are set.

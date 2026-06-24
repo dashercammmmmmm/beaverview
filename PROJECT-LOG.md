@@ -2,6 +2,17 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room candidate listing
+
+- Added `--list-candidates` to `scripts/check_first_live_room_preflight.py`.
+- The candidate list reports sanitized room IDs, building/room labels, status, health, eligible connector hints, and Hardware IP device types without printing raw IP addresses.
+- Extended `scripts/check_first_live_room_preflight_cases.py` to verify candidate-list JSON behavior and no raw IP leakage against an isolated temp DB.
+- Updated the pilot input checklist and first live-room validation runbook to run the candidate shortlist before setting `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR`.
+
+### Next
+
+- After the secure Hardware IP export is loaded, use `scripts/check_first_live_room_preflight.py --list-candidates --json` to choose the first non-critical target with OSU.
+
 ## 2026-06-24 - Deployment playbook validation
 
 - Updated `PLAYBOOK-DEPLOYMENT.md` so VM dependency verification uses the committed venv and `api/requirements.txt` instead of installing MSAL ad hoc and appending to requirements on the VM.

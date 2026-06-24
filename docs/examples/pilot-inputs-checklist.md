@@ -78,6 +78,12 @@ cd api && venv/bin/python import_device_ips.py hardware_ips.csv
 
 Set only after OSU selects the non-critical room and first connector.
 
+List candidate room IDs and connector hints from sanitized SQLite data:
+
+```bash
+scripts/check_first_live_room_preflight.py --list-candidates
+```
+
 Required `api/.env` values:
 
 - `FIRST_LIVE_ROOM_ID`

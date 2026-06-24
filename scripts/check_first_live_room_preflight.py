@@ -120,6 +120,122 @@ def emit(status: str, message: str, *, details: dict[str, Any] | None = None, as
     return code
 
 
+def table_exists(con: sqlite3.Connection, table: str) -> bool:
+    return con.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table,),
+    ).fetchone() is not None
+
+
+def device_ip_counts(con: sqlite3.Connection) -> dict[str, dict[str, int]]:
+    if not table_exists(con, "device_ips"):
+        return {}
+    rows = con.execute(
+        "SELECT room_id, device_type, COUNT(*) AS count FROM device_ips GROUP BY room_id, device_type"
+    ).fetchall()
+    counts: dict[str, dict[str, int]] = {}
+    for row in rows:
+        counts.setdefault(row["room_id"], {})[row["device_type"]] = int(row["count"])
+    return counts
+
+
+def connector_hints(room: sqlite3.Row, counts: dict[str, int]) -> list[str]:
+    connectors = ["25live", "servicenow", "sharepoint"]
+    if bool(room["screenconnect"]):
+        connectors.append("screenconnect")
+    if counts.get("xpanel") == 1:
+        connectors.extend(["xpanel", "crestron_poll"])
+    if counts.get("wattbox") == 1 and bool(room["wattbox"]):
+        connectors.append("wattbox")
+    if counts.get("ptz") == 1:
+        connectors.append("ptz")
+    return connectors
+
+
+def is_non_critical_candidate(room: sqlite3.Row) -> bool:
+    status = str(room["status"] or "").lower()
+    room_type = str(room["type"] or "").lower()
+    room_id = str(room["id"] or "").lower()
+    health = int(room["health"] or 0)
+    if status in {"in-use", "offline"}:
+        return False
+    if health <= 0:
+        return False
+    if "placeholder" in room_type or room_id.endswith("-tbd"):
+        return False
+    return True
+
+
+def list_candidates(*, as_json: bool = False, limit: int = 12) -> int:
+    if not DB_PATH.exists():
+        return emit("fail", "api/beaverview.db is missing; run scripts/check_data_migration.sh", as_json=as_json)
+
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    try:
+        counts_by_room = device_ip_counts(con)
+        rows = con.execute(
+            """
+            SELECT
+                rooms.id,
+                rooms.number,
+                rooms.type,
+                rooms.status,
+                rooms.health,
+                rooms.screenconnect,
+                rooms.wattbox,
+                buildings.code AS building_code,
+                buildings.name AS building_name
+            FROM rooms
+            JOIN buildings ON rooms.building_id = buildings.id
+            ORDER BY rooms.id
+            """
+        ).fetchall()
+    finally:
+        con.close()
+
+    candidates: list[dict[str, Any]] = []
+    for row in rows:
+        if not is_non_critical_candidate(row):
+            continue
+        room_counts = counts_by_room.get(row["id"], {})
+        connectors = connector_hints(row, room_counts)
+        candidates.append(
+            {
+                "room_id": row["id"],
+                "building_code": row["building_code"],
+                "room_number": row["number"],
+                "room_type": row["type"],
+                "status": row["status"],
+                "health": row["health"],
+                "eligible_connectors": connectors,
+                "hardware_ip_device_types": sorted(device_type for device_type, count in room_counts.items() if count == 1),
+            }
+        )
+
+    candidates.sort(key=lambda item: (-int(item["health"] or 0), item["room_id"]))
+    candidates = candidates[:limit]
+    payload = {
+        "status": "pass",
+        "message": "first live-room candidates listed",
+        "count": len(candidates),
+        "candidates": candidates,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print("PASS first live-room candidates listed")
+        if not candidates:
+            print("No non-critical candidate rooms found in the current SQLite inventory.")
+        for item in candidates:
+            print(
+                f"- {item['room_id']} ({item['building_code']} {item['room_number']}): "
+                f"{item['status']}, health {item['health']}, "
+                f"connectors: {', '.join(item['eligible_connectors'])}"
+            )
+    return 0
+
+
 def normalize_connector(value: str) -> str:
     normalized = value.strip().lower().replace("-", "_")
     aliases = {
@@ -136,8 +252,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Check first live-room connector prerequisites.")
     parser.add_argument("--room-id", help="selected BeaverView room ID, e.g. corvallis-kad-101")
     parser.add_argument("--connector", help="first connector to validate, e.g. xpanel, ptz, 25live")
+    parser.add_argument("--list-candidates", action="store_true", help="list non-critical candidate rooms without printing raw IPs")
+    parser.add_argument("--limit", type=int, default=12, help="maximum candidates to list with --list-candidates")
     parser.add_argument("--json", action="store_true", help="print machine-readable result")
     args = parser.parse_args()
+
+    if args.list_candidates:
+        return list_candidates(as_json=args.json, limit=max(args.limit, 1))
 
     env = parse_env(ENV_PATH)
     room_id = (args.room_id or env.get("FIRST_LIVE_ROOM_ID", "")).strip().lower()

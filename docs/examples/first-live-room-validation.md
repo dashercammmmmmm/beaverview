@@ -34,6 +34,7 @@ Run from `/home/beaverview/app` on the VM unless noted:
 
 ```bash
 python3 scripts/check_pilot_readiness.py --markdown
+scripts/check_first_live_room_preflight.py --list-candidates
 scripts/check_hardware_ip_import.sh
 scripts/check_first_live_room_preflight.py
 cd api && venv/bin/python import_device_ips.py hardware_ips.csv
@@ -41,7 +42,9 @@ sudo systemctl status beaverview --no-pager
 sudo nginx -t
 ```
 
-Expected result: local checks pass, the selected non-critical room and first connector pass preflight, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
+Use `--list-candidates --json` when the selected room and connector need to be reviewed by another tool or pasted into a private deployment note. The candidate list is built from sanitized SQLite room data and Hardware IP device types only; it does not print raw IP addresses.
+
+Expected result: local checks pass, the candidate list identifies non-critical room IDs and eligible connector hints, the selected non-critical room and first connector pass preflight, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
 
 ## Connector Order
 
