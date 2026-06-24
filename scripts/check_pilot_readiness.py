@@ -36,12 +36,13 @@ if (
 DB_PATH = API_DIR / "beaverview.db"
 ENV_PATH = API_DIR / ".env"
 HARDWARE_SAMPLE_PATH = ROOT / "docs" / "examples" / "hardware_ips.sample.csv"
-HARDWARE_REAL_PATH = API_DIR / "hardware_ips.csv"
 DEPLOY_SERVICE_PATH = ROOT / "deploy" / "systemd" / "beaverview.service"
 DEPLOY_NGINX_PATH = ROOT / "deploy" / "nginx" / "beaverview.conf.template"
 AZURE_CHECKLIST_PATH = ROOT / "docs" / "examples" / "azure-entra-app-registration.md"
 API_CONTRACTS_SCRIPT = ROOT / "scripts" / "check_api_contracts.py"
+DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
+HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
 
 LOCAL_FAILURES: list[str] = []
@@ -173,27 +174,32 @@ def check_db() -> None:
         pending("hardware IP records are not loaded yet")
 
 
-def check_hardware_ip_csv_shape() -> None:
-    py = API_DIR / "venv" / "bin" / "python"
-    if not py.exists():
+def check_data_migration() -> None:
+    if not DATA_MIGRATION_SCRIPT.exists():
+        fail("data migration validator is missing")
+        return
+
+    result = run([str(DATA_MIGRATION_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("data migration validates")
+    else:
+        fail("data migration failed validation")
+
+
+def check_hardware_ip_import() -> None:
+    if not HARDWARE_IP_IMPORT_SCRIPT.exists():
+        fail("hardware IP import validator is missing")
         return
 
     if not HARDWARE_SAMPLE_PATH.exists():
         fail("hardware IP sample CSV is missing")
         return
 
-    sample = run([str(py), "import_device_ips.py", "--dry-run", str(HARDWARE_SAMPLE_PATH)], cwd=API_DIR)
-    if sample.returncode == 0:
-        pass_("hardware IP sample CSV validates")
+    result = run([str(HARDWARE_IP_IMPORT_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("hardware IP import validation passes")
     else:
-        fail("hardware IP sample CSV does not validate")
-
-    if HARDWARE_REAL_PATH.exists():
-        real = run([str(py), "import_device_ips.py", "--dry-run", str(HARDWARE_REAL_PATH)], cwd=API_DIR)
-        if real.returncode == 0:
-            pass_("real api/hardware_ips.csv validates in dry-run mode")
-        else:
-            fail("real api/hardware_ips.csv failed dry-run validation")
+        fail("hardware IP import validation failed")
 
 
 def check_deployment_assets() -> None:
@@ -351,8 +357,9 @@ def run_checks() -> None:
     check_git()
     check_sensitive_paths()
     check_python_env()
+    check_data_migration()
     check_db()
-    check_hardware_ip_csv_shape()
+    check_hardware_ip_import()
     check_deployment_assets()
     check_api_contracts()
     check_env_template()

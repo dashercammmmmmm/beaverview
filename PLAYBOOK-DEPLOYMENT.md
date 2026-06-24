@@ -128,7 +128,7 @@ All commands run inside your SSH session on the Ubuntu VM.
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install python3 python3-venv python3-pip nginx -y
+sudo apt install python3 python3-venv python3-pip sqlite3 nginx -y
 ```
 
 This takes 2–5 minutes.

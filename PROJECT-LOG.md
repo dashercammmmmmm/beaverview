@@ -206,3 +206,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - On the Ubuntu VM, generate the cert with the actual VM IP before copying the rendered nginx config into place.
+
+## 2026-06-24 - Readiness covers data import validators
+
+- Updated `scripts/check_pilot_readiness.py` to run `scripts/check_data_migration.sh`.
+- Updated `scripts/check_pilot_readiness.py` to run `scripts/check_hardware_ip_import.sh` instead of duplicating only part of that validation inline.
+- Documented that the main readiness preflight now exercises the data migration and hardware IP import gates directly.
+- Updated the Ubuntu deployment package list to include the `sqlite3` CLI used by the data migration validator.
+
+### Next
+
+- Keep using `python3 scripts/check_pilot_readiness.py` as the single local go/no-go command before push or deployment.
