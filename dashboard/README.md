@@ -34,7 +34,7 @@ file:///Users/cam/Documents/New%20project/dashboard/index.html
 - No backend service.
 - Public `map.oregonstate.edu` provides building/location data, not the internal Presentation Support room inventory.
 - No Microsoft Entra SSO.
-- No real ServiceNow ticket creation.
+- No ServiceNow ticket creation from the static dashboard UI yet; the backend has a guarded create endpoint.
 - No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls.
 
 ## Version Archive

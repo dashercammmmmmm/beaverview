@@ -776,6 +776,14 @@ class ActionRequest(BaseModel):
     notes: str | None = None
 
 
+class ServiceNowIncidentRequest(BaseModel):
+    short_description: str | None = None
+    description: str | None = None
+    category: str = "AV Equipment"
+    urgency: str = "3"
+    impact: str = "3"
+
+
 class ChatMessage(BaseModel):
     role: str  # "user" or "assistant"
     content: str
@@ -1204,6 +1212,129 @@ async def room_incidents(room_id: str, request: Request = None):
             }
             for i in incidents
         ]
+    }
+
+
+@app.post("/api/rooms/{room_id}/servicenow/incident")
+async def create_servicenow_incident(room_id: str, body: ServiceNowIncidentRequest, request: Request):
+    """Create a ServiceNow incident from room context, or return a mock draft offline."""
+    conn = get_db()
+    room = conn.execute(
+        "SELECT r.id, r.number, r.type, r.status, r.health, r.processor, r.display,"
+        " b.code AS building_code, b.name AS building_name"
+        " FROM rooms r"
+        " JOIN buildings b ON b.id = r.building_id"
+        " WHERE r.id=?",
+        (room_id,),
+    ).fetchone()
+    conn.close()
+    if not room:
+        raise HTTPException(status_code=404, detail=f"Room '{room_id}' not found")
+
+    room_label = f"{room['building_code']} {room['number']}"
+    short_description = (body.short_description or f"AV issue in {room_label}").strip()[:160]
+    description = (
+        body.description
+        or "\n".join([
+            f"Building: {room['building_name']}",
+            f"Room: {room_label} ({room['type']})",
+            f"Health: {room['health']}%",
+            f"Processor: {room['processor']}",
+            f"Display: {room['display']}",
+        ])
+    ).strip()[:4000]
+    payload = {
+        "short_description": short_description,
+        "description": description,
+        "category": body.category or "AV Equipment",
+        "urgency": body.urgency,
+        "impact": body.impact,
+        "cmdb_ci": room_id,
+    }
+    user = request.headers.get("X-User", "technician")
+
+    if not (_SN_INSTANCE and ((_SN_CLIENT and _SN_SECRET) or (_SN_BASIC_USER and _SN_BASIC_PASS))):
+        _insert_audit_event(
+            room_id,
+            "servicenow_incident_draft",
+            short_description,
+            "mock",
+            "ServiceNow credentials are not configured",
+            user,
+        )
+        return {
+            "status": "mock",
+            "created": False,
+            "room_id": room_id,
+            "message": "ServiceNow credentials are not configured; returning draft payload only.",
+            "draft": payload,
+        }
+
+    try:
+        import httpx
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx is not installed in the API environment")
+
+    base_url = _servicenow_base_url(_SN_INSTANCE)
+    headers = {}
+    auth = None
+    if _SN_CLIENT and _SN_SECRET:
+        try:
+            async with httpx.AsyncClient(timeout=8, verify=False) as client:
+                token_resp = await client.post(
+                    f"{base_url}/oauth_token.do",
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": _SN_CLIENT,
+                        "client_secret": _SN_SECRET,
+                    },
+                )
+            if token_resp.status_code >= 400:
+                raise HTTPException(status_code=502, detail=f"ServiceNow token request returned HTTP {token_resp.status_code}")
+            token = token_resp.json().get("access_token")
+            if not token:
+                raise HTTPException(status_code=502, detail="ServiceNow token response did not include access_token")
+            headers["Authorization"] = f"Bearer {token}"
+        except HTTPException:
+            raise
+        except (httpx.RequestError, ValueError) as exc:
+            raise HTTPException(status_code=502, detail=f"ServiceNow token request failed: {str(exc)[:120]}")
+    else:
+        auth = (_SN_BASIC_USER, _SN_BASIC_PASS)
+
+    try:
+        async with httpx.AsyncClient(timeout=10, verify=False) as client:
+            resp = await client.post(
+                f"{base_url}/api/now/table/incident",
+                headers=headers,
+                auth=auth,
+                json=payload,
+            )
+    except httpx.TimeoutException:
+        _insert_audit_event(room_id, "servicenow_incident_create", short_description, "error", "timeout", user)
+        raise HTTPException(status_code=504, detail="ServiceNow incident create timed out")
+    except httpx.RequestError as exc:
+        _insert_audit_event(room_id, "servicenow_incident_create", short_description, "error", str(exc)[:120], user)
+        raise HTTPException(status_code=502, detail=f"ServiceNow incident create failed: {str(exc)[:120]}")
+
+    outcome = "success" if resp.status_code < 400 else "error"
+    _insert_audit_event(room_id, "servicenow_incident_create", short_description, outcome, f"HTTP {resp.status_code}", user)
+    if resp.status_code >= 400:
+        raise HTTPException(status_code=502, detail=f"ServiceNow incident create returned HTTP {resp.status_code}")
+    try:
+        result = resp.json().get("result", {})
+    except ValueError:
+        raise HTTPException(status_code=502, detail="ServiceNow incident create did not return JSON")
+
+    return {
+        "status": "live",
+        "created": True,
+        "room_id": room_id,
+        "incident": {
+            "number": result.get("number"),
+            "sys_id": result.get("sys_id"),
+            "state": result.get("state"),
+        },
     }
 
 

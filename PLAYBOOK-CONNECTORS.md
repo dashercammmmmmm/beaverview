@@ -453,41 +453,37 @@ For WattBoxes on the local network without OvrC (uses the same `device_ips` tabl
 ### Steps — OAuth (for API ticket creation)
 1. In `api/.env`:
    ```
-   SERVICENOW_INSTANCE=oregonstate
-   SERVICENOW_CLIENT_ID=your-client-id
-   SERVICENOW_CLIENT_SECRET=your-client-secret
+   SN_INSTANCE=oregonstate.service-now.com
+   SN_CLIENT_ID=your-client-id
+   SN_CLIENT_SECRET=your-client-secret
    ```
-2. Implement the token fetch and ticket creation in `main.py`:
-   ```python
-   async def _sn_token() -> str:
-       import httpx
-       resp = httpx.post(
-           f"https://{_SN_INSTANCE}.service-now.com/oauth_token.do",
-           data={
-               "grant_type": "client_credentials",
-               "client_id": _SN_CLIENT,
-               "client_secret": _SN_SECRET,
-           },
-       )
-       return resp.json()["access_token"]
+2. BeaverView includes the incident creation endpoint:
 
-   @app.post("/api/rooms/{room_id}/servicenow/incident")
-   async def create_incident(room_id: str, body: dict):
-       token = await _sn_token()
-       import httpx
-       resp = httpx.post(
-           f"https://{_SN_INSTANCE}.service-now.com/api/now/table/incident",
-           headers={"Authorization": f"Bearer {token}"},
-           json={
-               "short_description": body.get("short_description"),
-               "description":       body.get("description"),
-               "category":          "AV Equipment",
-               "cmdb_ci":           room_id,
-           },
-       )
-       resp.raise_for_status()
-       return resp.json()
+   ```http
+   POST /api/rooms/{room_id}/servicenow/incident
    ```
+
+   Request body:
+
+   ```json
+   {
+     "short_description": "Projector will not show HDMI",
+     "description": "Room context and technician notes",
+     "category": "AV Equipment",
+     "urgency": "3",
+     "impact": "3"
+   }
+   ```
+
+   When ServiceNow credentials are missing, the endpoint returns a mock draft payload and does not create an external ticket. When `SN_INSTANCE` plus either OAuth (`SN_CLIENT_ID`/`SN_CLIENT_SECRET`) or Basic Auth (`SN_USERNAME`/`SN_PASSWORD`) are configured, the backend creates the incident server-side and returns only the incident number, sys_id, and state.
+
+3. Validate offline behavior:
+
+   ```bash
+   scripts/check_api_contracts.py
+   ```
+
+   The contract covers mock draft creation and missing-room behavior without requiring live ServiceNow access.
 
 ### Steps — SSO web UI (for opening a pre-filled form)
 No credentials needed. The launch endpoint already builds the pre-filled URL.

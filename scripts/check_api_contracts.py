@@ -306,6 +306,27 @@ def main() -> int:
         expect(sn.status_code == 200, f"ServiceNow connector test returned {sn.status_code}")
         expect(json_response(sn, "ServiceNow connector test").get("status") == "mock", "ServiceNow test is not mock")
 
+        sn_create = client.post(
+            f"/api/rooms/{room_id}/servicenow/incident",
+            json={
+                "short_description": "Contract test AV issue",
+                "description": "Offline contract test",
+                "urgency": "3",
+                "impact": "3",
+            },
+        )
+        expect(sn_create.status_code == 200, f"ServiceNow incident create returned {sn_create.status_code}")
+        sn_create_data = json_response(sn_create, "ServiceNow incident create")
+        expect(sn_create_data.get("status") == "mock", "ServiceNow incident create should stay mock offline")
+        expect(sn_create_data.get("created") is False, "ServiceNow incident create should not create offline")
+        expect(sn_create_data.get("draft", {}).get("cmdb_ci") == room_id, "ServiceNow incident draft lost room context")
+
+        sn_create_missing_room = client.post(
+            "/api/rooms/__contract-missing-room__/servicenow/incident",
+            json={"short_description": "Contract test"},
+        )
+        expect(sn_create_missing_room.status_code == 404, "missing room ServiceNow create did not return 404")
+
         chat_test = client.get("/api/connectors/chat/test")
         expect(chat_test.status_code == 200, f"chat connector test returned {chat_test.status_code}")
         expect(json_response(chat_test, "chat connector test").get("status") == "mock", "chat connector test is not mock")

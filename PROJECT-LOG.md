@@ -263,3 +263,15 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - After real 25Live credentials are available, compare one room's live schedule payload with the seeded dashboard event display before wiring the frontend to this endpoint.
+
+## 2026-06-24 - ServiceNow incident create endpoint
+
+- Added `POST /api/rooms/{room_id}/servicenow/incident`.
+- The endpoint returns a mock draft and writes an audit row when ServiceNow credentials are missing.
+- With `SN_INSTANCE` plus OAuth or Basic Auth credentials, the backend creates incidents server-side and returns only minimal ticket identifiers.
+- Expanded offline API contracts to cover mock draft creation and missing-room behavior without live ServiceNow access.
+- Updated connector docs to describe the implemented endpoint and current `SN_*` environment variable names.
+
+### Next
+
+- After real ServiceNow credentials are available, create one controlled test incident from a non-production room context before wiring the dashboard submit button to this endpoint.
