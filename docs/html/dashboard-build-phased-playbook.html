@@ -240,13 +240,14 @@ pre code { background: transparent; padding: 0; color: inherit; }
 <li>MapLibre is now vendored locally under the dashboard package so the map engine can load without external CDN access; OpenStreetMap base tiles still require network access until a local tile service is introduced.</li>
 <li>Current mock uses sanitized room/device data and should still be treated as non-authoritative until internal room inventory is imported.</li>
 </ul>
-<p>Known limitations:</p>
+<p>Current guarded implementation state:</p>
 <ul>
-<li>Uses mock data only.</li>
+<li>Static <code>dashboard/data.js</code> remains the visible room inventory until the secure Hardware IP / room inventory import is loaded.</li>
 <li>Public OSU map data provides building/location records, not Presentation Support room inventory.</li>
-<li>Does not yet include backend API endpoints.</li>
-<li>Does not yet import <code>.xlsx</code> inventory.</li>
-<li>Does not yet include real API connectors or Entra SSO.</li>
+<li>FastAPI backend endpoints now exist for health, auth/session checks, admin inventory, audit logging, connector tests, 25Live schedule fallback, ServiceNow draft/create, XPanel launch/proxy, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ commands.</li>
+<li>Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.</li>
+<li>Real external systems still require ignored <code>api/.env</code> values and ignored <code>api/hardware_ips.csv</code>.</li>
+<li>Entra SSO is scaffolded but still requires real Azure app and group configuration.</li>
 </ul>
 <h2>Phase 2: Data Model And Mock JSON</h2>
 <p>Goal: make the prototype data-shaped like the production system.</p>
@@ -273,13 +274,13 @@ pre code { background: transparent; padding: 0; color: inherit; }
 <p>Deliverables:</p>
 <ul>
 <li>Room overview.</li>
-<li>XPanel launch placeholder.</li>
-<li>Device web UI placeholder.</li>
-<li>ScreenConnect launch placeholder.</li>
-<li>WattBox status/power action placeholder.</li>
-<li>SharePoint training link placeholder.</li>
-<li>ServiceNow incident list placeholder.</li>
-<li>Action log that records mock user actions.</li>
+<li>XPanel launch through the backend proxy contract.</li>
+<li>Device web UI inventory fallback until Hardware IP records are loaded.</li>
+<li>ScreenConnect launch through the backend URL contract.</li>
+<li>WattBox status and cycle requests through guarded backend endpoints.</li>
+<li>SharePoint training links through the backend URL contract.</li>
+<li>ServiceNow incident list and draft/create workflows through guarded backend endpoints.</li>
+<li>Action log that records local UI actions and backend-audited sensitive actions.</li>
 </ul>
 <p>Acceptance criteria:</p>
 <ul>
@@ -388,13 +389,14 @@ pre code { background: transparent; padding: 0; color: inherit; }
 <li><code>v2-dgx-spark-orin-and-dashboard-build-plan</code></li>
 </ul>
 <h2>Immediate Next Build Step</h2>
-<p>The next implementation phase should be <strong>Phase 2: Data Model And Mock JSON</strong>.</p>
-<p>Before building Phase 2, confirm:</p>
+<p>The next implementation phase should be <strong>first live-room validation</strong>.</p>
+<p>Before enabling pilot use, confirm:</p>
 <ul>
-<li>Whether the current mock building list is acceptable for early review.</li>
-<li>Whether mock room numbers should remain realistic or become fully anonymized.</li>
-<li>Which fields from the future Hardware IP <code>.xlsx</code> sample should appear in the first import-shaped JSON.</li>
-<li>Whether the mock data should remain in JavaScript for file-based review or move into separate JSON files.</li>
+<li>Which non-critical room should be used for the first live connector test.</li>
+<li>The real secure <code>api/hardware_ips.csv</code> export and room ID mapping.</li>
+<li>Which connector should be validated first after Hardware IP import: XPanel, WattBox/OvrC, PTZ, 25Live, ServiceNow, ScreenConnect, or SharePoint.</li>
+<li>The required ignored <code>api/.env</code> values for that first connector.</li>
+<li>Whether the static dashboard room list should be replaced by a backend room API response before broader pilot review.</li>
 </ul>
 <p>Recommended default if no further input is available:</p>
 <ul>

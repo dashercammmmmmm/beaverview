@@ -114,13 +114,14 @@ Latest fixes:
 - MapLibre is now vendored locally under the dashboard package so the map engine can load without external CDN access; OpenStreetMap base tiles still require network access until a local tile service is introduced.
 - Current mock uses sanitized room/device data and should still be treated as non-authoritative until internal room inventory is imported.
 
-Known limitations:
+Current guarded implementation state:
 
-- Uses mock data only.
+- Static `dashboard/data.js` remains the visible room inventory until the secure Hardware IP / room inventory import is loaded.
 - Public OSU map data provides building/location records, not Presentation Support room inventory.
-- Does not yet include backend API endpoints.
-- Does not yet import `.xlsx` inventory.
-- Does not yet include real API connectors or Entra SSO.
+- FastAPI backend endpoints now exist for health, auth/session checks, admin inventory, audit logging, connector tests, 25Live schedule fallback, ServiceNow draft/create, XPanel launch/proxy, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ commands.
+- Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.
+- Real external systems still require ignored `api/.env` values and ignored `api/hardware_ips.csv`.
+- Entra SSO is scaffolded but still requires real Azure app and group configuration.
 
 ## Phase 2: Data Model And Mock JSON
 
@@ -151,13 +152,13 @@ Goal: demonstrate the "dial into room" workflow and required audit behavior.
 Deliverables:
 
 - Room overview.
-- XPanel launch placeholder.
-- Device web UI placeholder.
-- ScreenConnect launch placeholder.
-- WattBox status/power action placeholder.
-- SharePoint training link placeholder.
-- ServiceNow incident list placeholder.
-- Action log that records mock user actions.
+- XPanel launch through the backend proxy contract.
+- Device web UI inventory fallback until Hardware IP records are loaded.
+- ScreenConnect launch through the backend URL contract.
+- WattBox status and cycle requests through guarded backend endpoints.
+- SharePoint training links through the backend URL contract.
+- ServiceNow incident list and draft/create workflows through guarded backend endpoints.
+- Action log that records local UI actions and backend-audited sensitive actions.
 
 Acceptance criteria:
 
@@ -278,14 +279,15 @@ Current archives:
 
 ## Immediate Next Build Step
 
-The next implementation phase should be **Phase 2: Data Model And Mock JSON**.
+The next implementation phase should be **first live-room validation**.
 
-Before building Phase 2, confirm:
+Before enabling pilot use, confirm:
 
-- Whether the current mock building list is acceptable for early review.
-- Whether mock room numbers should remain realistic or become fully anonymized.
-- Which fields from the future Hardware IP `.xlsx` sample should appear in the first import-shaped JSON.
-- Whether the mock data should remain in JavaScript for file-based review or move into separate JSON files.
+- Which non-critical room should be used for the first live connector test.
+- The real secure `api/hardware_ips.csv` export and room ID mapping.
+- Which connector should be validated first after Hardware IP import: XPanel, WattBox/OvrC, PTZ, 25Live, ServiceNow, ScreenConnect, or SharePoint.
+- The required ignored `api/.env` values for that first connector.
+- Whether the static dashboard room list should be replaced by a backend room API response before broader pilot review.
 
 Recommended default if no further input is available:
 

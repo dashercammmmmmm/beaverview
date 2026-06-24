@@ -2,6 +2,18 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Active docs guarded-workflow refresh
+
+- Updated setup and development docs that still described active tool panels as mock-only placeholders.
+- Updated the in-app first-run tour note to describe backend-guarded workflows and pending prerequisites.
+- Updated the active dashboard phased playbook to reflect implemented FastAPI endpoints, guarded dashboard tool panels, and first live-room validation as the next phase.
+- Regenerated the HTML playbook copies with `scripts/build_playbook_html.py`.
+
+### Next
+
+- Continue treating archived dashboard/playbook snapshots as historical; update only active docs unless an archive correction is explicitly needed.
+- Once real `api/.env` values and `api/hardware_ips.csv` are available, document the first live-room validation result.
+
 ## 2026-06-24 - Launch URL readiness tracking
 
 - Updated `scripts/check_pilot_readiness.py` to report missing `SC_BASE_URL` and `SHAREPOINT_BASE_URL` as pending external prerequisites.

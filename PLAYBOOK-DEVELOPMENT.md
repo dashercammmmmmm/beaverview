@@ -146,7 +146,7 @@ function renderMyToolTool(room) {
       <!-- your HTML here; room object has all room data -->
       <p>${room.building.code} ${room.number}</p>
     </div>
-  `, "Mock UI — in production this connects to [describe what]");
+  `, "Requests route through the BeaverView backend. Without live prerequisites, show a clear pending message.");
 }
 ```
 The `toolPanelWrap` helper automatically injects the `← Actions` back button.
@@ -253,7 +253,7 @@ my_service: "mock"
 - User identity: read from `X-User` request header (placeholder until Entra SSO)
 - Connector mode: check `CONNECTOR_REGISTRY[campus_id]["connector"]["mode"]` before deciding mock vs live
 - Mock functions: prefix with `_mock` or suffix with `_mock`
-- Real implementations: replace `# TODO` stubs, keep the mock functions as fallbacks
+- Live implementations: use guarded backend routes, keep mock/offline functions as explicit fallbacks, and surface missing prerequisites as `pending` or clear error responses without exposing secrets or raw device IPs
 
 ---
 

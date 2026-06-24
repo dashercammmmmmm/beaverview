@@ -100,11 +100,11 @@ If the map is blank/grey, wait 3–5 seconds for the map tiles to load (requires
 2. A room shelf appears below the map. Click **KAd 101**.
 3. The detail panel on the right shows the Overview tab.
 4. Click the **Actions** tab.
-5. Click **Launch XPanel** → you should see a mock Crestron XPanel UI with source select buttons.
+5. Click **Launch XPanel** → you should see a control panel with an **Open Proxied XPanel** launch button. With no live credentials, the panel reports the connector prerequisite instead of opening a raw device URL.
 6. Click **← Actions** to go back.
-7. Click **Draft ServiceNow ticket** → a pre-filled incident form appears.
+7. Click **Draft ServiceNow ticket** → a pre-filled incident form appears. Submitting it calls the backend and returns a mock draft until ServiceNow credentials are configured.
 
-All of this runs on mock data. No credentials are needed yet.
+These workflows are guarded: no credentials are needed for local review, and live actions stay pending until the required `.env` values and Hardware IP records are loaded.
 
 ---
 
