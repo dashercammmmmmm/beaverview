@@ -180,8 +180,9 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 - Added `--json` support to `scripts/check_pilot_readiness.py`.
 - JSON output includes status, pass/pending/failure arrays, and counts without printing secret values.
+- Added `--markdown` support for human-readable readiness reports.
 - Documented the JSON mode for future reporting or automation.
 
 ### Next
 
-- Use `python3 scripts/check_pilot_readiness.py --json` when another tool needs to consume readiness state.
+- Use `python3 scripts/check_pilot_readiness.py --json` when another tool needs to consume readiness state, or `--markdown` when a person needs a paste-ready report.

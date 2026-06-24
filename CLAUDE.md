@@ -67,6 +67,7 @@ For automation or reports, use:
 
 ```bash
 python3 scripts/check_pilot_readiness.py --json
+python3 scripts/check_pilot_readiness.py --markdown
 ```
 
 Run this after changing API route, auth, connector fallback, or proxy behavior:

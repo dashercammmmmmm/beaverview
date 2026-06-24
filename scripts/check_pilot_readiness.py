@@ -389,16 +389,55 @@ def print_text_result(result: dict) -> None:
     print(f"Local readiness passed with {result['pending_count']} external prerequisite(s) pending")
 
 
+def print_markdown_result(result: dict) -> None:
+    print("# BeaverView Pilot Readiness")
+    print()
+    print(f"- Status: `{result['status']}`")
+    print(f"- Passed checks: {result['passed_count']}")
+    print(f"- Pending external prerequisites: {result['pending_count']}")
+    print(f"- Local failures: {result['failure_count']}")
+    print()
+
+    print("## Passed")
+    print()
+    for item in result["passed"]:
+        print(f"- {item}")
+    if not result["passed"]:
+        print("- None")
+    print()
+
+    print("## Pending External Prerequisites")
+    print()
+    for item in result["pending"]:
+        print(f"- {item}")
+    if not result["pending"]:
+        print("- None")
+    print()
+
+    print("## Local Failures")
+    print()
+    for item in result["failures"]:
+        print(f"- {item}")
+    if not result["failures"]:
+        print("- None")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run BeaverView local pilot-readiness checks.")
     parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    parser.add_argument("--markdown", action="store_true", help="print a Markdown readiness report")
     args = parser.parse_args()
 
     run_checks()
     result = readiness_result()
 
+    if args.json and args.markdown:
+        parser.error("choose only one output format")
+
     if args.json:
         print(json.dumps(result, indent=2, sort_keys=True))
+    elif args.markdown:
+        print_markdown_result(result)
     else:
         print_text_result(result)
 
