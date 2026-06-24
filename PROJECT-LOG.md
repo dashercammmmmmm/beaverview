@@ -57,3 +57,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 - Pushed local `main` to `https://github.com/dashercammmmmmm/beaverview`.
 - Verified local `HEAD`, `origin/main`, and `origin/HEAD` were synced after the push.
 - Added and pushed `docs: record github sync status` so the handoff docs also exist on GitHub.
+
+## 2026-06-24 - Pilot readiness preflight
+
+- Added `scripts/check_pilot_readiness.py`.
+- The preflight verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed counts, and `.env`/connector prerequisite status without printing secret values.
+- It treats missing Azure credentials, missing connector credentials, and missing hardware IP rows as pending external prerequisites instead of local failures.
+
+### Next
+
+- Run this preflight after any environment, deployment, or connector change.
+- When secure `api/.env` and `api/hardware_ips.csv` are available, rerun the preflight and use the pending list as the pilot-readiness punch list.

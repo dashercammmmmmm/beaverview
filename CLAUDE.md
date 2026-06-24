@@ -47,6 +47,14 @@ It rebuilds the ignored local SQLite inventory from `dashboard/data.js` and veri
 
 The device web proxy at `/api/rooms/{room_id}/proxy/{tool}/{path}` performs server-side `device_ips` lookup for `xpanel`, `wattbox`, and `ptz`, injects backend-only credentials, and only proxies private/link-local IPs unless `DEVICE_PROXY_ALLOW_PUBLIC=true` is explicitly set after review. It supports GET only.
 
+Run this for a broader local readiness snapshot before deployment work:
+
+```bash
+scripts/check_pilot_readiness.py
+```
+
+It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, and reports pending external prerequisites without printing secret values.
+
 There is no build step, bundler, or test suite. Frontend changes are visible immediately — `index.html` has a built-in live-reload poller (HEAD requests every 1.5s, localhost only).
 
 ## Architecture

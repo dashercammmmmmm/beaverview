@@ -107,6 +107,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_chec
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
 ```
 
+**Pilot readiness preflight before deployment work:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
+```
+
 ### Step 3 — Open the site
 Open **Chrome** or **Safari** and go to: `http://localhost:8000`
 
@@ -208,6 +213,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `import_device_ips.py` now initializes the DB schema and validates IP addresses before import.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
 
+### Pilot readiness preflight
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, and deployment prerequisite status.
+- It does not print secret values.
+- It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
+
 ### Admin link in dashboard header
 - Orange-tinted "Admin" button appears in the top-right header
 - Shown only when `GET /api/me` returns `role: 'admin'`
@@ -270,4 +280,5 @@ Project root: /Users/benjaminfranklinautomation/projects/beaverview/
 Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
 Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
+Pilot readiness: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilot_readiness.py
 ```
