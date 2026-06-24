@@ -65,6 +65,11 @@ def main() -> int:
             expect(page.locator("[data-tool-status]")).to_contain_text("Configure the connector", timeout=5_000)
             page.locator("[data-back='tools']").click()
 
+            click_tool(page, "Device web UIs")
+            expect(page.locator("[data-tool-status]")).to_contain_text("proxy mapping", timeout=5_000)
+            expect(page.get_by_role("button", name=re.compile("Proxy pending", re.I)).first).to_be_disabled()
+            page.locator("[data-back='tools']").click()
+
             click_tool(page, "Start ScreenConnect")
             page.get_by_role("button", name=re.compile("Launch Remote Session", re.I)).click()
             expect(page.locator("[data-tool-status]")).to_contain_text("Configure the connector", timeout=5_000)

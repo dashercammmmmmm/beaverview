@@ -1578,6 +1578,10 @@ h1, h2, h3, p {
   cursor: wait;
   opacity: .55;
 }
+.dev-launch--pending:disabled {
+  cursor: default;
+  opacity: .72;
+}
 
 /* ── ServiceNow ticket form ── */
 .sn-panel { display: flex; flex-direction: column; gap: 10px; }

@@ -633,7 +633,8 @@ function renderTools(room) {
       danger: true,
       desc: "Last-resort — logged and requires confirmation"
     },
-    // Device web UI: always available (shows whatever's in the device list)
+    // Device web UI inventory: launch remains gated until Hardware IP import and
+    // a type-specific backend proxy route are available for the device.
     {
       label: "Device web UIs",
       action: "device_web_ui_opened",
@@ -661,7 +662,7 @@ function renderTools(room) {
     screenconnect: "Launch remote desktop session to the AV control PC",
     ptz: "View and control the PTZ camera in this room",
     wattbox: "Check WattBox outlet status or power-cycle AV devices",
-    device_web: "Open the device's local web interface",
+    device_web: "Review device inventory and web UI proxy readiness",
     sharepoint: "Open room documentation and knowledge base on SharePoint",
     servicenow: "Create or view support tickets for this room"
   };
@@ -853,10 +854,13 @@ function renderWattBoxTool(room) {
   `, "Status and cycle requests route through the BeaverView backend. Without OvrC credentials, the local outlet list remains a mock fallback.");
 }
 
-// Device Web UI — inventory list with per-device launch buttons
+// Device Web UI — inventory list with guarded launch readiness
 function renderDeviceWebTool(room) {
   const devices = room.devices || [];
   return toolPanelWrap(`
+    <div class="tool-status" data-tool-status aria-live="polite">
+      Device web UI launch is pending Hardware IP records and backend proxy mapping.
+    </div>
     <div class="dev-inventory">
       ${devices.length
         ? devices.map(d => `
@@ -866,13 +870,13 @@ function renderDeviceWebTool(room) {
                 <strong>${d[1]} ${d[2]}</strong>
                 <span>${d[3]}</span>
               </div>
-              <button class="dev-launch" type="button">Open UI →</button>
+              <button class="dev-launch dev-launch--pending" type="button" disabled>Proxy pending</button>
             </div>
           `).join("")
         : `<p style="color:var(--text-muted);font-size:13px;padding:8px 0">No device inventory recorded for this room.</p>`
       }
     </div>
-  `, "Mock UI — in production each button opens the device's built-in web interface. IPs are resolved by the backend proxy; the browser never receives a raw IP address.");
+  `, "Device browser access will stay disabled until secure Hardware IP records are imported and each supported device type has an approved backend proxy route.");
 }
 
 // SharePoint — room-type documentation links

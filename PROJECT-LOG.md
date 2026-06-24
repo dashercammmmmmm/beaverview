@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Device web UI readiness state
+
+- Reworked the dashboard Device web UIs panel so it no longer displays dead "Open UI" buttons.
+- The panel now shows room device inventory plus an explicit pending state until Hardware IP records are imported and supported device types have approved backend proxy routes.
+- Expanded `scripts/check_dashboard_browser.py` to verify the Device web UI panel stays guarded in headless Chromium.
+
+### Next
+
+- After real Hardware IP records are loaded, add explicit backend proxy/launch coverage for each approved web UI device type instead of introducing a generic raw-IP launcher.
+
 ## 2026-06-24 - Hermes readiness and browser coverage
 
 - Added `CHAT_BASE_URL` to the pilot readiness pending-prerequisite list so the visible Ask Hermes tab is tracked before pilot use.

@@ -28,6 +28,7 @@ http://localhost:8000
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
 - PTZ and WattBox controls route through guarded backend endpoints and show prerequisite messages until Hardware IP records and credentials are loaded.
 - XPanel, ScreenConnect, and SharePoint launch buttons ask the backend for live URLs and stay in pending mode until their connectors are configured.
+- Device web UIs show room inventory but keep per-device launch disabled until Hardware IP records and approved proxy routes are available.
 - Ask Hermes chat calls the backend and shows a clear fallback until the local AI endpoint is configured.
 - First-run guided tour.
 
@@ -38,6 +39,7 @@ http://localhost:8000
 - Public `map.oregonstate.edu` provides building/location data, not the internal Presentation Support room inventory.
 - No Microsoft Entra SSO.
 - No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls until credentials and Hardware IP records are loaded.
+- No generic raw device web UI launching; device browser access must go through approved backend proxy routes.
 - Static file mode cannot call backend APIs; use `http://localhost:8000` for API-backed workflows.
 
 ## Browser Smoke
@@ -46,7 +48,7 @@ http://localhost:8000
 scripts/check_dashboard_browser.sh
 ```
 
-This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, ScreenConnect, SharePoint, WattBox, PTZ, and Hermes chat workflows in headless Chromium.
+This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, Device web UI, ScreenConnect, SharePoint, WattBox, PTZ, and Hermes chat workflows in headless Chromium.
 
 ## Version Archive
 
