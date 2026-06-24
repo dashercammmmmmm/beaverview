@@ -33,8 +33,8 @@ BeaverView is an OSU Presentation Support dashboard — a FastAPI backend + vani
 - Canonical local repo: `/Users/benjaminfranklinautomation/projects/beaverview`
 - GitHub remote: `https://github.com/dashercammmmmmm/beaverview`
 - Branch: `main`
-- Current state before this stabilization pass: clean worktree, local `main` five commits ahead of `origin/main`
-- Latest local commit before this stabilization pass: `9a4cb4f fix: allow maplibre and osm tiles via relaxed CSP header`
+- Current sync state: local `main`, `origin/main`, and `origin/HEAD` point to `8f91fac feat: add device proxy foundation`
+- GitHub push verified: 2026-06-24T02:30:07Z
 - `/Users/benjaminfranklinautomation/Documents/Beaverview` is not the active v2 repo; it has no commits and no remote.
 - Durable work log: update `PROJECT-LOG.md` for material changes.
 
@@ -173,15 +173,15 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Git repository initialized
 - `git init` + initial commit (ec60a6f) — all project files committed
 - GitHub remote exists at `https://github.com/dashercammmmmmm/beaverview`
-- Current local repo is ahead of GitHub `origin/main`; run `git status --short --branch` for the exact count before pushing.
-- Remaining step: push local v2 to GitHub after smoke checks and approval
+- Local BeaverView v2 and stabilization commits were pushed to GitHub on 2026-06-24.
+- `git status --short --branch` should show `## main...origin/main` when the repo is clean and synced.
 
 ### Python venv required (macOS)
 - macOS Homebrew Python blocks system-wide `pip install` (PEP 668)
 - Fixed: `api/venv/` created, `starlette-sessions` version corrected to `>=0.3.0` in `requirements.txt`
 - 2026-06-24 finding: local venv was missing `httpx`, disabling Crestron polling and connector modules. `api/start.sh` now installs from `requirements.txt`; run it or `pip install -r requirements.txt` to repair the venv.
 
-### BeaverView v2 local commits not yet on GitHub
+### BeaverView v2 commits now on GitHub
 - `a4b259e` BeaverView v2 — Phase 1 & 2 visual redesign, ServiceNow, map UX improvements
 - `b9fd9fe` Phase 4 — Hermes chat agent integration
 - `a51006e` Map crash fix when search/filters match zero buildings
@@ -231,7 +231,6 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### 🔴 Blocking — must do before production
 | Item | Notes |
 |---|---|
-| **Push local v2 to GitHub** | GitHub remote exists. Local `main` is ahead of `origin/main`; push after smoke checks and GitHub credentials are available. |
 | **Azure App Registration** | IT team registers BeaverView in Azure Portal. See `PLAYBOOK-DEPLOYMENT.md` Part 7, Steps 1–3. Requires Application Administrator role. |
 | **.env credentials** | Fill in `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, group object IDs |
 | **Ubuntu VM** | Not yet created. See `PLAYBOOK-DEPLOYMENT.md` Part 2 |

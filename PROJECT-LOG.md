@@ -6,7 +6,7 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 - Confirmed canonical local repo: `/Users/benjaminfranklinautomation/projects/beaverview`.
 - Confirmed GitHub remote: `https://github.com/dashercammmmmmm/beaverview`.
-- Confirmed local `main` is five commits ahead of `origin/main`; latest local commit is `9a4cb4f fix: allow maplibre and osm tiles via relaxed CSP header`.
+- At the start of stabilization, confirmed local `main` was five commits ahead of `origin/main`; latest local commit was `9a4cb4f fix: allow maplibre and osm tiles via relaxed CSP header`.
 - Confirmed working tree was clean before edits.
 - Confirmed `/Users/benjaminfranklinautomation/Documents/Beaverview` is not the active v2 repo; it has no commits and no configured remote.
 - Found local venv was missing `httpx`, which disables Crestron polling and connector health paths even though `httpx` is listed in `api/requirements.txt`.
@@ -19,7 +19,7 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Run `scripts/smoke_check.sh` before pushing or starting feature work.
-- Push the five local v2 commits plus this stabilization commit to GitHub once Cam approves syncing `main`.
+- Pushed to GitHub on 2026-06-24 after `gh auth setup-git` enabled the existing GitHub CLI credentials.
 
 ## 2026-06-24 - Data migration repair
 
@@ -36,7 +36,7 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 ## 2026-06-24 - Device proxy foundation
 
-- Attempted `git push origin main`; remote had not advanced, but push failed because this environment has no GitHub HTTPS credentials configured.
+- Initial `git push origin main` attempt failed before GitHub CLI credentials were wired into Git; this was resolved later with `gh auth setup-git`.
 - Replaced the `/api/rooms/{room_id}/proxy/{tool}/{path}` 501 stub with a conservative GET-only proxy foundation for `xpanel`, `wattbox`, and `ptz`.
 - Proxy now looks up device IPs from `device_ips`, validates proxyable IP addresses, injects backend-only credentials, disables redirects, sets a short timeout, and returns `Cache-Control: no-store`.
 - Added private/link-local IP enforcement by default; `DEVICE_PROXY_ALLOW_PUBLIC=true` is available only for reviewed deployments.
@@ -46,5 +46,13 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 
 ### Next
 
-- Configure GitHub credentials or switch the remote to SSH, then push local `main`.
+- GitHub sync is complete as of `8f91fac`; continue to run smoke checks before future pushes.
 - Load the real secure `hardware_ips.csv` and device credentials, then test one actual XPanel or WattBox path on the AV network.
+
+## 2026-06-24 - GitHub sync completed
+
+- Verified GitHub CLI was authenticated as `dashercammmmmmm` with HTTPS git operations.
+- Ran `gh auth setup-git` to configure Git credential access.
+- Fetched `origin/main` and confirmed the remote had not advanced.
+- Pushed local `main` to `https://github.com/dashercammmmmmm/beaverview`.
+- Verified local `HEAD`, `origin/main`, and `origin/HEAD` all point to `8f91fac feat: add device proxy foundation`.
