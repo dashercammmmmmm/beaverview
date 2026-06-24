@@ -125,3 +125,16 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - Run `scripts/check_api_contracts.py` after API route, auth, connector fallback, or device proxy changes.
+
+## 2026-06-24 - Environment template validation
+
+- Added `scripts/check_env_template.py`.
+- The check verifies `api/.env.example` matches env vars used by runtime code and readiness checks, with no duplicate or stale keys.
+- Wired the env-template check into `scripts/check_pilot_readiness.py`.
+- Made `CRESTRON_VERIFY_SSL` active in the Crestron processor poller and added `CRESTRON_POLL_SCHEME`.
+- Added missing `SESSION_SECRET_KEY` and `SESSION_HTTPS_ONLY` entries to `api/.env.example`.
+- Consolidated the duplicate `SN_INSTANCE` documentation in `api/.env.example`.
+
+### Next
+
+- Run `scripts/check_env_template.py` after adding, renaming, or removing any `.env` setting.

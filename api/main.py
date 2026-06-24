@@ -189,6 +189,10 @@ CONNECTOR_REGISTRY: dict[str, dict[str, dict]] = {
 _CRESTRON_POLL_USER = os.getenv("CRESTRON_POLL_USERNAME", "")
 _CRESTRON_POLL_PASS = os.getenv("CRESTRON_POLL_PASSWORD", "")
 _CRESTRON_POLL_INTERVAL = int(os.getenv("CRESTRON_POLL_INTERVAL_SECONDS", "60"))
+_CRESTRON_POLL_SCHEME = os.getenv("CRESTRON_POLL_SCHEME", "http").lower()
+_CRESTRON_VERIFY_SSL = os.getenv("CRESTRON_VERIFY_SSL", "false").lower() not in ("0", "false", "no")
+if _CRESTRON_POLL_SCHEME not in ("http", "https"):
+    _CRESTRON_POLL_SCHEME = "http"
 if _CRESTRON_POLL_USER and _CRESTRON_POLL_PASS:
     for campus in CONNECTOR_REGISTRY.values():
         campus["crestron"]["mode"] = "live"
@@ -370,7 +374,7 @@ async def _poll_single_processor(
     async with semaphore:
         try:
             resp = await httpx_client.get(
-                f"http://{ip}/Device/DeviceInfo",
+                f"{_CRESTRON_POLL_SCHEME}://{ip}/Device/DeviceInfo",
                 auth=(_CRESTRON_POLL_USER, _CRESTRON_POLL_PASS),
                 timeout=5.0,
             )
@@ -416,7 +420,7 @@ async def poll_all_processors() -> None:
         con.close()
 
         if ips:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=_CRESTRON_VERIFY_SSL) as client:
                 tasks = [
                     _poll_single_processor(client, semaphore, row[0], row[1], now)
                     for row in ips

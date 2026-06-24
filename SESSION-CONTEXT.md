@@ -117,6 +117,11 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_pilo
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_api_contracts.py
 ```
 
+**Env template consistency after runtime env changes:**
+```
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_env_template.py
+```
+
 **Initialize local `.env` with generated `PROXY_SECRET`:**
 ```
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/init_local_env.sh
@@ -237,7 +242,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, env-template consistency, and deployment prerequisite status.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.
@@ -248,6 +253,10 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
 - It validates health, localhost dev auth, admin inventory access, xpanel launch/proxy behavior, ServiceNow/chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+
+### Environment template consistency
+- `scripts/check_env_template.py` verifies `api/.env.example` matches runtime env vars used by `api/main.py`, connector modules, and readiness checks.
+- It catches missing template entries, duplicate keys, and stale documented keys before deployment.
 
 ### Deployment templates
 - `deploy/systemd/beaverview.service` is the checked-in systemd unit for the Ubuntu VM.

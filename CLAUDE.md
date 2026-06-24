@@ -61,7 +61,7 @@ Run this for a broader local readiness snapshot before deployment work:
 scripts/check_pilot_readiness.py
 ```
 
-It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, offline API contracts, and reports pending external prerequisites without printing secret values.
+It verifies repo sync, ignored local secrets/data, Python imports, seeded SQLite inventory, offline API contracts, env-template consistency, and reports pending external prerequisites without printing secret values.
 
 Run this after changing API route, auth, connector fallback, or proxy behavior:
 
@@ -70,6 +70,14 @@ scripts/check_api_contracts.py
 ```
 
 It exercises the FastAPI app in-process with deterministic mock connector settings: health, localhost dev auth, admin inventory, xpanel launch/proxy behavior, ServiceNow/chat fallbacks, `/api/chat`, and room incidents.
+
+Run this after changing runtime environment variables in `api/main.py`, connector modules, or readiness checks:
+
+```bash
+scripts/check_env_template.py
+```
+
+It verifies `api/.env.example` documents the runtime env vars used by code/readiness, has no duplicate keys, and has no stale documented keys.
 
 Run this once on a local checkout or VM to create ignored `api/.env` with a generated `PROXY_SECRET`:
 

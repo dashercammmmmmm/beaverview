@@ -28,6 +28,7 @@ DEPLOY_SERVICE_PATH = ROOT / "deploy" / "systemd" / "beaverview.service"
 DEPLOY_NGINX_PATH = ROOT / "deploy" / "nginx" / "beaverview.conf.template"
 AZURE_CHECKLIST_PATH = ROOT / "docs" / "examples" / "azure-entra-app-registration.md"
 API_CONTRACTS_SCRIPT = ROOT / "scripts" / "check_api_contracts.py"
+ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
@@ -212,6 +213,18 @@ def check_api_contracts() -> None:
         fail("offline API contracts failed validation")
 
 
+def check_env_template() -> None:
+    if not ENV_TEMPLATE_SCRIPT.exists():
+        fail("environment template validator is missing")
+        return
+
+    result = run([str(ENV_TEMPLATE_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("environment template matches runtime env usage")
+    else:
+        fail("environment template validation failed")
+
+
 def is_configured(value: str | None) -> bool:
     if not value:
         return False
@@ -304,6 +317,7 @@ def main() -> int:
     check_hardware_ip_csv_shape()
     check_deployment_assets()
     check_api_contracts()
+    check_env_template()
     check_env_prereqs()
 
     print("BeaverView pilot-readiness preflight")
