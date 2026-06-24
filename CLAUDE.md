@@ -79,13 +79,13 @@ python3 scripts/check_env_template.py
 
 It verifies `api/.env.example` documents the runtime env vars used by code/readiness, has no duplicate keys, and has no stale documented keys.
 
-Run this once on a local checkout or VM to create ignored `api/.env` with a generated `PROXY_SECRET`:
+Run this once on a local checkout or VM to create/update ignored `api/.env` with generated `PROXY_SECRET` and `SESSION_SECRET_KEY` values:
 
 ```bash
-scripts/init_local_env.sh
+bash scripts/init_local_env.sh
 ```
 
-It does not print the generated secret.
+It does not print generated secret values.
 
 Azure/Entra setup has a committed checklist at `docs/examples/azure-entra-app-registration.md`. The preflight validates that the checklist exists and that `AZURE_REDIRECT_URI`, if configured, is an HTTPS `/auth/callback` URL.
 

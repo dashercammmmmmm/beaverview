@@ -251,6 +251,7 @@ def is_configured(value: str | None) -> bool:
         "tenant-id",
         "client-id",
         "client-secret",
+        "change-me",
     )
     return not any(marker in lowered for marker in placeholder_markers)
 
@@ -294,6 +295,11 @@ def check_env_prereqs() -> None:
         pass_("PROXY_SECRET is set")
     else:
         pending("PROXY_SECRET is not set")
+
+    if is_configured(env.get("SESSION_SECRET_KEY")):
+        pass_("SESSION_SECRET_KEY is set")
+    else:
+        pending("SESSION_SECRET_KEY is not set")
 
     if has_all(env, ("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")):
         pass_("Azure app credentials are present")

@@ -153,3 +153,14 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 ### Next
 
 - After real OSU credentials and `hardware_ips.csv` are available, use the admin connector test endpoint to validate one connector at a time before enabling technician workflows.
+
+## 2026-06-24 - Session secret readiness
+
+- Updated `scripts/init_local_env.sh` to idempotently generate both `PROXY_SECRET` and `SESSION_SECRET_KEY`.
+- Updated the pilot readiness preflight to require `SESSION_SECRET_KEY` and reject obvious placeholder values such as `change-me`.
+- Ran the initializer locally; ignored `api/.env` now has both required local secrets set without printing values.
+- Updated deployment and handoff docs to use `bash scripts/init_local_env.sh` and describe both generated secrets.
+
+### Next
+
+- Keep Azure and connector credentials out of Git; fill them only in ignored `api/.env` when OSU provides them.

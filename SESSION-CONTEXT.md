@@ -122,9 +122,9 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_api_
 cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_env_template.py
 ```
 
-**Initialize local `.env` with generated `PROXY_SECRET`:**
+**Initialize local `.env` with generated local secrets:**
 ```
-cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/init_local_env.sh
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && bash scripts/init_local_env.sh
 ```
 
 **Hardware IP CSV dry-run before real import:**
@@ -252,7 +252,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure/connector credentials and missing hardware IPs are reported as pending external prerequisites.
 - It also validates reusable deployment templates under `deploy/`.
-- `scripts/init_local_env.sh` creates ignored `api/.env` and sets `PROXY_SECRET` without printing it.
+- `scripts/init_local_env.sh` creates/updates ignored `api/.env` and sets `PROXY_SECRET` plus `SESSION_SECRET_KEY` without printing them.
 - Azure/Entra setup checklist: `docs/examples/azure-entra-app-registration.md`.
 - The preflight validates the Azure redirect URI shape when configured.
 
@@ -329,7 +329,7 @@ it has the full project state.
 Key files: api/main.py, dashboard/app.js, dashboard/index.html, dashboard/styles.css
 Project root: /Users/benjaminfranklinautomation/projects/beaverview/
 Dev server: cd "/Users/benjaminfranklinautomation/projects/beaverview/api" && source venv/bin/activate && uvicorn main:app --reload --port 8000
-Initialize env: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/init_local_env.sh
+Initialize env: cd "/Users/benjaminfranklinautomation/projects/beaverview" && bash scripts/init_local_env.sh
 Smoke check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/smoke_check.sh
 Data migration check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_data_migration.sh
 Hardware IP CSV check: cd "/Users/benjaminfranklinautomation/projects/beaverview" && scripts/check_hardware_ip_import.sh

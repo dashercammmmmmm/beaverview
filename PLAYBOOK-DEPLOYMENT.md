@@ -184,20 +184,15 @@ sudo -u beaverview cp /home/beaverview/app/api/.env.example /home/beaverview/app
 sudo nano /home/beaverview/app/api/.env
 ```
 
-Or create the file with a generated `PROXY_SECRET` first:
+Or create/update the file with generated `PROXY_SECRET` and `SESSION_SECRET_KEY` values first:
 
 ```bash
 cd /home/beaverview/app
-sudo -u beaverview scripts/init_local_env.sh
+sudo -u beaverview bash scripts/init_local_env.sh
 sudo nano /home/beaverview/app/api/.env
 ```
 
-At minimum, set `PROXY_SECRET`. Generate a random value:
-```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
-```
-
-Copy the output and paste it as the value of `PROXY_SECRET` in `.env`. Save with `Ctrl+O`, Enter, `Ctrl+X`.
+The initializer does not print generated secret values. Fill the Azure and connector credentials in `.env`, then save with `Ctrl+O`, Enter, `Ctrl+X`.
 
 ```bash
 sudo chmod 600 /home/beaverview/app/api/.env
