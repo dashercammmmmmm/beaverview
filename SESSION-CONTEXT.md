@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding the room diagnostics guard.
+**Last updated:** 2026-06-24 after adding the first live-room validation runbook.
 
 ---
 
@@ -135,6 +135,12 @@ cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/ch
 **Non-secret pilot input checklist:**
 ```
 docs/examples/pilot-inputs-checklist.md
+```
+
+**First live-room validation runbook:**
+```
+docs/examples/first-live-room-validation.md
+cd "/Users/benjaminfranklinautomation/projects/beaverview" && python3 scripts/check_live_validation_doc.py
 ```
 
 **Offline API contract check after route/auth/connector changes:**
@@ -291,7 +297,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room validation runbook coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - It does not print secret values.
@@ -300,6 +306,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - It also validates reusable deployment templates under `deploy/`.
 - `scripts/init_local_env.sh` creates/updates ignored `api/.env` and sets `PROXY_SECRET` plus `SESSION_SECRET_KEY` without printing them.
 - `docs/examples/pilot-inputs-checklist.md` is the non-secret collection packet for external OSU inputs.
+- `docs/examples/first-live-room-validation.md` is the no-secrets runbook for first non-critical room and connector validation.
 - Azure/Entra setup checklist: `docs/examples/azure-entra-app-registration.md`.
 - The preflight validates the Azure redirect URI shape when configured.
 

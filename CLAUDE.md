@@ -118,6 +118,8 @@ Azure/Entra setup has a committed checklist at `docs/examples/azure-entra-app-re
 
 The non-secret external input collection packet is `docs/examples/pilot-inputs-checklist.md`. It maps the remaining preflight pending items to `api/.env` keys and the ignored `api/hardware_ips.csv` file.
 
+The first live-room validation runbook is `docs/examples/first-live-room-validation.md`. It defines the non-critical-room checklist, connector order, evidence rules, rollback path, and no-secrets/no-raw-IP requirements. `python3 scripts/check_live_validation_doc.py` validates that the runbook still covers those gates and is part of `scripts/check_pilot_readiness.py`.
+
 Run this after changing deployment templates:
 
 ```bash

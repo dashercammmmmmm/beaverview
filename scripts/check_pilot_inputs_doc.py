@@ -49,6 +49,8 @@ REQUIRED_TERMS = (
     "SN_CLIENT_SECRET",
     "SN_USERNAME",
     "SN_PASSWORD",
+    "docs/examples/first-live-room-validation.md",
+    "python3 scripts/check_live_validation_doc.py",
 )
 
 

@@ -169,6 +169,12 @@ Basic Auth option:
 
 ## Final Verification
 
+Before the first live connector test, use:
+
+```bash
+docs/examples/first-live-room-validation.md
+```
+
 Run all local gates:
 
 ```bash
@@ -178,6 +184,7 @@ scripts/check_hardware_ip_import.sh
 scripts/check_deployment_assets.sh
 scripts/check_api_contracts.py
 python3 scripts/check_env_template.py
+python3 scripts/check_live_validation_doc.py
 python3 scripts/check_pilot_readiness.py
 ```
 

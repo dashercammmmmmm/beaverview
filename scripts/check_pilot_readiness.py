@@ -45,6 +45,7 @@ ADMIN_BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_admin_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
+LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
 
 LOCAL_FAILURES: list[str] = []
@@ -283,6 +284,18 @@ def check_pilot_inputs_doc() -> None:
         fail("pilot input checklist validation failed")
 
 
+def check_live_validation_doc() -> None:
+    if not LIVE_VALIDATION_SCRIPT.exists():
+        fail("first live-room validation doc validator is missing")
+        return
+
+    result = run([sys.executable, str(LIVE_VALIDATION_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("first live-room validation runbook covers pilot gates")
+    else:
+        fail("first live-room validation runbook validation failed")
+
+
 def is_configured(value: str | None) -> bool:
     if not value:
         return False
@@ -403,6 +416,7 @@ def run_checks() -> None:
     check_admin_browser()
     check_env_template()
     check_pilot_inputs_doc()
+    check_live_validation_doc()
     check_env_prereqs()
 
 

@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room validation runbook
+
+- Added `docs/examples/first-live-room-validation.md` as the no-secrets runbook for the first non-critical room and connector validation.
+- Added `scripts/check_live_validation_doc.py` and wired it into `scripts/check_pilot_readiness.py`.
+- Updated the pilot input checklist and handoff docs to point at the live-room validation runbook before any live connector test.
+
+### Next
+
+- When OSU provides the selected non-critical room, real Hardware IP data, and the first connector credentials, follow the runbook and record only a sanitized outcome in this log.
+
 ## 2026-06-24 - Room diagnostics guard
 
 - Added a room Overview diagnostics card that summarizes likely causes from room status, health, display state, open incidents, stale inventory, and device types.

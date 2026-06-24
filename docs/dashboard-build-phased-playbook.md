@@ -289,6 +289,8 @@ Before enabling pilot use, confirm:
 - The required ignored `api/.env` values for that first connector.
 - Whether the static dashboard room list should be replaced by a backend room API response before broader pilot review.
 
+Use `docs/examples/first-live-room-validation.md` as the no-secrets runbook for that first room. It defines the preflight commands, connector order, evidence rules, rollback path, and raw-IP/secret handling requirements.
+
 Recommended default if no further input is available:
 
 - Keep the current Phase 1 mock as-is for quick review.
