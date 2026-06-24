@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Dashboard backend inventory read path
+
+- Added `scripts/check_inventory_parity.py` to compare `dashboard/data.js` with `GET /api/campus/{campus_id}/inventory` for every seeded campus.
+- Wired the active dashboard to load sanitized SQLite inventory from FastAPI when the backend is online, while keeping `data.js` as the static/offline fallback.
+- Expanded dashboard browser smoke and pilot readiness so the backend inventory read path is verified before pilot-facing changes.
+
+### Next
+
+- Use the backend inventory path as the default local review mode; the remaining production blocker is still the secure Hardware IP import plus first live-room connector validation.
+
 ## 2026-06-24 - Backend inventory endpoint
 
 - Added `GET /api/campus/{campus_id}/inventory` as a read-only SQLite inventory endpoint for campus, building, room, device, and incident data.

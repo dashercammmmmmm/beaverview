@@ -11,6 +11,8 @@ const state = {
   history: [],   // last 5 building+room combos visited
   compact: false,
   backendOnline: false,
+  inventoryOverrides: {},  // campus_id -> normalized campus inventory from /api/campus/{id}/inventory
+  inventorySources: {},    // campus_id -> "sqlite" when backend inventory has replaced static room data
   connectorOverrides: {},  // campus_id -> connector health object from /api
   scheduleOverrides: {},   // campus_id -> {mode, ts, eventsByRoomId} from /api/campus/{id}/schedule
   lastSynced: null,         // ISO timestamp of last successful connector fetch
@@ -48,7 +50,15 @@ if (nullEls.length > 0) {
 }
 
 function currentCampus() {
-  return data.campuses.find((campus) => campus.id === state.campusId);
+  const baseCampus = data.campuses.find((campus) => campus.id === state.campusId);
+  const inventoryCampus = state.inventoryOverrides[state.campusId];
+  if (!baseCampus || !inventoryCampus) return baseCampus;
+  return {
+    ...baseCampus,
+    ...inventoryCampus,
+    connectors: baseCampus.connectors,
+    buildings: inventoryCampus.buildings
+  };
 }
 
 function campusBuildings(campus = currentCampus()) {
@@ -102,10 +112,78 @@ function generatedRoomsForBuilding(building) {
   });
 }
 
+function frontendRoomId(campusId, buildingCode, roomNumber) {
+  return `${campusId}-${buildingCode}-${roomNumber}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function normalizeInventoryRoom(apiRoom, baseRoom = {}) {
+  const incidents = { open: [], closed: [] };
+  (apiRoom.incidents || []).forEach((incident) => {
+    const status = incident.status === "closed" ? "closed" : "open";
+    if (incident.ticket) incidents[status].push(incident.ticket);
+  });
+
+  return {
+    ...baseRoom,
+    number: apiRoom.number,
+    type: apiRoom.type || "",
+    status: apiRoom.status || "offline",
+    health: Number(apiRoom.health) || 0,
+    activeEvent: apiRoom.active_event || "Available",
+    processor: apiRoom.processor || "mock",
+    display: apiRoom.display || "unknown",
+    screenconnect: Boolean(apiRoom.screenconnect),
+    wattbox: Boolean(apiRoom.wattbox),
+    hybrid: Boolean(apiRoom.hybrid),
+    stale: Boolean(apiRoom.stale),
+    incidents,
+    devices: (apiRoom.devices || []).map((device) => [
+      device.device_type || "",
+      device.manufacturer || "",
+      device.model || "",
+      device.connection || ""
+    ])
+  };
+}
+
+function normalizeInventoryCampus(payload, baseCampus) {
+  if (!payload?.campus?.id || !Array.isArray(payload.buildings) || !Array.isArray(payload.rooms)) return null;
+
+  const baseBuildings = Object.fromEntries((baseCampus.buildings || []).map((building) => [
+    (building.code || "").toLowerCase(),
+    building
+  ]));
+  const roomsByBuilding = {};
+
+  payload.rooms.forEach((apiRoom) => {
+    const code = (apiRoom.building_code || "").toLowerCase();
+    const baseBuilding = baseBuildings[code];
+    const baseRoom = (baseBuilding?.rooms || []).find((room) => room.number === apiRoom.number) || {};
+    if (!roomsByBuilding[code]) roomsByBuilding[code] = [];
+    roomsByBuilding[code].push(normalizeInventoryRoom(apiRoom, baseRoom));
+  });
+
+  return {
+    id: payload.campus.id,
+    name: payload.campus.name || baseCampus.name,
+    subtitle: payload.campus.subtitle || baseCampus.subtitle,
+    buildings: payload.buildings.map((building) => {
+      const code = (building.code || "").toLowerCase();
+      const baseBuilding = baseBuildings[code] || {};
+      return {
+        ...baseBuilding,
+        code: building.code,
+        name: building.name,
+        rooms: roomsByBuilding[code] || []
+      };
+    })
+  };
+}
+
 function allRooms(campus = currentCampus()) {
   return campusBuildings(campus).flatMap((building) =>
     supportRoomsForBuilding(building, campus).map((room) => {
-      const id = `${campus.id}-${building.code}-${room.number}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const id = frontendRoomId(campus.id, building.code, room.number);
       const scheduleSource = state.scheduleOverrides[campus.id];
       const scheduleEvent = scheduleSource?.eventsByRoomId?.[id];
       return {
@@ -472,9 +550,10 @@ function renderMap() {
     issues: rooms.filter((room) => ["issue", "offline"].includes(room.status)).length,
     active: rooms.filter((room) => room.activeEvent !== "Available").length
   };
+  const roomSourceLabel = state.inventorySources[campus.id] === "sqlite" ? "inventory rooms" : "mock rooms";
   els.statusSummary.innerHTML = `
     <span><strong>${summary.buildings}</strong> buildings</span>
-    <span><strong>${summary.rooms}</strong> mock rooms</span>
+    <span><strong>${summary.rooms}</strong> ${roomSourceLabel}</span>
     <span><strong>${summary.active}</strong> active</span>
     <span><strong>${summary.issues}</strong> needs attention</span>
   `;
@@ -1703,9 +1782,32 @@ async function checkBackend() {
 
 async function refreshBackendCampusData() {
   await Promise.all([
+    refreshInventory(),
     refreshConnectors(),
     refreshSchedule()
   ]);
+}
+
+async function refreshInventory() {
+  const campusId = state.campusId;
+  const baseCampus = data.campuses.find((campus) => campus.id === campusId);
+  if (!baseCampus) return;
+
+  try {
+    const res = await fetch(`/api/campus/${campusId}/inventory`, {
+      signal: AbortSignal.timeout(3000)
+    });
+    if (!res.ok) return;
+    const body = await res.json();
+    const normalized = normalizeInventoryCampus(body, baseCampus);
+    if (!normalized) return;
+
+    state.inventoryOverrides[campusId] = normalized;
+    state.inventorySources[campusId] = body.source || "sqlite";
+    renderAll();
+  } catch {
+    // backend inventory unavailable; keep static data.js room inventory
+  }
 }
 
 async function refreshConnectors() {
@@ -1796,4 +1898,7 @@ try {
 
 // Dev helper — exposes selectBuilding() to the browser console for testing
 // Usage: _dev.selectBuilding("1027537")  (building ID from osuMapBuildings)
-window._dev = { selectBuilding };
+window._dev = {
+  selectBuilding,
+  inventorySource: () => state.inventorySources[state.campusId] || "static"
+};

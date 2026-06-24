@@ -1,6 +1,6 @@
 # BeaverView — Session Context & Handoff
 **Purpose:** Reference for the next Claude session. Read this before doing anything.
-**Last updated:** 2026-06-24 after adding the sanitized backend inventory endpoint.
+**Last updated:** 2026-06-24 after switching the dashboard to backend inventory when FastAPI is online.
 
 ---
 
@@ -236,7 +236,11 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `GET /api/campus/{campus_id}/inventory` returns SQLite campus, building, room, device, and incident data.
 - The endpoint intentionally omits `device_ips` and raw `ip_address` fields; device web access still goes through approved backend routes.
 - `scripts/check_api_contracts.py` verifies the inventory response shape, seeded counts, missing-campus 404, and no hardware IP field exposure.
-- The visible dashboard still reads `dashboard/data.js`; the next local step is comparing one campus against this endpoint before switching the frontend read path.
+
+### Dashboard backend inventory read path
+- `scripts/check_inventory_parity.py` verifies every seeded campus in `dashboard/data.js` matches `GET /api/campus/{campus_id}/inventory`.
+- When served by FastAPI, the active dashboard loads sanitized SQLite inventory after `/api/health`; static file mode still falls back to `dashboard/data.js`.
+- `scripts/check_dashboard_browser.py` now waits for the dashboard to report the `sqlite` inventory source before checking guarded technician workflows.
 
 ### Git repository initialized
 - `git init` + initial commit (ec60a6f) — all project files committed
@@ -320,6 +324,10 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 ### Offline API contracts
 - `scripts/check_api_contracts.py` uses FastAPI `TestClient` with deterministic mock connector settings.
 - It validates health, localhost dev auth, admin inventory access, sanitized campus inventory, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow incident read/create fallbacks, chat fallback health, `/api/chat`, and room incidents without requiring live credentials.
+
+### Inventory parity
+- `scripts/check_inventory_parity.py` uses FastAPI `TestClient` to compare `dashboard/data.js` against `/api/campus/{campus_id}/inventory`.
+- It is part of `scripts/check_pilot_readiness.py` and should be run after changes to `dashboard/data.js`, `api/migrate_data.py`, campus inventory API behavior, or dashboard inventory normalization.
 
 ### Dashboard browser smoke
 - `scripts/check_dashboard_browser.sh` starts a local FastAPI server and runs the Playwright browser smoke in headless Chromium.

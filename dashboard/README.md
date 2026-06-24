@@ -24,7 +24,7 @@ http://localhost:8000
 - Quick filters.
 - Tool actions with local feedback.
 - Local action logging, plus backend admin audit logging when served by FastAPI.
-- Backend SQLite inventory is available through `GET /api/campus/{campus_id}/inventory` for the future dashboard read path.
+- Backend SQLite inventory loads through `GET /api/campus/{campus_id}/inventory` when served by FastAPI.
 - Room Overview diagnostics summarize likely causes and keep WattBox Auto-Fix disabled while a room appears occupied.
 - ServiceNow draft ticket submission through the guarded backend endpoint. Without ServiceNow credentials, the backend returns and logs a mock draft.
 - Backend schedule overlay through the guarded 25Live endpoint. Without 25Live credentials, the backend returns seeded mock schedule data.
@@ -37,7 +37,7 @@ http://localhost:8000
 ## What This Version Does Not Do Yet
 
 - No real Hardware IP data.
-- The visible dashboard room list still reads `data.js`; generated room entries are placeholders and must be replaced by the secure inventory import/backend inventory read path.
+- Static file mode still reads `data.js`; generated room entries are placeholders and must be replaced by the secure inventory import before production use.
 - Public `map.oregonstate.edu` provides building/location data, not the internal Presentation Support room inventory.
 - No Microsoft Entra SSO.
 - No real WattBox, Fusion, ScreenConnect, 25Live, or SharePoint calls until credentials and Hardware IP records are loaded.
@@ -51,6 +51,7 @@ scripts/check_dashboard_browser.sh
 ```
 
 This starts the local backend and verifies the active dashboard's guarded ServiceNow, XPanel, Device web UI, ScreenConnect, SharePoint, WattBox, PTZ, and Hermes chat workflows in headless Chromium.
+It also verifies that the FastAPI-served dashboard switches from static `data.js` to the SQLite inventory endpoint.
 
 ```text
 scripts/check_admin_browser.sh

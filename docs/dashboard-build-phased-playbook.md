@@ -116,9 +116,10 @@ Latest fixes:
 
 Current guarded implementation state:
 
-- Static `dashboard/data.js` remains the visible room inventory until the secure Hardware IP / room inventory import is loaded.
+- Static `dashboard/data.js` remains the offline fallback and SQLite seed source; FastAPI-served dashboard sessions load sanitized room inventory from SQLite.
 - Public OSU map data provides building/location records, not Presentation Support room inventory.
 - FastAPI backend endpoints now exist for health, auth/session checks, sanitized SQLite campus inventory, admin inventory, audit logging, connector tests, 25Live schedule fallback, ServiceNow draft/create, XPanel launch/proxy, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ commands.
+- `scripts/check_inventory_parity.py` verifies the static seed data and sanitized backend inventory match before the browser uses the SQLite read path.
 - Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.
 - Real external systems still require ignored `api/.env` values and ignored `api/hardware_ips.csv`.
 - Entra SSO is scaffolded but still requires real Azure app and group configuration.
@@ -287,7 +288,7 @@ Before enabling pilot use, confirm:
 - The real secure `api/hardware_ips.csv` export and room ID mapping.
 - Which connector should be validated first after Hardware IP import: XPanel, WattBox/OvrC, PTZ, 25Live, ServiceNow, ScreenConnect, or SharePoint.
 - The required ignored `api/.env` values for that first connector.
-- When to switch the static dashboard room list to `GET /api/campus/{campus_id}/inventory` after comparing one campus and preserving current UI behavior.
+- When to replace seeded mock room records with the real secure room inventory after Hardware IP / room mapping data is available.
 
 Use `docs/examples/first-live-room-validation.md` as the no-secrets runbook for that first room. It defines the preflight commands, connector order, evidence rules, rollback path, and raw-IP/secret handling requirements.
 

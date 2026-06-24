@@ -242,9 +242,10 @@ pre code { background: transparent; padding: 0; color: inherit; }
 </ul>
 <p>Current guarded implementation state:</p>
 <ul>
-<li>Static <code>dashboard/data.js</code> remains the visible room inventory until the secure Hardware IP / room inventory import is loaded.</li>
+<li>Static <code>dashboard/data.js</code> remains the offline fallback and SQLite seed source; FastAPI-served dashboard sessions load sanitized room inventory from SQLite.</li>
 <li>Public OSU map data provides building/location records, not Presentation Support room inventory.</li>
 <li>FastAPI backend endpoints now exist for health, auth/session checks, sanitized SQLite campus inventory, admin inventory, audit logging, connector tests, 25Live schedule fallback, ServiceNow draft/create, XPanel launch/proxy, ScreenConnect launch, SharePoint launch, WattBox status/cycle, and PTZ commands.</li>
+<li><code>scripts/check_inventory_parity.py</code> verifies the static seed data and sanitized backend inventory match before the browser uses the SQLite read path.</li>
 <li>Dashboard tool panels call guarded backend routes and show pending/prerequisite messages when credentials or Hardware IP records are missing.</li>
 <li>Real external systems still require ignored <code>api/.env</code> values and ignored <code>api/hardware_ips.csv</code>.</li>
 <li>Entra SSO is scaffolded but still requires real Azure app and group configuration.</li>
@@ -396,7 +397,7 @@ pre code { background: transparent; padding: 0; color: inherit; }
 <li>The real secure <code>api/hardware_ips.csv</code> export and room ID mapping.</li>
 <li>Which connector should be validated first after Hardware IP import: XPanel, WattBox/OvrC, PTZ, 25Live, ServiceNow, ScreenConnect, or SharePoint.</li>
 <li>The required ignored <code>api/.env</code> values for that first connector.</li>
-<li>When to switch the static dashboard room list to <code>GET /api/campus/{campus_id}/inventory</code> after comparing one campus and preserving current UI behavior.</li>
+<li>When to replace seeded mock room records with the real secure room inventory after Hardware IP / room mapping data is available.</li>
 </ul>
 <p>Use <code>docs/examples/first-live-room-validation.md</code> as the no-secrets runbook for that first room. It defines the preflight commands, connector order, evidence rules, rollback path, and raw-IP/secret handling requirements.</p>
 <p>Recommended default if no further input is available:</p>

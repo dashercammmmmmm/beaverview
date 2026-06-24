@@ -45,6 +45,7 @@ ADMIN_BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_admin_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
+INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
 
@@ -236,6 +237,18 @@ def check_api_contracts() -> None:
         fail("offline API contracts failed validation")
 
 
+def check_inventory_parity() -> None:
+    if not INVENTORY_PARITY_SCRIPT.exists():
+        fail("inventory parity validator is missing")
+        return
+
+    result = run([sys.executable, str(INVENTORY_PARITY_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("dashboard data matches sanitized SQLite inventory")
+    else:
+        fail("dashboard data and sanitized SQLite inventory differ")
+
+
 def check_dashboard_browser() -> None:
     if not BROWSER_SMOKE_SCRIPT.exists():
         fail("dashboard browser smoke validator is missing")
@@ -412,6 +425,7 @@ def run_checks() -> None:
     check_hardware_ip_import()
     check_deployment_assets()
     check_api_contracts()
+    check_inventory_parity()
     check_dashboard_browser()
     check_admin_browser()
     check_env_template()

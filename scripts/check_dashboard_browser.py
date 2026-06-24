@@ -51,6 +51,8 @@ def main() -> int:
                 timeout=10_000,
             )
             expect(page.locator("#roomHeader")).to_contain_text("No room selected", timeout=5_000)
+            page.wait_for_function("window._dev?.inventorySource?.() === 'sqlite'", timeout=8_000)
+            expect(page.locator("#statusSummary")).to_contain_text("inventory rooms", timeout=5_000)
 
             select_room(page, "KAd", "corvallis-kad-101")
             expect(page.locator("#roomBody")).to_contain_text("Diagnostics", timeout=5_000)

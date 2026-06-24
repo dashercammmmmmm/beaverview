@@ -98,6 +98,14 @@ scripts/check_api_contracts.py
 
 It exercises the FastAPI app in-process with deterministic mock connector settings: health, localhost dev auth, admin inventory, all seeded admin connector tests, live-mode pending behavior without credentials, 25Live schedule mock fallback, xpanel launch/proxy behavior, WattBox outlet failure contracts, PTZ command failure contracts, ServiceNow incident read/create fallbacks, chat fallback, `/api/chat`, and room incidents.
 
+Run this after changing `dashboard/data.js`, `api/migrate_data.py`, the campus inventory endpoint, or the dashboard inventory read path:
+
+```bash
+scripts/check_inventory_parity.py
+```
+
+It verifies that every seeded static room still matches `GET /api/campus/{campus_id}/inventory` before the browser uses SQLite inventory.
+
 Run this after changing runtime environment variables in `api/main.py`, connector modules, or readiness checks:
 
 ```bash
@@ -149,7 +157,7 @@ No framework. Three files own everything:
 
 **State object** (`state` in app.js) holds the single source of truth: selected campus, building, room, active tab, search string, filters, history, connector overrides.
 
-**Map data flow:** `window.osuMapBuildings` (278 footprints from `osu-map-buildings.js`) drives the MapLibre map. When a building is clicked, `supportBuildingFor()` matches it to a `data.js` entry by `code` field. If no match, `generatedRoomsForBuilding()` auto-generates placeholder rooms so every building is clickable. The visible dashboard still reads `data.js`, but `GET /api/campus/{campus_id}/inventory` now exposes the migrated SQLite campus/building/room/device data as the sanitized backend target for the future dashboard read path.
+**Map data flow:** `window.osuMapBuildings` (278 footprints from `osu-map-buildings.js`) drives the MapLibre map. When a building is clicked, `supportBuildingFor()` matches it to the current campus inventory by `code` field. If no match, `generatedRoomsForBuilding()` auto-generates placeholder rooms so every building is clickable. The dashboard starts from `data.js` so static file mode still works, then replaces campus room data with `GET /api/campus/{campus_id}/inventory` when served by FastAPI.
 
 **Search:** `normalizeSearch()` strips apostrophes, dashes, and `&`→`and` before matching, so "womens" finds "Women's Building". Non-matching buildings are dimmed (18% opacity) rather than removed, so map clicks always work.
 
@@ -159,10 +167,10 @@ No framework. Three files own everything:
 
 | Source | Used when | How to populate |
 |---|---|---|
-| `dashboard/data.js` | Always (frontend mock) | Edit by hand |
-| `api/beaverview.db` | Admin APIs, connector state, audit logs, and `GET /api/campus/{campus_id}/inventory` | `python3 migrate_data.py` (rooms from data.js), `python3 import_device_ips.py` (from `hardware_ips.csv`) |
+| `dashboard/data.js` | Static/offline dashboard fallback and SQLite seed source | Edit by hand |
+| `api/beaverview.db` | FastAPI dashboard inventory, admin APIs, connector state, and audit logs | `python3 migrate_data.py` (rooms from data.js), `python3 import_device_ips.py` (from `hardware_ips.csv`) |
 
-The DB is empty until migration runs. Frontend room rendering still works from `data.js`; backend inventory reads use SQLite and must not expose `device_ips` or raw IP fields.
+The DB is empty until migration runs. Frontend room rendering still falls back to `data.js`; FastAPI-served dashboard inventory uses SQLite and must not expose `device_ips` or raw IP fields.
 
 ## Key files and their rules
 
