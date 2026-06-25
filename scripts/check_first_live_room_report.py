@@ -88,7 +88,14 @@ def main() -> int:
             '"passed_count": 28,'
             '"failure_count": 0,'
             '"pending_count": 2,'
-            f'"pending": ["hardware IP records are not loaded yet", "device at {RAW_IP_SENTINEL} has PASSWORD=secret"]'
+            f'"pending": ["hardware IP records are not loaded yet", "device at {RAW_IP_SENTINEL} has PASSWORD=secret"],'
+            '"pending_actions": ['
+            '{'
+            '"pending": "hardware IP records are not loaded yet",'
+            f'"action": "Place export containing {RAW_IP_SENTINEL} with PASSWORD=secret in ignored api/hardware_ips.csv",'
+            '"reference": "docs/examples/pilot-inputs-checklist.md#hardware-ip-records"'
+            '}'
+            ']'
             "}"
         )
 
@@ -119,6 +126,8 @@ def main() -> int:
         "Readiness Snapshot",
         "Status: `pass`",
         "Pending external prerequisites: `2`",
+        "Pending next actions",
+        "Place export containing <redacted-ip> with PASSWORD=<redacted> in ignored api/hardware_ips.csv",
         "Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`",
         "scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json",

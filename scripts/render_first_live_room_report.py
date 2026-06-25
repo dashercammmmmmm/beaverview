@@ -87,6 +87,19 @@ def readiness_lines(snapshot: dict[str, Any] | None) -> list[str]:
             lines.extend(f"- {safe_text(item, 'unknown pending item')}" for item in pending_items)
         else:
             lines.append("- None")
+
+    pending_actions = snapshot.get("pending_actions")
+    if isinstance(pending_actions, list):
+        lines.extend(["", "Pending next actions:"])
+        if not pending_actions:
+            lines.append("- None")
+        for item in pending_actions:
+            if not isinstance(item, dict):
+                continue
+            pending = safe_text(item.get("pending"), "unknown pending item")
+            action = safe_text(item.get("action"), "review the pilot input checklist")
+            reference = safe_text(item.get("reference"), "docs/examples/pilot-inputs-checklist.md")
+            lines.append(f"- {pending}: {action} See `{reference}`.")
     return lines
 
 

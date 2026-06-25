@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room report pending actions
+
+- Extended `scripts/render_first_live_room_report.py` so attached readiness JSON contributes a sanitized `Pending next actions` section to the private first-live report.
+- Updated `scripts/check_first_live_room_report.py` to verify pending-action text is included while raw Hardware IPs and credential-looking values are redacted.
+
+### Next
+
+- Keep using `python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json` before rendering the private report so the operator sees the same pending-action punch list as readiness.
+
 ## 2026-06-24 - First live-room report go/no-go decision
 
 - Updated `scripts/render_first_live_room_report.py` to compute an explicit `GO FOR FIRST CONNECTOR VALIDATION` or `NO-GO` decision from the selected-room preflight result and saved readiness snapshot.
