@@ -84,6 +84,7 @@ python3 scripts/check_pilot_readiness.py
 It verifies repo sync, ignored local secrets/data, Python imports, data migration, hardware IP import validation, seeded SQLite inventory, offline API contracts, browser smoke coverage, env-template consistency, the pilot input checklist, and reports pending external prerequisites without printing secret values.
 The JSON output includes `pending_actions`, and the Markdown/text output includes `Pending Next Actions`, mapping each external prerequisite to the ignored file/key or runbook that closes it.
 `scripts/check_readiness_actions.py` validates those pending-action references, verifies literal and supported loop-generated `pending(...)` messages have mapped actions, and is part of the readiness gate.
+Local validator failures include bounded, redacted stdout/stderr tails. `scripts/check_readiness_diagnostics.py` verifies those diagnostics redact secret-like values, authorization headers, and non-local IPv4 addresses.
 
 For automation or reports, use:
 

@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Readiness failure diagnostics
+
+- Extended `scripts/check_pilot_readiness.py` so local validator failures include a bounded, redacted stdout/stderr tail with the failing exit code.
+- Added `scripts/check_readiness_diagnostics.py` to verify those failure diagnostics redact secret-like values, authorization headers, and non-local IPv4 addresses while preserving localhost context.
+- Wired the diagnostic redaction validator into pilot readiness.
+
+### Next
+
+- When a local readiness validator fails, use the inline redacted detail first, then rerun the failing validator directly only if more context is needed.
+
 ## 2026-06-24 - First live-room candidate listing
 
 - Added `--list-candidates` to `scripts/check_first_live_room_preflight.py`.

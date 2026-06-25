@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -53,10 +54,24 @@ LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
 PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
+READINESS_DIAGNOSTICS_SCRIPT = ROOT / "scripts" / "check_readiness_diagnostics.py"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
 PASSED: list[str] = []
+
+AUTH_HEADER_RE = re.compile(r"(?i)\b(authorization:\s*(?:bearer|basic)\s+)[A-Za-z0-9._~+/=-]+")
+SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i)\b([A-Z0-9_-]*(?:PASSWORD|SECRET|TOKEN|API[_-]?KEY|CLIENT[_-]?SECRET|PRIVATE[_-]?KEY|SESSION[_-]?KEY)[A-Z0-9_-]*)"
+    r"(\s*[=:]\s*)"
+    r"([^\s,;]+)"
+)
+GENERIC_SECRET_RE = re.compile(
+    r"(?i)\b(password|passwd|secret|token|api[_-]?key|client[_-]?secret)"
+    r"(\s*[=:]\s*)"
+    r"([^\s,;]+)"
+)
+IPV4_RE = re.compile(r"\b(?P<ip>(?:\d{1,3}\.){3}\d{1,3})(?P<port>:\d+)?\b")
 
 PENDING_ACTIONS = {
     "api/.env is not present; copy api/.env.example and fill deployment values": {
@@ -146,6 +161,40 @@ def fail(message: str) -> None:
     LOCAL_FAILURES.append(message)
 
 
+def redact_diagnostic_line(line: str) -> str:
+    def redact_ip(match: re.Match[str]) -> str:
+        ip = match.group("ip")
+        port = match.group("port") or ""
+        if ip.startswith("127.") or ip == "0.0.0.0":
+            return f"{ip}{port}"
+        return f"<redacted-ip>{port}"
+
+    line = AUTH_HEADER_RE.sub(r"\1<redacted>", line)
+    line = SECRET_ASSIGNMENT_RE.sub(r"\1\2<redacted>", line)
+    line = GENERIC_SECRET_RE.sub(r"\1\2<redacted>", line)
+    return IPV4_RE.sub(redact_ip, line)
+
+
+def subprocess_failure_detail(result: subprocess.CompletedProcess[str], max_lines: int = 8, max_chars: int = 900) -> str:
+    lines: list[str] = []
+    for label, text in (("stdout", result.stdout), ("stderr", result.stderr)):
+        for raw_line in (text or "").splitlines():
+            line = redact_diagnostic_line(raw_line.strip())
+            if line:
+                lines.append(f"{label}: {line}")
+
+    detail = f"exit {result.returncode}"
+    if lines:
+        detail += "; last output: " + " | ".join(lines[-max_lines:])
+    if len(detail) > max_chars:
+        detail = detail[: max_chars - 3].rstrip() + "..."
+    return detail
+
+
+def fail_with_result(message: str, result: subprocess.CompletedProcess[str]) -> None:
+    fail(f"{message} ({subprocess_failure_detail(result)})")
+
+
 def pending(message: str) -> None:
     PENDING.append(message)
 
@@ -220,7 +269,7 @@ def check_python_env() -> None:
     if result.returncode == 0:
         pass_("Python venv imports required backend dependencies")
     else:
-        fail("Python venv cannot import required backend dependencies")
+        fail_with_result("Python venv cannot import required backend dependencies", result)
 
 
 def check_db() -> None:
@@ -267,7 +316,7 @@ def check_data_migration() -> None:
     if result.returncode == 0:
         pass_("data migration validates")
     else:
-        fail("data migration failed validation")
+        fail_with_result("data migration failed validation", result)
 
 
 def check_hardware_ip_import() -> None:
@@ -283,7 +332,7 @@ def check_hardware_ip_import() -> None:
     if result.returncode == 0:
         pass_("hardware IP import validation passes")
     else:
-        fail("hardware IP import validation failed")
+        fail_with_result("hardware IP import validation failed", result)
 
 
 def check_deployment_assets() -> None:
@@ -302,7 +351,7 @@ def check_deployment_assets() -> None:
     if result.returncode == 0:
         pass_("deployment templates validate")
     else:
-        fail("deployment templates failed validation")
+        fail_with_result("deployment templates failed validation", result)
 
 
 def check_deployment_playbook() -> None:
@@ -314,7 +363,7 @@ def check_deployment_playbook() -> None:
     if result.returncode == 0:
         pass_("deployment playbook validates")
     else:
-        fail("deployment playbook validation failed")
+        fail_with_result("deployment playbook validation failed", result)
 
 
 def check_api_contracts() -> None:
@@ -326,7 +375,7 @@ def check_api_contracts() -> None:
     if result.returncode == 0:
         pass_("offline API contracts validate")
     else:
-        fail("offline API contracts failed validation")
+        fail_with_result("offline API contracts failed validation", result)
 
 
 def check_inventory_parity() -> None:
@@ -338,7 +387,7 @@ def check_inventory_parity() -> None:
     if result.returncode == 0:
         pass_("dashboard data matches sanitized SQLite inventory")
     else:
-        fail("dashboard data and sanitized SQLite inventory differ")
+        fail_with_result("dashboard data and sanitized SQLite inventory differ", result)
 
 
 def check_dashboard_browser() -> None:
@@ -350,7 +399,7 @@ def check_dashboard_browser() -> None:
     if result.returncode == 0:
         pass_("dashboard browser smoke validates guarded workflows")
     else:
-        fail("dashboard browser smoke failed validation")
+        fail_with_result("dashboard browser smoke failed validation", result)
 
 
 def check_admin_browser() -> None:
@@ -362,7 +411,7 @@ def check_admin_browser() -> None:
     if result.returncode == 0:
         pass_("admin browser smoke validates management pages")
     else:
-        fail("admin browser smoke failed validation")
+        fail_with_result("admin browser smoke failed validation", result)
 
 
 def check_env_template() -> None:
@@ -374,7 +423,7 @@ def check_env_template() -> None:
     if result.returncode == 0:
         pass_("environment template matches runtime env usage")
     else:
-        fail("environment template validation failed")
+        fail_with_result("environment template validation failed", result)
 
 
 def check_pilot_inputs_doc() -> None:
@@ -386,7 +435,7 @@ def check_pilot_inputs_doc() -> None:
     if result.returncode == 0:
         pass_("pilot input checklist covers external prerequisites")
     else:
-        fail("pilot input checklist validation failed")
+        fail_with_result("pilot input checklist validation failed", result)
 
 
 def check_readiness_actions() -> None:
@@ -398,7 +447,19 @@ def check_readiness_actions() -> None:
     if result.returncode == 0:
         pass_("readiness pending-action references validate")
     else:
-        fail("readiness pending-action reference validation failed")
+        fail_with_result("readiness pending-action reference validation failed", result)
+
+
+def check_readiness_diagnostics() -> None:
+    if not READINESS_DIAGNOSTICS_SCRIPT.exists():
+        fail("readiness diagnostic redaction validator is missing")
+        return
+
+    result = run([sys.executable, str(READINESS_DIAGNOSTICS_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("readiness failure diagnostics redact sensitive output")
+    else:
+        fail_with_result("readiness diagnostic redaction validation failed", result)
 
 
 def check_production_safety() -> None:
@@ -410,7 +471,7 @@ def check_production_safety() -> None:
     if result.returncode == 0:
         pass_("production safety guardrails validate")
     else:
-        fail("production safety guardrail validation failed")
+        fail_with_result("production safety guardrail validation failed", result)
 
 
 def check_live_validation_doc() -> None:
@@ -422,7 +483,7 @@ def check_live_validation_doc() -> None:
     if result.returncode == 0:
         pass_("first live-room validation runbook covers pilot gates")
     else:
-        fail("first live-room validation runbook validation failed")
+        fail_with_result("first live-room validation runbook validation failed", result)
 
 
 def check_first_live_room_preflight(env: dict[str, str]) -> None:
@@ -468,7 +529,7 @@ def check_first_live_room_preflight_cases() -> None:
     if result.returncode == 0:
         pass_("first live-room preflight pass/pending/fail cases validate")
     else:
-        fail("first live-room preflight case validation failed")
+        fail_with_result("first live-room preflight case validation failed", result)
 
 
 def is_configured(value: str | None) -> bool:
@@ -610,6 +671,7 @@ def run_checks() -> None:
     check_env_template()
     check_pilot_inputs_doc()
     check_readiness_actions()
+    check_readiness_diagnostics()
     check_production_safety()
     check_live_validation_doc()
     check_first_live_room_preflight_cases()
