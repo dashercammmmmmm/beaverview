@@ -264,6 +264,7 @@ def render_report(room_id: str, connector: str, readiness_json: str = "", candid
         "```bash",
         "python3 scripts/check_pilot_readiness.py --markdown",
         "python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json",
+        "scripts/check_hardware_ip_csv.py",
         "scripts/check_hardware_ip_import.sh",
         "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
         "scripts/check_first_live_room_preflight.py",

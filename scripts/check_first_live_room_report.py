@@ -191,6 +191,7 @@ def main() -> int:
         "selected room/connector appears in the candidate snapshot",
         "scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
+        "scripts/check_hardware_ip_csv.py",
         "scripts/check_hardware_ip_import.sh",
         "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
         "Required Private Evidence",
@@ -199,6 +200,7 @@ def main() -> int:
     )
     missing = [term for term in required_terms if term not in output]
     expect(not missing, "report renderer output is missing terms: " + ", ".join(missing))
+    expect_order(output, "scripts/check_hardware_ip_csv.py", "scripts/check_hardware_ip_import.sh")
     expect_order(output, "scripts/check_hardware_ip_import.sh", "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)")
     expect_order(output, "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)", "scripts/check_first_live_room_preflight.py")
     expect_order(

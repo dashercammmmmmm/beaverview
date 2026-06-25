@@ -83,7 +83,7 @@ PENDING_ACTIONS = {
         "reference": "docs/examples/pilot-inputs-checklist.md#production-http-origin",
     },
     "hardware IP records are not loaded yet": {
-        "action": "Place the secure export at ignored api/hardware_ips.csv, run scripts/check_hardware_ip_import.sh, then import it from the api directory.",
+        "action": "Place the secure export at ignored api/hardware_ips.csv, run scripts/check_hardware_ip_csv.py and scripts/check_hardware_ip_import.sh, then import it from the api directory.",
         "reference": "docs/examples/pilot-inputs-checklist.md#hardware-ip-records",
     },
     "Azure redirect URI is not configured": {

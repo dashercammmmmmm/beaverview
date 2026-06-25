@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - First-live report hardware CSV command parity
+
+- Updated the generated first live-room validation report so its Required Commands section runs `scripts/check_hardware_ip_csv.py` before the Hardware IP import smoke check.
+- Extended `scripts/check_first_live_room_report.py` to assert the shared CSV validator appears in the report and stays ordered before import.
+- Updated the Hardware IP readiness pending action to point operators at the shared CSV validator before import.
+
+### Next
+
+- Keep generated first-live report commands aligned with `docs/examples/first-live-room-validation.md` whenever operator sequencing changes.
+
 ## 2026-06-24 - Hardware CSV validator runbook coverage
 
 - Updated the first live-room validation runbook to run `scripts/check_hardware_ip_csv.py` before the import smoke check.
