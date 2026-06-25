@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - API contract DB isolation
+
+- Updated `api/main.py` to honor `BEAVERVIEW_DB_PATH` so local validators can run against isolated SQLite copies.
+- Updated `scripts/check_api_contracts.py` to copy `api/beaverview.db` to a temporary contract-test database before mutating connector modes.
+- Added a real-database connector-mode snapshot assertion so the offline API contract validator cannot silently change the source-of-truth local SQLite state.
+
+### Next
+
+- Use `BEAVERVIEW_DB_PATH` for future in-process API validators that need to mutate SQLite state during tests.
+
 ## 2026-06-25 - Pilot intake packet renderer
 
 - Added `scripts/render_pilot_intake_packet.py` to render a sanitized OSU input-request packet from current pilot-readiness JSON.

@@ -38,7 +38,7 @@ except ImportError:
 
 BASE_DIR = Path(__file__).parent
 DASHBOARD_DIR = BASE_DIR.parent / "dashboard"
-DB_PATH = BASE_DIR / "beaverview.db"
+DB_PATH = Path(os.environ.get("BEAVERVIEW_DB_PATH", BASE_DIR / "beaverview.db"))
 
 # ---------------------------------------------------------------------------
 # Database

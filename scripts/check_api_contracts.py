@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import sqlite3
 import sys
+import tempfile
 import warnings
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ API_DIR = ROOT / "api"
 VENV_PYTHON = API_DIR / "venv" / "bin" / "python"
 ENV_EXAMPLE = API_DIR / ".env.example"
 DB_PATH = API_DIR / "beaverview.db"
+ACTIVE_DB_PATH = DB_PATH
 EXPECTED_CONNECTORS = {
     "crestron",
     "live25",
@@ -82,8 +85,8 @@ def contains_key(value: Any, key: str) -> bool:
     return False
 
 
-def connector_mode_snapshot() -> list[tuple[str, str, str]]:
-    con = sqlite3.connect(DB_PATH)
+def connector_mode_snapshot(db_path: Path = DB_PATH) -> list[tuple[str, str, str]]:
+    con = sqlite3.connect(db_path)
     try:
         return con.execute(
             "SELECT campus_id, connector_name, mode FROM connector_config"
@@ -95,7 +98,7 @@ def connector_mode_snapshot() -> list[tuple[str, str, str]]:
 def restore_connector_modes(snapshot: list[tuple[str, str, str]]) -> None:
     if not snapshot:
         return
-    con = sqlite3.connect(DB_PATH)
+    con = sqlite3.connect(ACTIVE_DB_PATH)
     try:
         con.executemany(
             "UPDATE connector_config SET mode=? WHERE campus_id=? AND connector_name=?",
@@ -107,7 +110,7 @@ def restore_connector_modes(snapshot: list[tuple[str, str, str]]) -> None:
 
 
 def set_connector_mode(campus_id: str, connector_name: str, mode: str) -> None:
-    con = sqlite3.connect(DB_PATH)
+    con = sqlite3.connect(ACTIVE_DB_PATH)
     try:
         con.execute(
             "UPDATE connector_config SET mode=? WHERE campus_id=? AND connector_name=?",
@@ -121,8 +124,14 @@ def set_connector_mode(campus_id: str, connector_name: str, mode: str) -> None:
 def main() -> int:
     if not DB_PATH.exists():
         fail("api/beaverview.db is missing; run scripts/check_data_migration.sh")
+    real_connector_snapshot = connector_mode_snapshot(DB_PATH)
+    tmp_db_dir = tempfile.TemporaryDirectory()
+    global ACTIVE_DB_PATH
+    ACTIVE_DB_PATH = Path(tmp_db_dir.name) / "beaverview.contract.db"
+    shutil.copy2(DB_PATH, ACTIVE_DB_PATH)
 
     os.environ["PYTHON_DOTENV_DISABLED"] = "1"
+    os.environ["BEAVERVIEW_DB_PATH"] = str(ACTIVE_DB_PATH)
     for key in offline_env_keys():
         os.environ.pop(key, None)
 
@@ -141,7 +150,7 @@ def main() -> int:
         "groups": [],
     }
 
-    connector_snapshot = connector_mode_snapshot()
+    connector_snapshot = connector_mode_snapshot(ACTIVE_DB_PATH)
     original_ptz_user = api._PTZ_USER
     original_ptz_pass = api._PTZ_PASS
     client = TestClient(api.app, client=("127.0.0.1", 50000))
@@ -398,6 +407,12 @@ def main() -> int:
         api._PTZ_PASS = original_ptz_pass
         restore_connector_modes(connector_snapshot)
         api.app.dependency_overrides.clear()
+        tmp_db_dir.cleanup()
+
+    expect(
+        connector_mode_snapshot(DB_PATH) == real_connector_snapshot,
+        "API contract validator changed real connector modes",
+    )
 
     print("API contracts verified")
     return 0
