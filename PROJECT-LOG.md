@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First-live CSV preview duplicate guard
+
+- Updated `scripts/check_first_live_room_preflight.py --list-candidates --hardware-csv` to fail on duplicate room/device mappings instead of silently hiding device-backed connector eligibility.
+- Extended `scripts/check_first_live_room_preflight_cases.py` to verify duplicate CSV preview failures do not leak raw IP values.
+- Updated handoff notes so first-live candidate preview and Hardware IP import validation stay aligned.
+
+### Next
+
+- Treat any first-live Hardware IP CSV preview failure as a source-export correction task before importing rows or rendering a go/no-go report.
+
 ## 2026-06-24 - First-live report command ordering
 
 - Updated the private first live-room report template so its Required Commands section validates and imports Hardware IP rows before selected-room preflight and candidate JSON generation.

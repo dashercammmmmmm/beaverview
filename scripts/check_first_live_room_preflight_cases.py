@@ -162,6 +162,18 @@ def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
     expect("ptz" in first.get("eligible_connectors", []), "hardware CSV preview did not include ptz hint")
     expect("ptz" in first.get("hardware_ip_device_types", []), "hardware CSV preview did not include sanitized ptz device type")
 
+    duplicate_csv = csv_path.with_name("hardware_ips.duplicate-preview.csv")
+    duplicate_csv.write_text(
+        "room_id,device_type,ip_address,notes\n"
+        f"corvallis-kad-101,ptz,{RAW_IP_SENTINEL},preview PTZ\n"
+        "corvallis-kad-101,ptz,10.77.1.26,duplicate PTZ\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(duplicate_csv))
+    expect(code == 1, f"duplicate hardware CSV preview returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"duplicate hardware CSV preview should fail: {payload}")
+    expect("duplicate room/device mappings" in payload.get("message", ""), f"duplicate preview message changed: {payload}")
+    expect(RAW_IP_SENTINEL not in json.dumps(payload), "duplicate hardware CSV preview leaked a raw IP address")
+
 
 def main() -> int:
     if not SCRIPT.exists():

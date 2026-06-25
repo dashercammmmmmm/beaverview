@@ -146,6 +146,7 @@ def hardware_csv_device_counts(path: Path) -> dict[str, dict[str, int]]:
     if not path.exists():
         raise ValueError(f"hardware CSV does not exist: {path}")
     counts: dict[str, dict[str, int]] = {}
+    duplicates: list[str] = []
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
         fieldnames = set(reader.fieldnames or [])
@@ -158,7 +159,14 @@ def hardware_csv_device_counts(path: Path) -> dict[str, dict[str, int]]:
             if not room_id or not device_type:
                 continue
             room_counts = counts.setdefault(room_id, {})
+            if room_counts.get(device_type):
+                duplicates.append(f"{room_id}/{device_type}")
             room_counts[device_type] = room_counts.get(device_type, 0) + 1
+    if duplicates:
+        preview = ", ".join(sorted(set(duplicates))[:8])
+        if len(set(duplicates)) > 8:
+            preview += f", ... ({len(set(duplicates))} total)"
+        raise ValueError(f"hardware CSV has duplicate room/device mappings: {preview}")
     return counts
 
 
