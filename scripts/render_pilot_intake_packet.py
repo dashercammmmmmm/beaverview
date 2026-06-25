@@ -106,6 +106,18 @@ def render_packet(readiness: dict[str, Any]) -> str:
         f"- Local failures: `{safe_text(readiness.get('failure_count'), 'unknown')}`",
         f"- Pending external prerequisites: `{safe_text(readiness.get('pending_count'), 'unknown')}`",
         "",
+        "## Local Failures To Resolve First",
+        "",
+    ]
+
+    failures = readiness.get("failures")
+    if isinstance(failures, list) and failures:
+        lines.extend(f"- {safe_text(item, 'unknown local failure')}" for item in failures)
+    else:
+        lines.append("- None")
+
+    lines.extend([
+        "",
         "## Secure Handling",
         "",
         "- Send secrets through the approved OSU secret channel, not chat, Git, screenshots, or shared notes.",
@@ -115,7 +127,7 @@ def render_packet(readiness: dict[str, Any]) -> str:
         "",
         "## Requested Inputs",
         "",
-    ]
+    ])
 
     any_actions = False
     for category in CATEGORY_ORDER:

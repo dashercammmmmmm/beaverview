@@ -66,6 +66,7 @@ def main() -> int:
             "passed_count": 34,
             "failure_count": 0,
             "pending_count": len(pending_actions),
+            "failures": [],
             "pending_actions": pending_actions,
         }
     )
@@ -73,9 +74,11 @@ def main() -> int:
     required_terms = (
         "# BeaverView Pilot Intake Packet",
         "## Secure Handling",
+        "## Local Failures To Resolve First",
         "## Requested Inputs",
         "## Verification After Inputs Arrive",
         "- Local failures: `0`",
+        "- None",
         "python3 scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
     )
@@ -89,6 +92,21 @@ def main() -> int:
         expect(forbidden not in packet, f"pilot intake packet leaked {forbidden!r}: {packet}")
     expect("<redacted-ip>" in packet, "pilot intake packet should redact non-local IPs")
     expect("<redacted>" in packet, "pilot intake packet should redact secret-like values")
+
+    failure_packet = render_packet(
+        {
+            "status": "fail",
+            "passed_count": 33,
+            "failure_count": 1,
+            "pending_count": 0,
+            "failures": [f"validator reached {RAW_IP_SENTINEL} with PASSWORD={SECRET_SENTINEL}"],
+            "pending_actions": [],
+        }
+    )
+    expect("## Local Failures To Resolve First" in failure_packet, "local failure section is missing")
+    expect("validator reached <redacted-ip> with PASSWORD=<redacted>" in failure_packet, "local failure was not redacted")
+    for forbidden in (RAW_IP_SENTINEL, SECRET_SENTINEL):
+        expect(forbidden not in failure_packet, f"local failure packet leaked {forbidden!r}: {failure_packet}")
 
     print(f"Pilot intake packet verified: {len(actions)} readiness actions covered")
     return 0

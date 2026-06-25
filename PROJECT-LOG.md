@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Pilot intake local-failure section
+
+- Updated `scripts/render_pilot_intake_packet.py` to include a sanitized `Local Failures To Resolve First` section before the OSU input request list.
+- Extended `scripts/check_pilot_intake_packet.py` to cover both zero-failure packets and failure packets with raw-IP and secret-shaped sentinel values.
+
+### Next
+
+- Keep the intake packet focused on external inputs only after local failures are visible and resolved first.
+
 ## 2026-06-25 - Test-only DB override production guard
 
 - Strengthened `scripts/check_production_safety.py` so `BEAVERVIEW_DB_PATH` remains a test-only override and is not documented in `api/.env.example` or the deployment playbook.
