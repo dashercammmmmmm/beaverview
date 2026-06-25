@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Project log readiness validation
+
+- Added `scripts/check_project_log.py` to validate the durable work log exists, stays newest-first, keeps entry summaries and `Next` bullets, and avoids unredacted sensitive-looking text.
+- Wired the project log validator into `scripts/check_pilot_readiness.py` so local source-of-truth logging is part of the readiness gate.
+
+### Next
+
+- Keep adding a `PROJECT-LOG.md` entry for material changes before running pilot readiness.
+
 ## 2026-06-25 - Selected first-live room non-critical guard
 
 - Updated `scripts/check_first_live_room_preflight.py` so a manually selected `FIRST_LIVE_ROOM_ID` must pass the same non-critical room checks used by candidate listing.
@@ -373,6 +382,10 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 - Made localhost dev auth consistent for `/api/admin/*` when Azure SSO is not fully configured, matching `/api/me`.
 - Replaced brittle raw JSON `onclick` payloads in room/user edit rows with encoded data attributes and delegated handlers.
 
+### Next
+
+- Keep admin browser smoke in pilot readiness when changing admin pages, auth fallback, or CSP policy.
+
 ## 2026-06-24 - Device web UI readiness state
 
 - Reworked the dashboard Device web UIs panel so it no longer displays dead "Open UI" buttons.
@@ -533,6 +546,10 @@ This is the durable local work log for BeaverView v2. Add an entry every time th
 - Pushed local `main` to `https://github.com/dashercammmmmmm/beaverview`.
 - Verified local `HEAD`, `origin/main`, and `origin/HEAD` were synced after the push.
 - Added and pushed `docs: record github sync status` so the handoff docs also exist on GitHub.
+
+### Next
+
+- Keep `main` synced with `origin/main` after each material repo change.
 
 ## 2026-06-24 - Pilot readiness preflight
 

@@ -57,6 +57,7 @@ INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
 PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
+PROJECT_LOG_SCRIPT = ROOT / "scripts" / "check_project_log.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
 READINESS_DIAGNOSTICS_SCRIPT = ROOT / "scripts" / "check_readiness_diagnostics.py"
 SANITIZE_OUTPUT_SCRIPT = ROOT / "scripts" / "check_sanitize_output.py"
@@ -428,6 +429,18 @@ def check_pilot_inputs_doc() -> None:
         fail_with_result("pilot input checklist validation failed", result)
 
 
+def check_project_log() -> None:
+    if not PROJECT_LOG_SCRIPT.exists():
+        fail("project log validator is missing")
+        return
+
+    result = run([sys.executable, str(PROJECT_LOG_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("project log structure and redaction validate")
+    else:
+        fail_with_result("project log validation failed", result)
+
+
 def check_readiness_actions() -> None:
     if not READINESS_ACTIONS_SCRIPT.exists():
         fail("readiness pending-action validator is missing")
@@ -697,6 +710,7 @@ def run_checks() -> None:
     check_admin_browser()
     check_env_template()
     check_pilot_inputs_doc()
+    check_project_log()
     check_readiness_actions()
     check_sanitize_output()
     check_readiness_diagnostics()
