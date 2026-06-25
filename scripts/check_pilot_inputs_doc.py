@@ -33,6 +33,8 @@ REQUIRED_TERMS = (
     "--list-candidates",
     "--connector",
     "--hardware-csv",
+    "import_device_ips.py",
+    "For device-backed connectors",
     "scripts/check_first_live_room_preflight_cases.py",
     "scripts/check_first_live_room_report.py",
     "scripts/check_readiness_actions.py",

@@ -36,17 +36,17 @@ Run from `/home/beaverview/app` on the VM unless noted:
 python3 scripts/check_pilot_readiness.py --markdown
 python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json
 scripts/check_first_live_room_preflight.py --list-candidates
-scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json
 scripts/check_hardware_ip_import.sh
 scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv
+(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)
 scripts/check_first_live_room_preflight.py
+scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json
 scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json
-cd api && venv/bin/python import_device_ips.py hardware_ips.csv
 sudo systemctl status beaverview --no-pager
 sudo nginx -t
 ```
 
-Use `--list-candidates --json` when the selected room and connector need to be reviewed by another tool or pasted into a private deployment note. Add `--connector <name>` to filter the shortlist to one first connector. Add `--hardware-csv api/hardware_ips.csv` after `scripts/check_hardware_ip_import.sh` passes to preview device-backed connector matches before importing the secure CSV. The candidate list is built from sanitized SQLite room data and Hardware IP device types only; it does not print raw IP addresses.
+Use `--list-candidates --json` after the Hardware IP import when the selected room and connector need to be reviewed by another tool or pasted into a private deployment note. Add `--connector <name>` to filter the shortlist to one first connector. Add `--hardware-csv api/hardware_ips.csv` after `scripts/check_hardware_ip_import.sh` passes to preview device-backed connector matches before importing the secure CSV. The candidate list is built from sanitized SQLite room data and Hardware IP device types only; it does not print raw IP addresses.
 
 Expected result: local checks pass, the candidate list identifies non-critical room IDs and eligible connector hints, the selected non-critical room and first connector pass preflight, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
 

@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First-live hardware import ordering
+
+- Updated the first live-room validation runbook so validated Hardware IP rows are imported before selected-room preflight and report rendering.
+- Updated the pilot input checklist to call out that device-backed connectors need imported Hardware IP rows before the go/no-go report.
+- Extended the live-validation doc check to enforce the secure CSV validation, import, selected preflight, and report command order.
+
+### Next
+
+- During first live validation, generate candidate JSON after importing Hardware IP rows so the private report reflects the same device-backed inventory as selected preflight.
+
 ## 2026-06-24 - Shared first-live connector aliases
 
 - Added `scripts/first_live_connectors.py` as the shared first live-room connector alias normalizer.

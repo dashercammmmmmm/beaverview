@@ -48,6 +48,16 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
+def expect_order(text: str, first: str, second: str) -> None:
+    first_index = text.find(first)
+    second_index = text.find(second)
+    if first_index == -1 or second_index == -1:
+        missing = first if first_index == -1 else second
+        fail(f"first live-room validation runbook is missing ordered term: {missing}")
+    if first_index > second_index:
+        fail(f"first live-room validation runbook must list {first!r} before {second!r}")
+
+
 def main() -> int:
     if not RUNBOOK.exists():
         fail("first live-room validation runbook is missing")
@@ -56,6 +66,21 @@ def main() -> int:
     missing = [term for term in REQUIRED_TERMS if term not in text]
     if missing:
         fail("first live-room validation runbook is missing terms: " + ", ".join(missing))
+    expect_order(
+        text,
+        "scripts/check_hardware_ip_import.sh",
+        "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
+    )
+    expect_order(
+        text,
+        "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
+        "\nscripts/check_first_live_room_preflight.py\n",
+    )
+    expect_order(
+        text,
+        "\nscripts/check_first_live_room_preflight.py\n",
+        "scripts/render_first_live_room_report.py --readiness-json",
+    )
 
     print(f"First live-room validation runbook verified: {len(REQUIRED_TERMS)} terms covered")
     return 0
