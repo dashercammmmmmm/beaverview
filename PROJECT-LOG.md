@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Deployment asset negative-path validation
+
+- Extended `scripts/check_deployment_assets.sh` to verify nginx rendering rejects invalid VM IP values.
+- Added certificate helper coverage for private-key permissions, invalid VM IP rejection, overwrite refusal, and explicit `--force` replacement.
+
+### Next
+
+- Keep deployment helper failure paths covered whenever nginx rendering or certificate generation behavior changes.
+
 ## 2026-06-25 - Local env bootstrap readiness validation
 
 - Added `scripts/check_init_local_env.py` to validate `scripts/init_local_env.sh` in a temporary repo-shaped directory without touching real ignored `api/.env`.

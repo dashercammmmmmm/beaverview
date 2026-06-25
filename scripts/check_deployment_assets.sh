@@ -23,6 +23,12 @@ require_text() {
   grep -Fq "$text" "$file" || fail "missing '$text' in $file"
 }
 
+require_failure() {
+  if "$@" >/dev/null 2>&1; then
+    fail "expected command to fail: $*"
+  fi
+}
+
 require_file "$SERVICE"
 require_file "$NGINX"
 require_file "$RENDER"
@@ -52,12 +58,28 @@ require_text "$rendered" "server_name beaverview 192.0.2.50;"
 if grep -Fq "__VM_IP__" "$rendered"; then
   fail "rendered nginx config still contains __VM_IP__"
 fi
+require_failure "$RENDER" "999.0.2.50" "$rendered.invalid"
 
 "$CERT" "192.0.2.50" "$cert_dir" >/dev/null
 require_file "$cert_dir/beaverview.key"
 require_file "$cert_dir/beaverview.crt"
+python3 - "$cert_dir/beaverview.key" <<'PY'
+import stat
+import sys
+from pathlib import Path
+
+mode = stat.S_IMODE(Path(sys.argv[1]).stat().st_mode)
+if mode != 0o600:
+    print(f"private key mode should be 600, got {oct(mode)}", file=sys.stderr)
+    raise SystemExit(1)
+PY
 cert_text="$(openssl x509 -in "$cert_dir/beaverview.crt" -noout -text)"
 printf '%s\n' "$cert_text" | grep -Fq "DNS:beaverview" || fail "certificate missing DNS SAN"
 printf '%s\n' "$cert_text" | grep -Fq "IP Address:192.0.2.50" || fail "certificate missing IP SAN"
+require_failure "$CERT" "192.0.2.51" "$cert_dir"
+require_failure "$CERT" "999.0.2.50" "$cert_dir.invalid"
+"$CERT" --force "192.0.2.51" "$cert_dir" >/dev/null
+forced_cert_text="$(openssl x509 -in "$cert_dir/beaverview.crt" -noout -text)"
+printf '%s\n' "$forced_cert_text" | grep -Fq "IP Address:192.0.2.51" || fail "forced certificate did not update IP SAN"
 
 echo "Deployment assets verified"
