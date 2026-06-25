@@ -665,6 +665,10 @@ def has_all(env: dict[str, str], keys: tuple[str, ...]) -> bool:
     return all(is_configured(env.get(key)) for key in keys)
 
 
+def is_http_scheme(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"http", "https"}
+
+
 def cors_origins_are_restricted(value: str | None) -> bool:
     if not is_configured(value):
         return False
@@ -764,6 +768,16 @@ def check_env_prereqs() -> None:
             pass_(f"{label} credentials are present")
         else:
             pending(f"{label} credentials are not complete")
+
+    connector_schemes = {
+        "Crestron poll scheme": "CRESTRON_POLL_SCHEME",
+        "XPanel proxy scheme": "CRESTRON_PROXY_SCHEME",
+        "WattBox proxy scheme": "WATTBOX_PROXY_SCHEME",
+        "PTZ proxy scheme": "PTZ_PROXY_SCHEME",
+    }
+    for label, key in connector_schemes.items():
+        if is_configured(env.get(key)) and not is_http_scheme(env.get(key)):
+            fail(f"{label} must be http or https")
 
     if has_all(env, ("LIVE25_BASE_URL", "LIVE25_USERNAME", "LIVE25_PASSWORD")):
         if is_https_url(env.get("LIVE25_BASE_URL")):

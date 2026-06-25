@@ -125,6 +125,26 @@ def main() -> int:
                 "https://beaverview,http://localhost:8000",
                 "CORS allowed origins must be comma-separated https origins",
             ),
+            "crestron-poll-bad-scheme.env": (
+                "CRESTRON_POLL_SCHEME",
+                "ftp",
+                "Crestron poll scheme must be http or https",
+            ),
+            "xpanel-bad-scheme.env": (
+                "CRESTRON_PROXY_SCHEME",
+                "ssh",
+                "XPanel proxy scheme must be http or https",
+            ),
+            "wattbox-bad-scheme.env": (
+                "WATTBOX_PROXY_SCHEME",
+                "file",
+                "WattBox proxy scheme must be http or https",
+            ),
+            "ptz-bad-scheme.env": (
+                "PTZ_PROXY_SCHEME",
+                "rtsp",
+                "PTZ proxy scheme must be http or https",
+            ),
             "live25-http.env": ("LIVE25_BASE_URL", "http://25live.example.edu", "25Live base URL must use https"),
             "live25-empty-host.env": ("LIVE25_BASE_URL", "https://", "25Live base URL must use https"),
             "live25-whitespace.env": (

@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Connector scheme readiness guard
+
+- Updated `scripts/check_pilot_readiness.py` so configured Crestron poll, XPanel, WattBox, and PTZ scheme env values must be `http` or `https`.
+- Extended `scripts/check_readiness_env_prereqs.py` with malformed scheme cases for the first-live connector path.
+- Added allowed scheme guidance to the pilot inputs checklist and validator.
+
+### Next
+
+- Leave connector scheme values unset to use backend defaults, or set only `http`/`https` after confirming the device endpoint scheme.
+
 ## 2026-06-25 - Parsed CORS origin readiness guard
 
 - Updated `scripts/check_pilot_readiness.py` so configured CORS origins are parsed as comma-separated HTTPS origins with hosts.

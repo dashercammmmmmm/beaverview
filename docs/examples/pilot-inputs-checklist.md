@@ -167,6 +167,10 @@ Optional `api/.env` values:
 - `CRESTRON_POLL_SCHEME`
 - `CRESTRON_VERIFY_SSL`
 
+Scheme values:
+
+- `CRESTRON_POLL_SCHEME` may be `http` or `https`
+
 ## XPanel Proxy Credentials
 
 Required `api/.env` values:
@@ -174,6 +178,10 @@ Required `api/.env` values:
 - `CRESTRON_PROXY_USERNAME`
 - `CRESTRON_PROXY_PASSWORD`
 - `CRESTRON_PROXY_SCHEME`
+
+Scheme values:
+
+- `CRESTRON_PROXY_SCHEME` may be `http` or `https`
 
 ## ScreenConnect Launch URL
 
@@ -195,6 +203,10 @@ Required `api/.env` values:
 - `WATTBOX_DIRECT_PASSWORD`
 - `WATTBOX_PROXY_SCHEME`
 
+Scheme values:
+
+- `WATTBOX_PROXY_SCHEME` may be `http` or `https`
+
 Optional OvrC values:
 
 - `WATTBOX_OVRC_BASE_URL`
@@ -207,6 +219,10 @@ Required `api/.env` values:
 - `PTZ_PROXY_USERNAME`
 - `PTZ_PROXY_PASSWORD`
 - `PTZ_PROXY_SCHEME`
+
+Scheme values:
+
+- `PTZ_PROXY_SCHEME` may be `http` or `https`
 
 ## 25Live Credentials
 
