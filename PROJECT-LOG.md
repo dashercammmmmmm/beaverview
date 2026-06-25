@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First-live CSV preview IP validation
+
+- Extended `scripts/check_first_live_room_preflight.py --list-candidates --hardware-csv` so candidate preview validates the required `ip_address` column and rejects invalid, non-proxyable, or unreviewed public IP rows without printing addresses.
+- Added first-live preflight case coverage for missing IP columns, invalid IP rows, and public IP rows.
+- Updated handoff notes to keep preview behavior aligned with the Hardware IP import validator.
+
+### Next
+
+- If import validation gains an explicit reviewed-public preview path, add the matching first-live preview flag and tests before using public rows in a candidate shortlist.
+
 ## 2026-06-24 - First-live CSV preview import parity
 
 - Tightened `scripts/check_first_live_room_preflight.py --list-candidates --hardware-csv` so preview fails on blank required fields and unknown room IDs, matching Hardware IP import validation behavior.

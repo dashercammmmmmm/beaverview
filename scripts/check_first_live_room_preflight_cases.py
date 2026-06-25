@@ -196,6 +196,37 @@ def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
     expect("missing required field" in payload.get("message", ""), f"blank-field preview message changed: {payload}")
     expect(RAW_IP_SENTINEL not in json.dumps(payload), "blank-field hardware CSV preview leaked a raw IP address")
 
+    missing_ip_column_csv = csv_path.with_name("hardware_ips.missing-ip-column-preview.csv")
+    missing_ip_column_csv.write_text(
+        "room_id,device_type,notes\n"
+        "corvallis-kad-101,ptz,missing IP column\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(missing_ip_column_csv))
+    expect(code == 1, f"missing-ip-column hardware CSV preview returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"missing-ip-column hardware CSV preview should fail: {payload}")
+    expect("missing required columns" in payload.get("message", ""), f"missing-ip-column preview message changed: {payload}")
+
+    public_ip_csv = csv_path.with_name("hardware_ips.public-preview.csv")
+    public_ip_csv.write_text(
+        "room_id,device_type,ip_address,notes\n"
+        "corvallis-kad-101,ptz,8.8.8.8,public IP\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(public_ip_csv))
+    expect(code == 1, f"public-IP hardware CSV preview returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"public-IP hardware CSV preview should fail: {payload}")
+    expect("public IP address" in payload.get("message", ""), f"public-IP preview message changed: {payload}")
+    expect("8.8.8.8" not in json.dumps(payload), "public-IP hardware CSV preview leaked a raw IP address")
+
+    invalid_ip_csv = csv_path.with_name("hardware_ips.invalid-ip-preview.csv")
+    invalid_ip_csv.write_text(
+        "room_id,device_type,ip_address,notes\n"
+        "corvallis-kad-101,ptz,not-an-ip,invalid IP\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(invalid_ip_csv))
+    expect(code == 1, f"invalid-IP hardware CSV preview returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"invalid-IP hardware CSV preview should fail: {payload}")
+    expect("invalid IP address" in payload.get("message", ""), f"invalid-IP preview message changed: {payload}")
+
 
 def main() -> int:
     if not SCRIPT.exists():

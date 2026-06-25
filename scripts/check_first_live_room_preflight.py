@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import ipaddress
 import json
 import os
 import sqlite3
@@ -150,23 +151,26 @@ def hardware_csv_device_counts(path: Path) -> dict[str, dict[str, int]]:
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
         fieldnames = set(reader.fieldnames or [])
-        missing = {"room_id", "device_type"} - fieldnames
+        missing = {"room_id", "device_type", "ip_address"} - fieldnames
         if missing:
             raise ValueError("hardware CSV is missing required columns: " + ", ".join(sorted(missing)))
         for row in reader:
             row_number = reader.line_num
             room_id = (row.get("room_id") or "").strip().lower()
             device_type = (row.get("device_type") or "").strip().lower()
+            ip_raw = (row.get("ip_address") or "").strip()
             missing_fields = [
                 field
                 for field, value in (
                     ("room_id", room_id),
                     ("device_type", device_type),
+                    ("ip_address", ip_raw),
                 )
                 if not value
             ]
             if missing_fields:
                 raise ValueError(f"hardware CSV row {row_number} missing required field(s): {', '.join(missing_fields)}")
+            validate_hardware_csv_ip(ip_raw, row_number)
             room_counts = counts.setdefault(room_id, {})
             if room_counts.get(device_type):
                 duplicates.append(f"{room_id}/{device_type}")
@@ -177,6 +181,17 @@ def hardware_csv_device_counts(path: Path) -> dict[str, dict[str, int]]:
             preview += f", ... ({len(set(duplicates))} total)"
         raise ValueError(f"hardware CSV has duplicate room/device mappings: {preview}")
     return counts
+
+
+def validate_hardware_csv_ip(ip_address: str, row_number: int) -> None:
+    try:
+        parsed = ipaddress.ip_address(ip_address)
+    except ValueError as exc:
+        raise ValueError(f"hardware CSV row {row_number} has an invalid IP address") from exc
+    if parsed.is_loopback or parsed.is_unspecified or parsed.is_multicast:
+        raise ValueError(f"hardware CSV row {row_number} has a non-proxyable IP address")
+    if not (parsed.is_private or parsed.is_link_local):
+        raise ValueError(f"hardware CSV row {row_number} has a public IP address; use import validation only after network review")
 
 
 def connector_hints(room: sqlite3.Row, counts: dict[str, int]) -> list[str]:
