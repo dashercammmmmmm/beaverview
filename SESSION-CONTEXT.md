@@ -236,8 +236,10 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/check_first_live_room_preflight.py --list-candidates` lists non-critical candidate room IDs and eligible connector hints from sanitized SQLite inventory.
 - `scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel` filters candidates to a specific first connector; device-backed connectors require imported Hardware IP device-type rows before matching.
 - `scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv` previews device-backed matches from a validated secure CSV before importing it.
+- `scripts/render_first_live_room_report.py` renders a private no-secrets Markdown report template around the selected first live-room preflight result.
 - Candidate output includes building code, room number, status, health, eligible connector names, and Hardware IP device types only; it does not print raw IP addresses.
 - `scripts/check_first_live_room_preflight_cases.py` now verifies candidate-list JSON behavior against an isolated temp DB.
+- `scripts/check_first_live_room_report.py` verifies the report renderer does not leak raw IPs or credential values.
 - The pilot input checklist and first live-room validation runbook now include the shortlist command before setting `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR`.
 
 ### Production safety guardrails
@@ -342,7 +344,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - The active dashboard now fetches this endpoint when FastAPI is reachable and overlays schedule values by `room_id`; room Overview shows whether the schedule came from 25Live, backend mock fallback, or static inventory.
 
 ### Pilot readiness preflight
-- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room target preflight case coverage, selected target preflight, first live-room validation runbook coverage, and deployment prerequisite status.
+- `scripts/check_pilot_readiness.py` verifies local repo sync, ignored local-only files, Python dependency imports, SQLite seed state, offline API contracts, dashboard/admin browser smoke coverage, env-template consistency, pilot input checklist coverage, first live-room target preflight/report coverage, selected target preflight, first live-room validation runbook coverage, and deployment prerequisite status.
 - `python3 scripts/check_pilot_readiness.py --json` prints the same result as structured JSON for reports or automation.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - Readiness JSON includes `pending_actions`; Markdown/text output includes `Pending Next Actions`, mapping each external pending item to the ignored file/key or runbook that closes it.

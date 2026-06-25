@@ -2,6 +2,17 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room report template
+
+- Added `scripts/render_first_live_room_report.py` to produce a sanitized private Markdown report template around the selected first live-room preflight result.
+- Added `scripts/check_first_live_room_report.py` to verify the report output includes the required handoff sections without leaking credential values or raw Hardware IP addresses.
+- Wired the report validator into `scripts/check_pilot_readiness.py`.
+- Updated the pilot input checklist and first live-room validation runbook to include the report command.
+
+### Next
+
+- After OSU selects the first non-critical target and connector, run `scripts/render_first_live_room_report.py` for the private validation note, then commit only a sanitized `PROJECT-LOG.md` summary.
+
 ## 2026-06-24 - Readiness failure diagnostics
 
 - Extended `scripts/check_pilot_readiness.py` so local validator failures include a bounded, redacted stdout/stderr tail with the failing exit code.

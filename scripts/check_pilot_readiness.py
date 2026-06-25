@@ -48,6 +48,7 @@ DEPLOYMENT_PLAYBOOK_SCRIPT = ROOT / "scripts" / "check_deployment_playbook.py"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
 FIRST_LIVE_ROOM_CASES_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight_cases.py"
 FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
+FIRST_LIVE_ROOM_REPORT_SCRIPT = ROOT / "scripts" / "check_first_live_room_report.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
@@ -532,6 +533,18 @@ def check_first_live_room_preflight_cases() -> None:
         fail_with_result("first live-room preflight case validation failed", result)
 
 
+def check_first_live_room_report() -> None:
+    if not FIRST_LIVE_ROOM_REPORT_SCRIPT.exists():
+        fail("first live-room report validator is missing")
+        return
+
+    result = run([sys.executable, str(FIRST_LIVE_ROOM_REPORT_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("first live-room report renderer validates no-secrets handoff output")
+    else:
+        fail_with_result("first live-room report renderer validation failed", result)
+
+
 def is_configured(value: str | None) -> bool:
     if not value:
         return False
@@ -675,6 +688,7 @@ def run_checks() -> None:
     check_production_safety()
     check_live_validation_doc()
     check_first_live_room_preflight_cases()
+    check_first_live_room_report()
     check_env_prereqs()
 
 

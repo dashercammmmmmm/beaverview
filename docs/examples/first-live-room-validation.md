@@ -38,6 +38,7 @@ scripts/check_first_live_room_preflight.py --list-candidates
 scripts/check_hardware_ip_import.sh
 scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv
 scripts/check_first_live_room_preflight.py
+scripts/render_first_live_room_report.py
 cd api && venv/bin/python import_device_ips.py hardware_ips.csv
 sudo systemctl status beaverview --no-pager
 sudo nginx -t
@@ -88,6 +89,7 @@ In the admin panel:
 Store evidence outside Git:
 
 - readiness report
+- sanitized first live-room validation report
 - connector test result
 - admin audit log row
 - technician notes
