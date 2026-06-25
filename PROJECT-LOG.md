@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Hardware IP import negative-path coverage
+
+- Extended `scripts/check_hardware_ip_import.sh` to cover unknown room IDs, missing CSV columns, blank required fields, and invalid IP rows at the importer boundary.
+- Kept each failure assertion behind the existing no-raw-IP output guard so malformed operator CSV data does not expose device addresses in smoke-check logs.
+
+### Next
+
+- Keep importer failure messages row-, field-, or room-based; do not print raw device addresses when Hardware IP validation fails.
+
 ## 2026-06-25 - Deployment asset negative-path validation
 
 - Extended `scripts/check_deployment_assets.sh` to verify nginx rendering rejects invalid VM IP values.
