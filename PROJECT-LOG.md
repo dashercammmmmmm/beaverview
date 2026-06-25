@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - First-live report connector filter guard
+
+- Updated `scripts/render_first_live_room_report.py` so an attached candidate snapshot with a connector filter must match the selected first connector before the report can say go.
+- Extended `scripts/check_first_live_room_report.py` with a connector-filter mismatch case that still sanitizes raw device IP output.
+
+### Next
+
+- Generate candidate JSON with the same connector under review, or leave the candidate snapshot unfiltered when comparing several possible first connectors.
+
 ## 2026-06-25 - Pilot intake input target matrix
 
 - Added an `Input Targets` matrix to `scripts/render_pilot_intake_packet.py` so each pending readiness prerequisite names the ignored file and exact env keys or CSV columns to provide.

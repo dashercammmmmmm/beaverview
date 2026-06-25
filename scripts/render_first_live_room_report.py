@@ -189,6 +189,16 @@ def candidate_matches_selection(snapshot: dict[str, Any] | None, selected_room: 
     return False
 
 
+def candidate_filter_matches_selection(snapshot: dict[str, Any] | None, selected_connector: str) -> bool:
+    if snapshot is None:
+        return False
+    connector_filter = normalize_connector(snapshot.get("connector_filter"))
+    if not connector_filter:
+        return True
+    selected = normalize_connector(selected_connector)
+    return bool(selected) and connector_filter == selected
+
+
 def decision_lines(
     preflight: dict[str, Any],
     readiness_snapshot: dict[str, Any] | None,
@@ -209,6 +219,8 @@ def decision_lines(
         )
     if candidates_snapshot is None:
         reasons.append("candidate JSON snapshot is not attached")
+    elif not candidate_filter_matches_selection(candidates_snapshot, selected_connector):
+        reasons.append("candidate snapshot connector filter does not match the selected connector")
     elif not candidate_matches_selection(candidates_snapshot, selected_room, selected_connector):
         reasons.append("selected room and connector are not present in the candidate snapshot")
 

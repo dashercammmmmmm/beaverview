@@ -172,6 +172,28 @@ def main() -> int:
         write_candidates_json(alias_candidates, connector="crestron_poll")
         alias_result = run_report(db_path, readiness_json, alias_candidates, connector="crestron")
 
+        filter_mismatch_candidates = Path(tmp) / "candidates-filter-mismatch.json"
+        filter_mismatch_candidates.write_text(
+            "{"
+            '"status": "pass",'
+            '"connector_filter": "ptz",'
+            '"hardware_source": "csv",'
+            '"count": 1,'
+            '"candidates": ['
+            '{'
+            '"room_id": "corvallis-kad-101",'
+            '"building_code": "KAd",'
+            '"room_number": "101",'
+            '"status": "available",'
+            '"health": 91,'
+            '"eligible_connectors": ["xpanel", "ptz"],'
+            '"hardware_ip_device_types": ["xpanel", "ptz"]'
+            '}'
+            ']'
+            "}"
+        )
+        filter_mismatch_result = run_report(db_path, readiness_json, filter_mismatch_candidates, connector="xpanel")
+
     expect(result.returncode == 0, f"report renderer exited {result.returncode}: {result.stderr}")
     output = result.stdout
     expect(RAW_IP_SENTINEL not in output, "report renderer leaked a raw IP address")
@@ -228,6 +250,18 @@ def main() -> int:
     expect("First connector: `crestron_poll`" in alias_output, "connector alias should be normalized in report output")
     expect("Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`" in alias_output, "connector alias should match normalized candidate")
     expect(RAW_IP_SENTINEL not in alias_output, "connector alias output leaked a raw IP address")
+
+    expect(
+        filter_mismatch_result.returncode == 0,
+        f"filter mismatch report renderer exited {filter_mismatch_result.returncode}: {filter_mismatch_result.stderr}",
+    )
+    filter_mismatch_output = filter_mismatch_result.stdout
+    expect("Go/no-go: `NO-GO`" in filter_mismatch_output, "candidate filter mismatch should force no-go")
+    expect(
+        "candidate snapshot connector filter does not match the selected connector" in filter_mismatch_output,
+        "candidate filter mismatch no-go reason is missing",
+    )
+    expect(RAW_IP_SENTINEL not in filter_mismatch_output, "candidate filter mismatch output leaked a raw IP address")
 
     print("First live-room report renderer verified")
     return 0
