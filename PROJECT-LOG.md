@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Data migration validator DB isolation
+
+- Updated `api/migrate_data.py` to honor the test-only `BEAVERVIEW_DB_PATH` override.
+- Updated `scripts/check_data_migration.sh` so migration validation runs against a temporary SQLite database instead of clearing and reseeding ignored `api/beaverview.db`.
+- Added `api/migrate_data.py` to the env-template scanner so the DB override remains tracked as code-only configuration.
+
+### Next
+
+- Keep destructive or reseeding validators pointed at temporary SQLite databases so readiness checks do not mutate the source-of-truth local database.
+
 ## 2026-06-25 - Browser smoke dynamic ports
 
 - Updated `scripts/check_dashboard_browser.sh` and `scripts/check_admin_browser.sh` to allocate an available local port per run when no explicit override is provided.

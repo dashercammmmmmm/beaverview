@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENV_EXAMPLE = ROOT / "api" / ".env.example"
 SCAN_PATHS = [
     ROOT / "api" / "main.py",
+    ROOT / "api" / "migrate_data.py",
     ROOT / "api" / "connectors" / "chat.py",
     ROOT / "api" / "connectors" / "servicenow.py",
     ROOT / "scripts" / "check_first_live_room_preflight.py",

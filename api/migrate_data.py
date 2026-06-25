@@ -9,7 +9,7 @@ import os
 import re
 import sqlite3
 
-DB_PATH   = os.path.join(os.path.dirname(__file__), 'beaverview.db')
+DB_PATH   = os.environ.get('BEAVERVIEW_DB_PATH', os.path.join(os.path.dirname(__file__), 'beaverview.db'))
 DATA_PATH = os.path.join(os.path.dirname(__file__), '../dashboard/data.js')
 
 

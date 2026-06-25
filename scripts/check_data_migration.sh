@@ -4,7 +4,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$ROOT/api"
-DB_PATH="$API_DIR/beaverview.db"
+TMP_DIR="$(mktemp -d)"
+DB_PATH="$TMP_DIR/beaverview.migration.db"
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 if [ ! -x "$API_DIR/venv/bin/python" ]; then
   echo "Missing api/venv. Create it with: cd api && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt" >&2
@@ -12,7 +14,7 @@ if [ ! -x "$API_DIR/venv/bin/python" ]; then
 fi
 
 cd "$API_DIR"
-"$API_DIR/venv/bin/python" migrate_data.py
+BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" migrate_data.py > "$TMP_DIR/migrate-data.log"
 
 campuses="$(sqlite3 "$DB_PATH" "select count(*) from campuses;")"
 buildings="$(sqlite3 "$DB_PATH" "select count(*) from buildings;")"
