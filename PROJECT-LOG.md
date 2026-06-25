@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Fast smoke dynamic port isolation
+
+- Updated `scripts/smoke_check.sh` to allocate an available local port per run when `BEAVERVIEW_SMOKE_PORT` is not set.
+- Moved fast-smoke server logs and response capture files into a per-run temporary directory so concurrent smoke checks do not share `/tmp` files.
+- Preserved `BEAVERVIEW_SMOKE_PORT` for manual debugging when a fixed local port is useful.
+
+### Next
+
+- Keep fast local smoke checks safe to run alongside readiness and browser smoke checks by defaulting to per-run ports and temporary files.
+
 ## 2026-06-25 - Hardware IP import validator DB isolation
 
 - Updated `api/import_device_ips.py` to honor the test-only `BEAVERVIEW_DB_PATH` override.
