@@ -171,7 +171,7 @@ def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
     code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(duplicate_csv))
     expect(code == 1, f"duplicate hardware CSV preview returned exit {code}: {payload}")
     expect(payload.get("status") == "fail", f"duplicate hardware CSV preview should fail: {payload}")
-    expect("duplicate room/device mappings" in payload.get("message", ""), f"duplicate preview message changed: {payload}")
+    expect("duplicate room/device mapping" in payload.get("message", ""), f"duplicate preview message changed: {payload}")
     expect(RAW_IP_SENTINEL not in json.dumps(payload), "duplicate hardware CSV preview leaked a raw IP address")
 
     unknown_room_csv = csv_path.with_name("hardware_ips.unknown-room-preview.csv")

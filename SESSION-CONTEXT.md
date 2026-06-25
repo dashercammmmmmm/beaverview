@@ -314,6 +314,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - Import validation rejects empty required fields, duplicate `room_id`/`device_type` mappings, and public IP addresses unless `--allow-public` is explicitly supplied after review.
 - IP validation errors report CSV row numbers without echoing raw IP values.
 - `import_device_ips.py --dry-run <csv>` validates Hardware IP CSV data without replacing the `device_ips` table.
+- `api/hardware_ip_csv.py` owns shared Hardware IP CSV row parsing and validation for both import and first-live preview.
 - Safe sample CSV: `docs/examples/hardware_ips.sample.csv`.
 - `scripts/check_hardware_ip_import.sh` validates the sample, asserts duplicate/public-IP negative fixtures fail, dry-runs the real ignored `api/hardware_ips.csv` when present, and verifies those outputs do not print raw IP values.
 - Still requires the real secure `hardware_ips.csv` and actual device credentials before live device access can be tested.

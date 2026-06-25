@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Shared Hardware IP CSV validation
+
+- Added `api/hardware_ip_csv.py` as the shared parser and validator for Hardware IP CSV rows.
+- Updated `api/import_device_ips.py` and first-live Hardware CSV preview to use the shared validation helper so import and preview rules stay aligned.
+- Kept first-live preview failures no-raw-IP and covered by the existing preflight case suite.
+
+### Next
+
+- Put any future Hardware IP CSV rule in `api/hardware_ip_csv.py` first, then update import/preview callers and tests together.
+
 ## 2026-06-24 - First-live CSV preview IP validation
 
 - Extended `scripts/check_first_live_room_preflight.py --list-candidates --hardware-csv` so candidate preview validates the required `ip_address` column and rejects invalid, non-proxyable, or unreviewed public IP rows without printing addresses.

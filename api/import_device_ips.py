@@ -16,87 +16,21 @@ Private/link-local IP addresses are required by default. Use --allow-public
 only after explicit network review.
 """
 import argparse
-import csv
-import ipaddress
 import os
 import sqlite3
 import sys
+
+from hardware_ip_csv import HardwareCsvError, load_hardware_rows
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'beaverview.db')
 SUPPORTED_PROXY_TYPES = {'xpanel', 'wattbox', 'ptz'}
 
 
-def validate_ip(ip_address: str, row_number: int, allow_public: bool = False) -> str:
-    try:
-        parsed = ipaddress.ip_address(ip_address)
-    except ValueError:
-        print(f'Error: invalid IP address in CSV row {row_number}')
-        sys.exit(1)
-    if parsed.is_loopback or parsed.is_unspecified or parsed.is_multicast:
-        print(f'Error: non-proxyable IP address in CSV row {row_number}')
-        sys.exit(1)
-    if not allow_public and not (parsed.is_private or parsed.is_link_local):
-        print(f'Error: public IP address in CSV row {row_number}; use --allow-public only after network review')
-        sys.exit(1)
-    return str(parsed)
-
-
 def load_rows(csv_path: str, allow_public: bool = False) -> list[tuple[str, str, str]]:
-    if not os.path.exists(csv_path):
-        print(f'Error: file not found: {csv_path}')
-        sys.exit(1)
-
-    rows = []
-    with open(csv_path, newline='') as f:
-        reader = csv.DictReader(f)
-        required = {'room_id', 'device_type', 'ip_address'}
-        if not required.issubset(set(reader.fieldnames or [])):
-            missing = required - set(reader.fieldnames or [])
-            print(f'Error: CSV missing required columns: {missing}')
-            sys.exit(1)
-        for line in reader:
-            row_number = reader.line_num
-            room_id     = line['room_id'].strip().lower()
-            device_type = line['device_type'].strip().lower()
-            ip_raw      = line['ip_address'].strip()
-            missing_fields = [
-                field
-                for field, value in (
-                    ('room_id', room_id),
-                    ('device_type', device_type),
-                    ('ip_address', ip_raw),
-                )
-                if not value
-            ]
-            if missing_fields:
-                print(f'Error: CSV row {row_number} missing required field(s): {", ".join(missing_fields)}')
-                sys.exit(1)
-            ip_address = validate_ip(ip_raw, row_number, allow_public=allow_public)
-            rows.append((room_id, device_type, ip_address))
-
-    if not rows:
-        print('Error: CSV contains no importable rows')
-        sys.exit(1)
-
-    validate_unique_device_targets(rows)
-    return rows
-
-
-def validate_unique_device_targets(rows: list[tuple[str, str, str]]) -> None:
-    seen: set[tuple[str, str]] = set()
-    duplicates: list[str] = []
-    for room_id, device_type, _ in rows:
-        key = (room_id, device_type)
-        if key in seen:
-            duplicates.append(f'{room_id}/{device_type}')
-        seen.add(key)
-
-    if duplicates:
-        preview = ', '.join(sorted(set(duplicates))[:8])
-        if len(set(duplicates)) > 8:
-            preview += f', ... ({len(set(duplicates))} total)'
-        print(f'Error: duplicate room/device mapping in CSV: {preview}')
-        print('Each room_id/device_type pair must resolve to exactly one device IP.')
+    try:
+        return load_hardware_rows(csv_path, allow_public=allow_public)
+    except HardwareCsvError as exc:
+        print(f'Error: {exc}')
         sys.exit(1)
 
 
