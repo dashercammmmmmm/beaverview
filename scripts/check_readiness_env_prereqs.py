@@ -110,6 +110,21 @@ def main() -> int:
         expect(pending_message not in pending, "configured Azure group values should not remain pending")
 
         malformed_cases = {
+            "cors-http.env": (
+                "BEAVERVIEW_CORS_ORIGINS",
+                "http://beaverview",
+                "CORS allowed origins must be comma-separated https origins",
+            ),
+            "cors-empty-host.env": (
+                "BEAVERVIEW_CORS_ORIGINS",
+                "https://",
+                "CORS allowed origins must be comma-separated https origins",
+            ),
+            "cors-mixed-invalid.env": (
+                "BEAVERVIEW_CORS_ORIGINS",
+                "https://beaverview,http://localhost:8000",
+                "CORS allowed origins must be comma-separated https origins",
+            ),
             "live25-http.env": ("LIVE25_BASE_URL", "http://25live.example.edu", "25Live base URL must use https"),
             "live25-empty-host.env": ("LIVE25_BASE_URL", "https://", "25Live base URL must use https"),
             "live25-whitespace.env": (

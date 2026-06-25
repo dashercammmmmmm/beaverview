@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Parsed CORS origin readiness guard
+
+- Updated `scripts/check_pilot_readiness.py` so configured CORS origins are parsed as comma-separated HTTPS origins with hosts.
+- Extended `scripts/check_readiness_env_prereqs.py` to fail malformed configured CORS values while leaving missing or wildcard CORS as the existing pending production-origin prerequisite.
+- Added CORS origin shape guidance to the pilot inputs checklist and validator.
+
+### Next
+
+- Before VM pilot use, set only approved HTTPS origins in `BEAVERVIEW_CORS_ORIGINS`; malformed configured origins now fail local readiness.
+
 ## 2026-06-25 - Parsed external URL readiness guard
 
 - Updated `scripts/check_pilot_readiness.py` to parse configured external URLs and reject missing hosts or whitespace instead of relying on scheme prefixes only.

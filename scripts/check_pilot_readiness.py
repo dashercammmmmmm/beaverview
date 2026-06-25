@@ -671,7 +671,7 @@ def cors_origins_are_restricted(value: str | None) -> bool:
     origins = [origin.strip() for origin in value.split(",") if origin.strip()]
     if not origins or "*" in origins:
         return False
-    return all(origin.startswith("https://") for origin in origins)
+    return all(is_url_with_scheme(origin, {"https"}) for origin in origins)
 
 
 def is_url_with_scheme(value: str | None, allowed_schemes: set[str]) -> bool:
@@ -738,6 +738,8 @@ def check_env_prereqs() -> None:
 
     if cors_origins_are_restricted(env.get("BEAVERVIEW_CORS_ORIGINS")):
         pass_("CORS allowed origins are restricted")
+    elif is_configured(env.get("BEAVERVIEW_CORS_ORIGINS")) and env.get("BEAVERVIEW_CORS_ORIGINS", "").strip() != "*":
+        fail("CORS allowed origins must be comma-separated https origins")
     else:
         pending("CORS allowed origins are not restricted")
 

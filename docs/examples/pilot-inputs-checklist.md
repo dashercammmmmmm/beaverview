@@ -39,6 +39,12 @@ BEAVERVIEW_CORS_ORIGINS=https://beaverview
 
 Use a comma-separated list only if the deployment has multiple approved HTTPS hostnames. Do not use `*` for pilot or production.
 
+Required origin shape:
+
+- Each origin must start with `https://`
+- Each origin must include a host name
+- Do not include wildcard, path-only, or `http://` origins for pilot use
+
 ## Hardware IP Records
 
 Target file: ignored `api/hardware_ips.csv`
