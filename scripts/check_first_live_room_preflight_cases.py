@@ -174,6 +174,28 @@ def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
     expect("duplicate room/device mappings" in payload.get("message", ""), f"duplicate preview message changed: {payload}")
     expect(RAW_IP_SENTINEL not in json.dumps(payload), "duplicate hardware CSV preview leaked a raw IP address")
 
+    unknown_room_csv = csv_path.with_name("hardware_ips.unknown-room-preview.csv")
+    unknown_room_csv.write_text(
+        "room_id,device_type,ip_address,notes\n"
+        f"corvallis-missing-101,ptz,{RAW_IP_SENTINEL},unknown room\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(unknown_room_csv))
+    expect(code == 1, f"unknown-room hardware CSV preview returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"unknown-room hardware CSV preview should fail: {payload}")
+    expect("unknown room_id values" in payload.get("message", ""), f"unknown-room preview message changed: {payload}")
+    expect(RAW_IP_SENTINEL not in json.dumps(payload), "unknown-room hardware CSV preview leaked a raw IP address")
+
+    blank_field_csv = csv_path.with_name("hardware_ips.blank-preview.csv")
+    blank_field_csv.write_text(
+        "room_id,device_type,ip_address,notes\n"
+        f"corvallis-kad-101,,{RAW_IP_SENTINEL},blank device type\n"
+    )
+    code, payload = run_case(db_path, "--list-candidates", "--connector", "ptz", "--hardware-csv", str(blank_field_csv))
+    expect(code == 1, f"blank-field hardware CSV preview returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"blank-field hardware CSV preview should fail: {payload}")
+    expect("missing required field" in payload.get("message", ""), f"blank-field preview message changed: {payload}")
+    expect(RAW_IP_SENTINEL not in json.dumps(payload), "blank-field hardware CSV preview leaked a raw IP address")
+
 
 def main() -> int:
     if not SCRIPT.exists():

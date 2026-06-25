@@ -154,10 +154,19 @@ def hardware_csv_device_counts(path: Path) -> dict[str, dict[str, int]]:
         if missing:
             raise ValueError("hardware CSV is missing required columns: " + ", ".join(sorted(missing)))
         for row in reader:
+            row_number = reader.line_num
             room_id = (row.get("room_id") or "").strip().lower()
             device_type = (row.get("device_type") or "").strip().lower()
-            if not room_id or not device_type:
-                continue
+            missing_fields = [
+                field
+                for field, value in (
+                    ("room_id", room_id),
+                    ("device_type", device_type),
+                )
+                if not value
+            ]
+            if missing_fields:
+                raise ValueError(f"hardware CSV row {row_number} missing required field(s): {', '.join(missing_fields)}")
             room_counts = counts.setdefault(room_id, {})
             if room_counts.get(device_type):
                 duplicates.append(f"{room_id}/{device_type}")
@@ -246,6 +255,14 @@ def list_candidates(
         ).fetchall()
     finally:
         con.close()
+
+    room_ids = {row["id"] for row in rows}
+    unknown_csv_rooms = sorted(set(counts_by_room) - room_ids)
+    if unknown_csv_rooms:
+        preview = ", ".join(unknown_csv_rooms[:8])
+        if len(unknown_csv_rooms) > 8:
+            preview += f", ... ({len(unknown_csv_rooms)} total)"
+        return emit("fail", f"hardware CSV references unknown room_id values: {preview}", as_json=as_json)
 
     candidates: list[dict[str, Any]] = []
     for row in rows:
