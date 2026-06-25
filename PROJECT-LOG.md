@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Hardware IP import validator DB isolation
+
+- Updated `api/import_device_ips.py` to honor the test-only `BEAVERVIEW_DB_PATH` override.
+- Updated `scripts/check_hardware_ip_import.sh` so migration setup and dry-run import validation use a temporary migrated SQLite database.
+- Added `api/import_device_ips.py` to the env-template scanner so the DB override remains tracked as code-only configuration.
+
+### Next
+
+- Keep Hardware IP validation dry-runs isolated from ignored `api/beaverview.db`; only the explicit real import command should load `device_ips`.
+
 ## 2026-06-25 - Data migration validator DB isolation
 
 - Updated `api/migrate_data.py` to honor the test-only `BEAVERVIEW_DB_PATH` override.

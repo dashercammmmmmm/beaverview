@@ -22,7 +22,7 @@ import sys
 
 from hardware_ip_csv import HardwareCsvError, load_hardware_rows
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'beaverview.db')
+DB_PATH = os.environ.get('BEAVERVIEW_DB_PATH', os.path.join(os.path.dirname(__file__), 'beaverview.db'))
 SUPPORTED_PROXY_TYPES = {'xpanel', 'wattbox', 'ptz'}
 
 

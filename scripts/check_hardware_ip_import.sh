@@ -7,6 +7,7 @@ API_DIR="$ROOT/api"
 SAMPLE="$ROOT/docs/examples/hardware_ips.sample.csv"
 REAL_CSV="$API_DIR/hardware_ips.csv"
 TMP_DIR="$(mktemp -d)"
+DB_PATH="$TMP_DIR/beaverview.hardware-import.db"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 assert_no_raw_ip_output() {
@@ -24,8 +25,8 @@ if [ ! -x "$API_DIR/venv/bin/python" ]; then
 fi
 
 cd "$API_DIR"
-"$API_DIR/venv/bin/python" migrate_data.py >/tmp/beaverview-migrate-for-hardware-check.log
-if ! output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$SAMPLE" 2>&1)"; then
+BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" migrate_data.py > "$TMP_DIR/migrate-for-hardware-check.log"
+if ! output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$SAMPLE" 2>&1)"; then
   echo "$output" >&2
   exit 1
 fi
@@ -39,7 +40,7 @@ corvallis-kad-101,xpanel,10.20.1.45,first mapping
 corvallis-kad-101,xpanel,10.20.1.46,duplicate mapping
 CSV
 
-if output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$DUPLICATE_CSV" 2>&1)"; then
+if output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$DUPLICATE_CSV" 2>&1)"; then
   echo "Expected duplicate room/device mapping validation to fail." >&2
   exit 1
 fi
@@ -55,7 +56,7 @@ room_id,device_type,ip_address,notes
 corvallis-kad-101,xpanel,8.8.8.8,public address should require review
 CSV
 
-if output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$PUBLIC_CSV" 2>&1)"; then
+if output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$PUBLIC_CSV" 2>&1)"; then
   echo "Expected public IP validation to fail." >&2
   exit 1
 fi
@@ -71,7 +72,7 @@ room_id,device_type,ip_address,notes
 corvallis-kad-999,xpanel,10.20.1.47,room is not in seeded inventory
 CSV
 
-if output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$UNKNOWN_ROOM_CSV" 2>&1)"; then
+if output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$UNKNOWN_ROOM_CSV" 2>&1)"; then
   echo "Expected unknown room_id validation to fail." >&2
   exit 1
 fi
@@ -87,7 +88,7 @@ room_id,device_type,notes
 corvallis-kad-101,xpanel,missing IP column
 CSV
 
-if output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$MISSING_COLUMN_CSV" 2>&1)"; then
+if output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$MISSING_COLUMN_CSV" 2>&1)"; then
   echo "Expected missing column validation to fail." >&2
   exit 1
 fi
@@ -103,7 +104,7 @@ room_id,device_type,ip_address,notes
 corvallis-kad-101,,10.20.1.48,blank device type
 CSV
 
-if output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$BLANK_FIELD_CSV" 2>&1)"; then
+if output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$BLANK_FIELD_CSV" 2>&1)"; then
   echo "Expected blank field validation to fail." >&2
   exit 1
 fi
@@ -119,7 +120,7 @@ room_id,device_type,ip_address,notes
 corvallis-kad-101,xpanel,999.20.1.49,invalid IP should fail by row only
 CSV
 
-if output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$INVALID_IP_CSV" 2>&1)"; then
+if output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$INVALID_IP_CSV" 2>&1)"; then
   echo "Expected invalid IP validation to fail." >&2
   exit 1
 fi
@@ -130,7 +131,7 @@ fi
 assert_no_raw_ip_output "$output" "Invalid Hardware IP validation"
 
 if [ -f "$REAL_CSV" ]; then
-  if ! output="$("$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$REAL_CSV" 2>&1)"; then
+  if ! output="$(BEAVERVIEW_DB_PATH="$DB_PATH" "$API_DIR/venv/bin/python" import_device_ips.py --dry-run "$REAL_CSV" 2>&1)"; then
     assert_no_raw_ip_output "$output" "Real Hardware IP dry-run failure"
     echo "$output" >&2
     exit 1
