@@ -246,6 +246,7 @@ def render_report(room_id: str, connector: str, readiness_json: str = "", candid
     details = preflight.get("details") if isinstance(preflight.get("details"), dict) else {}
     selected_room = room_id or details.get("room_id") or "not selected"
     selected_connector = normalize_connector(connector or details.get("connector")) or "not selected"
+    candidate_connector_arg = f" --connector {selected_connector}" if selected_connector != "not selected" else ""
     generated_at = datetime.now(UTC).replace(microsecond=0).isoformat()
 
     lines = [
@@ -280,7 +281,7 @@ def render_report(room_id: str, connector: str, readiness_json: str = "", candid
         "scripts/check_hardware_ip_import.sh",
         "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
         "scripts/check_first_live_room_preflight.py",
-        "scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json",
+        f"scripts/check_first_live_room_preflight.py --list-candidates{candidate_connector_arg} --json > /tmp/beaverview-candidates.json",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
         "```",
         "",

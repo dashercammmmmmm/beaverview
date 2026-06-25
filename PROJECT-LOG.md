@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - First-live candidate JSON connector command
+
+- Updated `scripts/render_first_live_room_report.py` so its required command list generates candidate JSON with the selected first connector filter.
+- Updated `docs/examples/first-live-room-validation.md` and `docs/examples/pilot-inputs-checklist.md` to show connector-filtered candidate JSON before rendering the private report.
+- Strengthened the first-live report and handoff doc validators so the selected-connector candidate command stays ordered before report rendering.
+
+### Next
+
+- Replace the `xpanel` example with the chosen `FIRST_LIVE_CONNECTOR` during the pilot, or omit `--connector` only when intentionally comparing several first-connector options.
+
 ## 2026-06-25 - First-live report connector filter guard
 
 - Updated `scripts/render_first_live_room_report.py` so an attached candidate snapshot with a connector filter must match the selected first connector before the report can say go.

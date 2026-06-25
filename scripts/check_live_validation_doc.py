@@ -28,6 +28,9 @@ REQUIRED_TERMS = (
     "--list-candidates",
     "--connector",
     "--hardware-csv",
+    "--list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
+    "Replace `xpanel` in the example with the selected `FIRST_LIVE_CONNECTOR`",
+    "omit `--connector` only when intentionally comparing several possible first connectors",
     "import_device_ips.py",
     "XPanel",
     "25Live",
@@ -89,6 +92,16 @@ def main() -> int:
     expect_order(
         text,
         "\nscripts/check_first_live_room_preflight.py\n",
+        "scripts/render_first_live_room_report.py --readiness-json",
+    )
+    expect_order(
+        text,
+        "\nscripts/check_first_live_room_preflight.py\n",
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
+    )
+    expect_order(
+        text,
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
         "scripts/render_first_live_room_report.py --readiness-json",
     )
 

@@ -120,11 +120,11 @@ scripts/check_hardware_ip_import.sh
 (cd api && venv/bin/python import_device_ips.py hardware_ips.csv)
 scripts/check_first_live_room_preflight.py
 python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json
-scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json
+scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json
 scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json
 ```
 
-For device-backed connectors, import the validated Hardware IP rows before running the selected-room preflight and rendering the report.
+For device-backed connectors, import the validated Hardware IP rows before running the selected-room preflight and rendering the report. Replace `xpanel` in the candidate JSON command with the selected `FIRST_LIVE_CONNECTOR`, or omit `--connector` only when intentionally comparing several possible first connectors.
 
 ## Azure / Entra App
 

@@ -213,6 +213,7 @@ def main() -> int:
         "selected room/connector appears in the candidate snapshot",
         "scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
         "scripts/check_hardware_ip_csv.py",
         "scripts/check_hardware_ip_import.sh",
         "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
@@ -228,11 +229,11 @@ def main() -> int:
     expect_order(
         output,
         "scripts/check_first_live_room_preflight.py",
-        "scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json",
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
     )
     expect_order(
         output,
-        "scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json",
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
     )
 

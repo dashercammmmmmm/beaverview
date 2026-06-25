@@ -36,6 +36,9 @@ REQUIRED_TERMS = (
     "--list-candidates",
     "--connector",
     "--hardware-csv",
+    "--list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
+    "Replace `xpanel` in the candidate JSON command with the selected `FIRST_LIVE_CONNECTOR`",
+    "omit `--connector` only when intentionally comparing several possible first connectors",
     "import_device_ips.py",
     "For device-backed connectors",
     "Blank required fields",
@@ -161,6 +164,16 @@ def main() -> int:
         first_live_section,
         "scripts/check_hardware_ip_csv.py",
         "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv",
+    )
+    expect_order(
+        first_live_section,
+        "scripts/check_first_live_room_preflight.py",
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
+    )
+    expect_order(
+        first_live_section,
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --json > /tmp/beaverview-candidates.json",
+        "scripts/render_first_live_room_report.py --readiness-json",
     )
     expect_order(
         hardware_section,
