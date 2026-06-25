@@ -2,6 +2,17 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Shared no-secrets output sanitizer
+
+- Added `scripts/sanitize_output.py` as the shared redaction helper for readiness diagnostics and first live-room handoff reports.
+- Added `scripts/check_sanitize_output.py` to verify secret-like values, authorization headers, and non-local IPv4 addresses are redacted while localhost diagnostics remain visible.
+- Updated `scripts/check_pilot_readiness.py` and `scripts/render_first_live_room_report.py` to use the shared sanitizer.
+- Wired the sanitizer validator into pilot readiness.
+
+### Next
+
+- Use `sanitize_output.redact_line` for any new pilot diagnostic or handoff command that may echo subprocess output, env-shaped text, URLs, or device-network context.
+
 ## 2026-06-24 - First live-room report template
 
 - Added `scripts/render_first_live_room_report.py` to produce a sanitized private Markdown report template around the selected first live-room preflight result.

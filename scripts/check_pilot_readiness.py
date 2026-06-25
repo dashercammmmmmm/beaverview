@@ -14,11 +14,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sqlite3
 import subprocess
 import sys
 from pathlib import Path
+
+from sanitize_output import redact_line
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,23 +57,11 @@ PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
 PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
 READINESS_DIAGNOSTICS_SCRIPT = ROOT / "scripts" / "check_readiness_diagnostics.py"
+SANITIZE_OUTPUT_SCRIPT = ROOT / "scripts" / "check_sanitize_output.py"
 
 LOCAL_FAILURES: list[str] = []
 PENDING: list[str] = []
 PASSED: list[str] = []
-
-AUTH_HEADER_RE = re.compile(r"(?i)\b(authorization:\s*(?:bearer|basic)\s+)[A-Za-z0-9._~+/=-]+")
-SECRET_ASSIGNMENT_RE = re.compile(
-    r"(?i)\b([A-Z0-9_-]*(?:PASSWORD|SECRET|TOKEN|API[_-]?KEY|CLIENT[_-]?SECRET|PRIVATE[_-]?KEY|SESSION[_-]?KEY)[A-Z0-9_-]*)"
-    r"(\s*[=:]\s*)"
-    r"([^\s,;]+)"
-)
-GENERIC_SECRET_RE = re.compile(
-    r"(?i)\b(password|passwd|secret|token|api[_-]?key|client[_-]?secret)"
-    r"(\s*[=:]\s*)"
-    r"([^\s,;]+)"
-)
-IPV4_RE = re.compile(r"\b(?P<ip>(?:\d{1,3}\.){3}\d{1,3})(?P<port>:\d+)?\b")
 
 PENDING_ACTIONS = {
     "api/.env is not present; copy api/.env.example and fill deployment values": {
@@ -162,25 +151,11 @@ def fail(message: str) -> None:
     LOCAL_FAILURES.append(message)
 
 
-def redact_diagnostic_line(line: str) -> str:
-    def redact_ip(match: re.Match[str]) -> str:
-        ip = match.group("ip")
-        port = match.group("port") or ""
-        if ip.startswith("127.") or ip == "0.0.0.0":
-            return f"{ip}{port}"
-        return f"<redacted-ip>{port}"
-
-    line = AUTH_HEADER_RE.sub(r"\1<redacted>", line)
-    line = SECRET_ASSIGNMENT_RE.sub(r"\1\2<redacted>", line)
-    line = GENERIC_SECRET_RE.sub(r"\1\2<redacted>", line)
-    return IPV4_RE.sub(redact_ip, line)
-
-
 def subprocess_failure_detail(result: subprocess.CompletedProcess[str], max_lines: int = 8, max_chars: int = 900) -> str:
     lines: list[str] = []
     for label, text in (("stdout", result.stdout), ("stderr", result.stderr)):
         for raw_line in (text or "").splitlines():
-            line = redact_diagnostic_line(raw_line.strip())
+            line = redact_line(raw_line.strip())
             if line:
                 lines.append(f"{label}: {line}")
 
@@ -463,6 +438,18 @@ def check_readiness_diagnostics() -> None:
         fail_with_result("readiness diagnostic redaction validation failed", result)
 
 
+def check_sanitize_output() -> None:
+    if not SANITIZE_OUTPUT_SCRIPT.exists():
+        fail("shared output sanitizer validator is missing")
+        return
+
+    result = run([sys.executable, str(SANITIZE_OUTPUT_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("shared output sanitizer validates no-secrets redaction")
+    else:
+        fail_with_result("shared output sanitizer validation failed", result)
+
+
 def check_production_safety() -> None:
     if not PRODUCTION_SAFETY_SCRIPT.exists():
         fail("production safety validator is missing")
@@ -684,6 +671,7 @@ def run_checks() -> None:
     check_env_template()
     check_pilot_inputs_doc()
     check_readiness_actions()
+    check_sanitize_output()
     check_readiness_diagnostics()
     check_production_safety()
     check_live_validation_doc()

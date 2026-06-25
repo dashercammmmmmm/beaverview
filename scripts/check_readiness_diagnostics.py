@@ -36,6 +36,10 @@ def load_readiness_module():
 
 def main() -> int:
     readiness = load_readiness_module()
+    redacted_line = readiness.redact_line("CLIENT_SECRET=super-secret 10.42.7.9")
+    expect("super-secret" not in redacted_line, "readiness should import the shared sanitizer")
+    expect("10.42.7.9" not in redacted_line, "readiness should redact IPs through the shared sanitizer")
+
     result = subprocess.CompletedProcess(
         args=["example-validator"],
         returncode=7,

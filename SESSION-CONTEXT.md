@@ -349,7 +349,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `python3 scripts/check_pilot_readiness.py --markdown` prints the same result as a human-readable Markdown report.
 - Readiness JSON includes `pending_actions`; Markdown/text output includes `Pending Next Actions`, mapping each external pending item to the ignored file/key or runbook that closes it.
 - `scripts/check_readiness_actions.py` validates that pending-action references point to existing files and Markdown anchors, and that literal plus supported loop-generated `pending(...)` readiness messages have mapped actions.
-- Local readiness validator failures include a bounded, redacted stdout/stderr tail with the exit code; `scripts/check_readiness_diagnostics.py` verifies that those diagnostics redact secret-like values, authorization headers, and non-local IPv4 addresses.
+- Local readiness validator failures include a bounded, redacted stdout/stderr tail with the exit code; `scripts/sanitize_output.py` is the shared redaction helper, while `scripts/check_sanitize_output.py` and `scripts/check_readiness_diagnostics.py` verify that diagnostics redact secret-like values, authorization headers, and non-local IPv4 addresses.
 - It does not print secret values.
 - It exits nonzero only for local failures; missing Azure credentials, connector credentials, ScreenConnect/SharePoint launch URLs, Hermes chat endpoint, and Hardware IP records are reported as pending external prerequisites.
 - It runs the data migration and hardware IP import validators directly before reporting DB/input readiness.
