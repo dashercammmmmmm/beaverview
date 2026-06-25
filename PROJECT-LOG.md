@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Browser smoke dynamic ports
+
+- Updated `scripts/check_dashboard_browser.sh` and `scripts/check_admin_browser.sh` to allocate an available local port per run when no explicit override is provided.
+- Moved browser-smoke health and server logs into per-run temporary directories so concurrent smoke checks do not share `/tmp` files.
+- Kept `BEAVERVIEW_BROWSER_PORT` and `BEAVERVIEW_ADMIN_BROWSER_PORT` overrides for explicit local debugging.
+
+### Next
+
+- Prefer the dynamic default ports in readiness and CI-style local runs; use fixed port overrides only for manual debugging.
+
 ## 2026-06-25 - Pilot intake local-failure section
 
 - Updated `scripts/render_pilot_intake_packet.py` to include a sanitized `Local Failures To Resolve First` section before the OSU input request list.

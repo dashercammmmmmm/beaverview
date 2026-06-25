@@ -4,13 +4,26 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$ROOT/api"
-PORT="${BEAVERVIEW_ADMIN_BROWSER_PORT:-8028}"
-BASE_URL="http://127.0.0.1:${PORT}"
 
 if [ ! -x "$API_DIR/venv/bin/python" ]; then
   echo "Missing api/venv. Create it with: cd api && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt" >&2
   exit 1
 fi
+
+if [ -n "${BEAVERVIEW_ADMIN_BROWSER_PORT:-}" ]; then
+  PORT="$BEAVERVIEW_ADMIN_BROWSER_PORT"
+else
+  PORT="$("$API_DIR/venv/bin/python" - <<'PY'
+import socket
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
+)"
+fi
+BASE_URL="http://127.0.0.1:${PORT}"
+TMP_DIR="$(mktemp -d)"
 
 PLAYWRIGHT_PY=""
 for candidate in "$API_DIR/venv/bin/python" python3 /Library/Developer/CommandLineTools/usr/bin/python3; do
@@ -26,12 +39,12 @@ if [ -z "$PLAYWRIGHT_PY" ]; then
 fi
 
 cd "$API_DIR"
-"$API_DIR/venv/bin/uvicorn" main:app --host 127.0.0.1 --port "$PORT" > /tmp/beaverview-admin-browser-smoke.log 2>&1 &
+"$API_DIR/venv/bin/uvicorn" main:app --host 127.0.0.1 --port "$PORT" > "$TMP_DIR/beaverview-admin-browser-smoke.log" 2>&1 &
 SERVER_PID=$!
-trap 'kill "$SERVER_PID" >/dev/null 2>&1 || true' EXIT
+trap 'kill "$SERVER_PID" >/dev/null 2>&1 || true; rm -rf "$TMP_DIR"' EXIT
 
 for _ in $(seq 1 40); do
-  if curl -fsS "$BASE_URL/api/health" >/tmp/beaverview-admin-browser-health.json 2>/dev/null; then
+  if curl -fsS "$BASE_URL/api/health" >"$TMP_DIR/beaverview-admin-browser-health.json" 2>/dev/null; then
     break
   fi
   sleep 0.25
