@@ -27,7 +27,9 @@ CATEGORY_ORDER = (
 
 
 def safe_text(value: Any, fallback: str = "not provided") -> str:
-    text = redact_line(str(value or "").strip())
+    if value is None:
+        return fallback
+    text = redact_line(str(value).strip())
     return text if text else fallback
 
 

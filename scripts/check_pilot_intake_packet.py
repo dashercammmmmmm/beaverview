@@ -75,6 +75,7 @@ def main() -> int:
         "## Secure Handling",
         "## Requested Inputs",
         "## Verification After Inputs Arrive",
+        "- Local failures: `0`",
         "python3 scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
     )
