@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-from render_pilot_intake_packet import CATEGORY_ORDER, render_packet
+from render_pilot_intake_packet import CATEGORY_ORDER, INPUT_REQUIREMENTS, render_packet
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +42,10 @@ def main() -> int:
     readiness = load_readiness_module()
     actions = readiness.PENDING_ACTIONS
     expect(isinstance(actions, dict) and actions, "PENDING_ACTIONS must be a non-empty dict")
+    expect(
+        set(INPUT_REQUIREMENTS) == set(actions),
+        "pilot intake input matrix must cover exactly the canonical readiness actions",
+    )
 
     pending_actions = []
     for pending, item in actions.items():
@@ -76,9 +80,14 @@ def main() -> int:
         "## Secure Handling",
         "## Local Failures To Resolve First",
         "## Requested Inputs",
+        "## Input Targets",
         "## Verification After Inputs Arrive",
         "- Local failures: `0`",
         "- None",
+        "| Pending prerequisite | Target | Values to provide |",
+        "ignored `api/.env`",
+        "ignored `api/hardware_ips.csv`",
+        "`SN_INSTANCE, SN_CLIENT_ID + SN_CLIENT_SECRET or SN_USERNAME + SN_PASSWORD`",
         "python3 scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
     )
@@ -88,6 +97,8 @@ def main() -> int:
         expect(f"### {category}" in packet, f"pilot intake packet is missing category: {category}")
     for pending in actions:
         expect(pending in packet, f"pilot intake packet is missing pending action: {pending}")
+        for value in INPUT_REQUIREMENTS[pending]["values"]:
+            expect(value in packet, f"pilot intake packet is missing input target value: {value}")
     for forbidden in (RAW_IP_SENTINEL, SECRET_SENTINEL, TOKEN_SENTINEL):
         expect(forbidden not in packet, f"pilot intake packet leaked {forbidden!r}: {packet}")
     expect("<redacted-ip>" in packet, "pilot intake packet should redact non-local IPs")

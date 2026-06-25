@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Pilot intake input target matrix
+
+- Added an `Input Targets` matrix to `scripts/render_pilot_intake_packet.py` so each pending readiness prerequisite names the ignored file and exact env keys or CSV columns to provide.
+- Strengthened `scripts/check_pilot_intake_packet.py` so the matrix must cover exactly the canonical readiness pending actions and include the ServiceNow auth alternatives.
+
+### Next
+
+- Use the intake packet as the primary OSU handoff checklist, then enter supplied values only into ignored `api/.env` or ignored `api/hardware_ips.csv`.
+
 ## 2026-06-25 - Fast smoke dynamic port isolation
 
 - Updated `scripts/smoke_check.sh` to allocate an available local port per run when `BEAVERVIEW_SMOKE_PORT` is not set.
