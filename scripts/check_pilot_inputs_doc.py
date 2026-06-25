@@ -45,6 +45,18 @@ REQUIRED_TERMS = (
     "scripts/check_first_live_room_preflight_cases.py",
     "scripts/check_first_live_room_report.py",
     "scripts/check_readiness_actions.py",
+    "scripts/check_deployment_playbook.py",
+    "scripts/check_inventory_parity.py",
+    "scripts/check_dashboard_browser.sh",
+    "scripts/check_admin_browser.sh",
+    "scripts/check_init_local_env.py",
+    "scripts/check_pilot_inputs_doc.py",
+    "scripts/check_playbook_html.py",
+    "scripts/check_project_log.py",
+    "scripts/check_sanitize_output.py",
+    "scripts/check_readiness_diagnostics.py",
+    "scripts/check_production_safety.py",
+    "scripts/check_first_live_connectors.py",
     "crestron_poll",
     "AZURE_TENANT_ID",
     "AZURE_CLIENT_ID",
@@ -74,6 +86,33 @@ REQUIRED_TERMS = (
     "SN_PASSWORD",
     "docs/examples/first-live-room-validation.md",
     "python3 scripts/check_live_validation_doc.py",
+)
+
+FINAL_VERIFICATION_COMMANDS = (
+    "scripts/smoke_check.sh",
+    "scripts/check_data_migration.sh",
+    "scripts/check_hardware_ip_csv.py",
+    "scripts/check_hardware_ip_import.sh",
+    "scripts/check_deployment_assets.sh",
+    "python3 scripts/check_deployment_playbook.py",
+    "scripts/check_api_contracts.py",
+    "python3 scripts/check_inventory_parity.py",
+    "scripts/check_dashboard_browser.sh",
+    "scripts/check_admin_browser.sh",
+    "python3 scripts/check_env_template.py",
+    "python3 scripts/check_init_local_env.py",
+    "python3 scripts/check_pilot_inputs_doc.py",
+    "python3 scripts/check_playbook_html.py",
+    "python3 scripts/check_project_log.py",
+    "python3 scripts/check_readiness_actions.py",
+    "python3 scripts/check_sanitize_output.py",
+    "python3 scripts/check_readiness_diagnostics.py",
+    "python3 scripts/check_production_safety.py",
+    "python3 scripts/check_live_validation_doc.py",
+    "python3 scripts/check_first_live_connectors.py",
+    "scripts/check_first_live_room_preflight_cases.py",
+    "scripts/check_first_live_room_report.py",
+    "python3 scripts/check_pilot_readiness.py",
 )
 
 
@@ -112,6 +151,7 @@ def main() -> int:
         fail("pilot input checklist is missing terms: " + ", ".join(missing))
     hardware_section = section_between(text, "## Hardware IP Records", "## First Live-Room Target")
     first_live_section = section_between(text, "## First Live-Room Target", "## Azure / Entra App")
+    final_section = section_between(text, "## Final Verification", "Expected result before external inputs are available:")
     expect_order(
         first_live_section,
         "scripts/check_hardware_ip_csv.py",
@@ -122,6 +162,8 @@ def main() -> int:
         "scripts/check_hardware_ip_csv.py",
         "scripts/check_hardware_ip_import.sh",
     )
+    for previous, current in zip(FINAL_VERIFICATION_COMMANDS, FINAL_VERIFICATION_COMMANDS[1:]):
+        expect_order(final_section, previous, current)
 
     print(f"Pilot input checklist verified: {len(REQUIRED_TERMS)} terms covered")
     return 0

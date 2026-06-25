@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Pilot checklist final-gate parity
+
+- Expanded the pilot inputs checklist final verification block so it names the focused validators used by the readiness gate, including browser smoke, inventory parity, playbook HTML, project log, sanitizer, diagnostics, production safety, and first-live connector checks.
+- Strengthened `scripts/check_pilot_inputs_doc.py` to enforce the final verification command order so operator handoff instructions do not drift from local readiness coverage.
+
+### Next
+
+- Update the final verification block and checklist validator in the same commit whenever `scripts/check_pilot_readiness.py` adds or reorders local gates.
+
 ## 2026-06-25 - Hardware IP import negative-path coverage
 
 - Extended `scripts/check_hardware_ip_import.sh` to cover unknown room IDs, missing CSV columns, blank required fields, and invalid IP rows at the importer boundary.

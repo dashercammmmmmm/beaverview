@@ -257,12 +257,24 @@ scripts/check_data_migration.sh
 scripts/check_hardware_ip_csv.py
 scripts/check_hardware_ip_import.sh
 scripts/check_deployment_assets.sh
+python3 scripts/check_deployment_playbook.py
 scripts/check_api_contracts.py
+python3 scripts/check_inventory_parity.py
+scripts/check_dashboard_browser.sh
+scripts/check_admin_browser.sh
+python3 scripts/check_env_template.py
+python3 scripts/check_init_local_env.py
+python3 scripts/check_pilot_inputs_doc.py
+python3 scripts/check_playbook_html.py
+python3 scripts/check_project_log.py
+python3 scripts/check_readiness_actions.py
+python3 scripts/check_sanitize_output.py
+python3 scripts/check_readiness_diagnostics.py
+python3 scripts/check_production_safety.py
+python3 scripts/check_live_validation_doc.py
+python3 scripts/check_first_live_connectors.py
 scripts/check_first_live_room_preflight_cases.py
 scripts/check_first_live_room_report.py
-scripts/check_readiness_actions.py
-python3 scripts/check_env_template.py
-python3 scripts/check_live_validation_doc.py
 python3 scripts/check_pilot_readiness.py
 ```
 
