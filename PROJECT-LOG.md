@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Hardware CSV preview checklist ordering
+
+- Updated the pilot inputs checklist so first live-room CSV-backed candidate preview runs `scripts/check_hardware_ip_csv.py` first.
+- Strengthened `scripts/check_pilot_inputs_doc.py` to enforce the shared Hardware CSV validator before both CSV preview and import commands.
+
+### Next
+
+- Keep Hardware CSV validation ahead of any operator command that reads `api/hardware_ips.csv`, including previews that do not import rows.
+
 ## 2026-06-25 - First-live report hardware CSV command parity
 
 - Updated the generated first live-room validation report so its Required Commands section runs `scripts/check_hardware_ip_csv.py` before the Hardware IP import smoke check.

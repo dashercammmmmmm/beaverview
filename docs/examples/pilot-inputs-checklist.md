@@ -88,8 +88,11 @@ List candidate room IDs and connector hints from sanitized SQLite data:
 
 ```bash
 scripts/check_first_live_room_preflight.py --list-candidates
+scripts/check_hardware_ip_csv.py
 scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv
 ```
+
+Run the shared Hardware CSV validator before using `--hardware-csv` so preview failures are treated as source-export corrections, not room-selection results.
 
 Required `api/.env` values:
 

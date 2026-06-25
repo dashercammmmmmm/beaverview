@@ -82,6 +82,26 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
+def expect_order(text: str, first: str, second: str) -> None:
+    first_index = text.find(first)
+    second_index = text.find(second)
+    if first_index == -1 or second_index == -1:
+        missing = first if first_index == -1 else second
+        fail(f"pilot input checklist is missing ordered term: {missing}")
+    if first_index > second_index:
+        fail(f"pilot input checklist must list {first!r} before {second!r}")
+
+
+def section_between(text: str, start: str, end: str) -> str:
+    start_index = text.find(start)
+    if start_index == -1:
+        fail(f"pilot input checklist is missing section: {start}")
+    end_index = text.find(end, start_index + len(start))
+    if end_index == -1:
+        fail(f"pilot input checklist is missing section after {start}: {end}")
+    return text[start_index:end_index]
+
+
 def main() -> int:
     if not CHECKLIST.exists():
         fail("pilot input checklist is missing")
@@ -90,6 +110,18 @@ def main() -> int:
     missing = [term for term in REQUIRED_TERMS if term not in text]
     if missing:
         fail("pilot input checklist is missing terms: " + ", ".join(missing))
+    hardware_section = section_between(text, "## Hardware IP Records", "## First Live-Room Target")
+    first_live_section = section_between(text, "## First Live-Room Target", "## Azure / Entra App")
+    expect_order(
+        first_live_section,
+        "scripts/check_hardware_ip_csv.py",
+        "scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv",
+    )
+    expect_order(
+        hardware_section,
+        "scripts/check_hardware_ip_csv.py",
+        "scripts/check_hardware_ip_import.sh",
+    )
 
     print(f"Pilot input checklist verified: {len(REQUIRED_TERMS)} terms covered")
     return 0
