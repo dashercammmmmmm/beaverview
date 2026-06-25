@@ -269,6 +269,7 @@ python3 scripts/check_playbook_html.py
 python3 scripts/check_project_log.py
 python3 scripts/check_readiness_actions.py
 python3 scripts/check_sanitize_output.py
+python3 scripts/check_readiness_output.py
 python3 scripts/check_readiness_diagnostics.py
 python3 scripts/check_production_safety.py
 python3 scripts/check_live_validation_doc.py

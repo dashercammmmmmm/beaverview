@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Readiness handoff output redaction
+
+- Updated readiness text and Markdown rendering to pass displayed passed, pending, failure, pending-action, and reference strings through the shared output sanitizer.
+- Added `scripts/check_readiness_output.py` to validate human-facing readiness output redacts secret-like values and non-local IPv4 addresses while preserving localhost diagnostics.
+- Wired the new output-redaction check into pilot readiness and the pilot checklist final verification sequence.
+
+### Next
+
+- Keep any new human-facing readiness renderer covered by `scripts/check_readiness_output.py` before using it for OSU handoff material.
+
 ## 2026-06-25 - Pilot checklist final-gate parity
 
 - Expanded the pilot inputs checklist final verification block so it names the focused validators used by the readiness gate, including browser smoke, inventory parity, playbook HTML, project log, sanitizer, diagnostics, production safety, and first-live connector checks.

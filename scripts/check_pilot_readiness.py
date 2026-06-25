@@ -62,6 +62,7 @@ PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 PROJECT_LOG_SCRIPT = ROOT / "scripts" / "check_project_log.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
 READINESS_DIAGNOSTICS_SCRIPT = ROOT / "scripts" / "check_readiness_diagnostics.py"
+READINESS_OUTPUT_SCRIPT = ROOT / "scripts" / "check_readiness_output.py"
 SANITIZE_OUTPUT_SCRIPT = ROOT / "scripts" / "check_sanitize_output.py"
 
 LOCAL_FAILURES: list[str] = []
@@ -178,6 +179,10 @@ def fail_with_result(message: str, result: subprocess.CompletedProcess[str]) -> 
 
 def pending(message: str) -> None:
     PENDING.append(message)
+
+
+def safe_output(value: object) -> str:
+    return redact_line(str(value))
 
 
 def parse_env(path: Path) -> dict[str, str]:
@@ -491,6 +496,18 @@ def check_readiness_diagnostics() -> None:
         fail_with_result("readiness diagnostic redaction validation failed", result)
 
 
+def check_readiness_output() -> None:
+    if not READINESS_OUTPUT_SCRIPT.exists():
+        fail("readiness output redaction validator is missing")
+        return
+
+    result = run([sys.executable, str(READINESS_OUTPUT_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("readiness human output redaction validates")
+    else:
+        fail_with_result("readiness human output redaction validation failed", result)
+
+
 def check_sanitize_output() -> None:
     if not SANITIZE_OUTPUT_SCRIPT.exists():
         fail("shared output sanitizer validator is missing")
@@ -741,6 +758,7 @@ def run_checks() -> None:
     check_project_log()
     check_readiness_actions()
     check_sanitize_output()
+    check_readiness_output()
     check_readiness_diagnostics()
     check_production_safety()
     check_live_validation_doc()
@@ -780,17 +798,20 @@ def print_text_result(result: dict) -> None:
     print("BeaverView pilot-readiness preflight")
     print()
     for item in result["passed"]:
-        print(f"PASS    {item}")
+        print(f"PASS    {safe_output(item)}")
     for item in result["pending"]:
-        print(f"PENDING {item}")
+        print(f"PENDING {safe_output(item)}")
     for item in result["failures"]:
-        print(f"FAIL    {item}")
+        print(f"FAIL    {safe_output(item)}")
 
     if result["pending_actions"]:
         print()
         print("Next actions")
         for item in result["pending_actions"]:
-            print(f"- {item['pending']}: {item['action']} See {item['reference']}.")
+            pending_text = safe_output(item["pending"])
+            action = safe_output(item["action"])
+            reference = safe_output(item["reference"])
+            print(f"- {pending_text}: {action} See {reference}.")
 
     print()
     if result["failures"]:
@@ -811,7 +832,7 @@ def print_markdown_result(result: dict) -> None:
     print("## Passed")
     print()
     for item in result["passed"]:
-        print(f"- {item}")
+        print(f"- {safe_output(item)}")
     if not result["passed"]:
         print("- None")
     print()
@@ -819,7 +840,7 @@ def print_markdown_result(result: dict) -> None:
     print("## Pending External Prerequisites")
     print()
     for item in result["pending"]:
-        print(f"- {item}")
+        print(f"- {safe_output(item)}")
     if not result["pending"]:
         print("- None")
     print()
@@ -827,7 +848,10 @@ def print_markdown_result(result: dict) -> None:
     print("## Pending Next Actions")
     print()
     for item in result["pending_actions"]:
-        print(f"- **{item['pending']}**: {item['action']} See `{item['reference']}`.")
+        pending_text = safe_output(item["pending"])
+        action = safe_output(item["action"])
+        reference = safe_output(item["reference"])
+        print(f"- **{pending_text}**: {action} See `{reference}`.")
     if not result["pending_actions"]:
         print("- None")
     print()
@@ -835,7 +859,7 @@ def print_markdown_result(result: dict) -> None:
     print("## Local Failures")
     print()
     for item in result["failures"]:
-        print(f"- {item}")
+        print(f"- {safe_output(item)}")
     if not result["failures"]:
         print("- None")
 
