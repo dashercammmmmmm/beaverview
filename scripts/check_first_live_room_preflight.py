@@ -164,17 +164,21 @@ def connector_hints(room: sqlite3.Row, counts: dict[str, int]) -> list[str]:
 
 
 def is_non_critical_candidate(room: sqlite3.Row) -> bool:
+    return non_critical_blocker(room) is None
+
+
+def non_critical_blocker(room: sqlite3.Row) -> str | None:
     status = str(room["status"] or "").lower()
     room_type = str(room["type"] or "").lower()
     room_id = str(room["id"] or "").lower()
     health = int(room["health"] or 0)
     if status in {"in-use", "offline"}:
-        return False
+        return f"selected room is not a non-critical candidate: status is {status}"
     if health <= 0:
-        return False
+        return "selected room is not a non-critical candidate: health is not positive"
     if "placeholder" in room_type or room_id.endswith("-tbd"):
-        return False
-    return True
+        return "selected room is not a non-critical candidate: placeholder inventory"
+    return None
 
 
 def list_candidates(
@@ -324,11 +328,20 @@ def main() -> int:
     con.row_factory = sqlite3.Row
     try:
         room = con.execute(
-            "SELECT id, screenconnect FROM rooms WHERE id=?",
+            "SELECT id, type, status, health, screenconnect FROM rooms WHERE id=?",
             (room_id,),
         ).fetchone()
         if not room:
             return emit("fail", f"selected first live-room ID is not in SQLite inventory: {room_id}", as_json=args.json)
+
+        blocker = non_critical_blocker(room)
+        if blocker:
+            return emit(
+                "pending",
+                blocker,
+                details={"room_id": room_id, "connector": connector},
+                as_json=args.json,
+            )
 
         config = CONNECTORS[connector]
         device_type = config.get("device_type")

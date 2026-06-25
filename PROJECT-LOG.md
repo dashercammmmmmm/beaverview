@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Selected first-live room non-critical guard
+
+- Updated `scripts/check_first_live_room_preflight.py` so a manually selected `FIRST_LIVE_ROOM_ID` must pass the same non-critical room checks used by candidate listing.
+- Added isolated preflight cases for selected rooms that are in use, unhealthy, or placeholder inventory so they return pending/no-go before connector validation.
+
+### Next
+
+- Keep selected-room preflight eligibility in sync with candidate-list filtering whenever the first-live room selection policy changes.
+
 ## 2026-06-25 - Hardware CSV preview checklist ordering
 
 - Updated the pilot inputs checklist so first live-room CSV-backed candidate preview runs `scripts/check_hardware_ip_csv.py` first.

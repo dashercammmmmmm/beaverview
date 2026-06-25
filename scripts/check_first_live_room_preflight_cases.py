@@ -27,7 +27,16 @@ def expect(condition: bool, message: str) -> None:
         fail(message)
 
 
-def create_db(path: Path, *, duplicate: bool = False, screenconnect: bool = True) -> None:
+def create_db(
+    path: Path,
+    *,
+    duplicate: bool = False,
+    screenconnect: bool = True,
+    room_id: str = "corvallis-kad-101",
+    room_type: str = "Presentation Classroom",
+    status: str = "available",
+    health: int = 91,
+) -> None:
     con = sqlite3.connect(path)
     try:
         con.executescript(
@@ -61,16 +70,16 @@ def create_db(path: Path, *, duplicate: bool = False, screenconnect: bool = True
         )
         con.execute(
             "INSERT INTO rooms(id, building_id, number, type, status, health, screenconnect, wattbox) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
-            ("corvallis-kad-101", 1, "101", "Presentation Classroom", "available", 91, int(screenconnect), 1),
+            (room_id, 1, "101", room_type, status, health, int(screenconnect), 1),
         )
         con.execute(
             "INSERT INTO device_ips(room_id, device_type, ip_address) VALUES(?, ?, ?)",
-            ("corvallis-kad-101", "xpanel", RAW_IP_SENTINEL),
+            (room_id, "xpanel", RAW_IP_SENTINEL),
         )
         if duplicate:
             con.execute(
                 "INSERT INTO device_ips(room_id, device_type, ip_address) VALUES(?, ?, ?)",
-                ("corvallis-kad-101", "xpanel", "10.77.1.26"),
+                (room_id, "xpanel", "10.77.1.26"),
             )
         con.commit()
     finally:
@@ -287,6 +296,45 @@ def main() -> int:
             "--connector",
             "screenconnect",
             env_extra={"SC_BASE_URL": "https://screenconnect.example.test"},
+        )
+
+        in_use_db = Path(tmp) / "beaverview.in-use.db"
+        create_db(in_use_db, status="in-use")
+        expect_case(
+            in_use_db,
+            2,
+            "pending",
+            "--room-id",
+            "corvallis-kad-101",
+            "--connector",
+            "xpanel",
+            env_extra={"CRESTRON_PROXY_USERNAME": "contract-user", "CRESTRON_PROXY_PASSWORD": "contract-pass"},
+        )
+
+        unhealthy_db = Path(tmp) / "beaverview.unhealthy.db"
+        create_db(unhealthy_db, health=0)
+        expect_case(
+            unhealthy_db,
+            2,
+            "pending",
+            "--room-id",
+            "corvallis-kad-101",
+            "--connector",
+            "xpanel",
+            env_extra={"CRESTRON_PROXY_USERNAME": "contract-user", "CRESTRON_PROXY_PASSWORD": "contract-pass"},
+        )
+
+        placeholder_db = Path(tmp) / "beaverview.placeholder.db"
+        create_db(placeholder_db, room_id="corvallis-kad-tbd", room_type="Placeholder Room")
+        expect_case(
+            placeholder_db,
+            2,
+            "pending",
+            "--room-id",
+            "corvallis-kad-tbd",
+            "--connector",
+            "xpanel",
+            env_extra={"CRESTRON_PROXY_USERNAME": "contract-user", "CRESTRON_PROXY_PASSWORD": "contract-pass"},
         )
 
     print("First live-room preflight cases verified")
