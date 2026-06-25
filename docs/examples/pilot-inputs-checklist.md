@@ -271,6 +271,7 @@ python3 scripts/check_pilot_intake_packet.py
 python3 scripts/check_playbook_html.py
 python3 scripts/check_project_log.py
 python3 scripts/check_readiness_actions.py
+python3 scripts/check_readiness_env_prereqs.py
 python3 scripts/check_sanitize_output.py
 python3 scripts/check_readiness_output.py
 python3 scripts/check_readiness_diagnostics.py

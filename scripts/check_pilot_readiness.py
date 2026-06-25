@@ -62,6 +62,7 @@ PLAYBOOK_HTML_SCRIPT = ROOT / "scripts" / "check_playbook_html.py"
 PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 PROJECT_LOG_SCRIPT = ROOT / "scripts" / "check_project_log.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
+READINESS_ENV_PREREQS_SCRIPT = ROOT / "scripts" / "check_readiness_env_prereqs.py"
 READINESS_DIAGNOSTICS_SCRIPT = ROOT / "scripts" / "check_readiness_diagnostics.py"
 READINESS_OUTPUT_SCRIPT = ROOT / "scripts" / "check_readiness_output.py"
 SANITIZE_OUTPUT_SCRIPT = ROOT / "scripts" / "check_sanitize_output.py"
@@ -497,6 +498,18 @@ def check_readiness_actions() -> None:
         fail_with_result("readiness pending-action reference validation failed", result)
 
 
+def check_readiness_env_prereqs() -> None:
+    if not READINESS_ENV_PREREQS_SCRIPT.exists():
+        fail("readiness env-prerequisite validator is missing")
+        return
+
+    result = run([sys.executable, str(READINESS_ENV_PREREQS_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("readiness env prerequisite classification validates")
+    else:
+        fail_with_result("readiness env prerequisite classification failed", result)
+
+
 def check_readiness_diagnostics() -> None:
     if not READINESS_DIAGNOSTICS_SCRIPT.exists():
         fail("readiness diagnostic redaction validator is missing")
@@ -711,7 +724,7 @@ def check_env_prereqs() -> None:
     else:
         pending("Azure app credentials are not complete")
 
-    if env.get("AZURE_GROUP_TECHNICIAN") and env.get("AZURE_GROUP_ADMIN"):
+    if has_all(env, ("AZURE_GROUP_TECHNICIAN", "AZURE_GROUP_ADMIN")):
         pass_("Azure group object IDs are present")
     else:
         pending("Azure technician/admin group object IDs are not complete")
@@ -771,6 +784,7 @@ def run_checks() -> None:
     check_playbook_html()
     check_project_log()
     check_readiness_actions()
+    check_readiness_env_prereqs()
     check_sanitize_output()
     check_readiness_output()
     check_readiness_diagnostics()
