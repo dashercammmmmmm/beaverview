@@ -69,6 +69,74 @@ def create_db(path: Path) -> None:
         con.close()
 
 
+def write_readiness_json(path: Path) -> None:
+    path.write_text(
+        "{"
+        '"status": "pass",'
+        '"passed_count": 28,'
+        '"failure_count": 0,'
+        '"pending_count": 2,'
+        f'"pending": ["hardware IP records are not loaded yet", "device at {RAW_IP_SENTINEL} has PASSWORD=secret"],'
+        '"pending_actions": ['
+        '{'
+        '"pending": "hardware IP records are not loaded yet",'
+        f'"action": "Place export containing {RAW_IP_SENTINEL} with PASSWORD=secret in ignored api/hardware_ips.csv",'
+        '"reference": "docs/examples/pilot-inputs-checklist.md#hardware-ip-records"'
+        '}'
+        ']'
+        "}"
+    )
+
+
+def write_candidates_json(path: Path, *, room_id: str = "corvallis-kad-101", connector: str = "xpanel") -> None:
+    path.write_text(
+        "{"
+        '"status": "pass",'
+        f'"connector_filter": "{connector}",'
+        '"hardware_source": "csv",'
+        '"count": 1,'
+        '"candidates": ['
+        '{'
+        f'"room_id": "{room_id}",'
+        '"building_code": "KAd",'
+        '"room_number": "101",'
+        '"status": "available",'
+        '"health": 91,'
+        f'"eligible_connectors": ["{connector}", "crestron_poll"],'
+        f'"hardware_ip_device_types": ["{connector}"],'
+        f'"ignored_raw_ip": "{RAW_IP_SENTINEL}"'
+        '}'
+        ']'
+        "}"
+    )
+
+
+def run_report(db_path: Path, readiness_json: Path, candidates_json: Path, *, room_id: str = "corvallis-kad-101", connector: str = "xpanel") -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["PYTHON_DOTENV_DISABLED"] = "1"
+    env["BEAVERVIEW_DB_PATH"] = str(db_path)
+    env["CRESTRON_PROXY_USERNAME"] = "contract-user"
+    env["CRESTRON_PROXY_PASSWORD"] = SECRET_SENTINEL
+    return subprocess.run(
+        [
+            sys.executable,
+            str(REPORT_SCRIPT),
+            "--room-id",
+            room_id,
+            "--connector",
+            connector,
+            "--readiness-json",
+            str(readiness_json),
+            "--candidates-json",
+            str(candidates_json),
+        ],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+    )
+
+
 def main() -> int:
     if not REPORT_SCRIPT.exists():
         fail("first live-room report renderer is missing")
@@ -76,68 +144,17 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "beaverview.report.db"
         create_db(db_path)
-        env = os.environ.copy()
-        env["PYTHON_DOTENV_DISABLED"] = "1"
-        env["BEAVERVIEW_DB_PATH"] = str(db_path)
-        env["CRESTRON_PROXY_USERNAME"] = "contract-user"
-        env["CRESTRON_PROXY_PASSWORD"] = SECRET_SENTINEL
         readiness_json = Path(tmp) / "readiness.json"
-        readiness_json.write_text(
-            "{"
-            '"status": "pass",'
-            '"passed_count": 28,'
-            '"failure_count": 0,'
-            '"pending_count": 2,'
-            f'"pending": ["hardware IP records are not loaded yet", "device at {RAW_IP_SENTINEL} has PASSWORD=secret"],'
-            '"pending_actions": ['
-            '{'
-            '"pending": "hardware IP records are not loaded yet",'
-            f'"action": "Place export containing {RAW_IP_SENTINEL} with PASSWORD=secret in ignored api/hardware_ips.csv",'
-            '"reference": "docs/examples/pilot-inputs-checklist.md#hardware-ip-records"'
-            '}'
-            ']'
-            "}"
-        )
-        candidates_json = Path(tmp) / "candidates.json"
-        candidates_json.write_text(
-            "{"
-            '"status": "pass",'
-            '"connector_filter": "xpanel",'
-            '"hardware_source": "csv",'
-            '"count": 1,'
-            '"candidates": ['
-            '{'
-            '"room_id": "corvallis-kad-101",'
-            '"building_code": "KAd",'
-            '"room_number": "101",'
-            '"status": "available",'
-            '"health": 91,'
-            '"eligible_connectors": ["xpanel", "crestron_poll"],'
-            '"hardware_ip_device_types": ["xpanel"],'
-            f'"ignored_raw_ip": "{RAW_IP_SENTINEL}"'
-            '}'
-            ']'
-            "}"
-        )
+        write_readiness_json(readiness_json)
 
-        result = subprocess.run(
-            [
-                sys.executable,
-                str(REPORT_SCRIPT),
-                "--room-id",
-                "corvallis-kad-101",
-                "--connector",
-                "xpanel",
-                "--readiness-json",
-                str(readiness_json),
-                "--candidates-json",
-                str(candidates_json),
-            ],
-            cwd=ROOT,
-            env=env,
-            text=True,
-            capture_output=True,
-        )
+        candidates_json = Path(tmp) / "candidates.json"
+        write_candidates_json(candidates_json)
+
+        result = run_report(db_path, readiness_json, candidates_json)
+
+        mismatch_candidates = Path(tmp) / "candidates-mismatch.json"
+        write_candidates_json(mismatch_candidates, room_id="corvallis-kad-999")
+        mismatch_result = run_report(db_path, readiness_json, mismatch_candidates)
 
     expect(result.returncode == 0, f"report renderer exited {result.returncode}: {result.stderr}")
     output = result.stdout
@@ -155,6 +172,7 @@ def main() -> int:
         "Pending next actions",
         "Place export containing <redacted-ip> with PASSWORD=<redacted> in ignored api/hardware_ips.csv",
         "Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`",
+        "selected room/connector appears in the candidate snapshot",
         "scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
         "scripts/check_hardware_ip_import.sh",
@@ -164,6 +182,15 @@ def main() -> int:
     )
     missing = [term for term in required_terms if term not in output]
     expect(not missing, "report renderer output is missing terms: " + ", ".join(missing))
+
+    expect(mismatch_result.returncode == 0, f"mismatch report renderer exited {mismatch_result.returncode}: {mismatch_result.stderr}")
+    mismatch_output = mismatch_result.stdout
+    expect("Go/no-go: `NO-GO`" in mismatch_output, "candidate mismatch should force no-go")
+    expect(
+        "selected room and connector are not present in the candidate snapshot" in mismatch_output,
+        "candidate mismatch no-go reason is missing",
+    )
+    expect(RAW_IP_SENTINEL not in mismatch_output, "candidate mismatch output leaked a raw IP address")
 
     print("First live-room report renderer verified")
     return 0

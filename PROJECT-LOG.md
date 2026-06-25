@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room decision candidate match
+
+- Tightened `scripts/render_first_live_room_report.py` so a `GO FOR FIRST CONNECTOR VALIDATION` decision now requires the selected room and connector to appear in the attached candidate snapshot.
+- Updated `scripts/check_first_live_room_report.py` to cover both the matching candidate pass path and a mismatched candidate no-go path without leaking raw IP data.
+
+### Next
+
+- Treat a missing or mismatched candidate snapshot as a private-report no-go until the candidate shortlist is regenerated from the same inventory and Hardware IP preview used for selection.
+
 ## 2026-06-24 - First live-room report candidate snapshot
 
 - Extended `scripts/render_first_live_room_report.py` with `--candidates-json` so private first-live reports can preserve the sanitized candidate shortlist used for room selection.

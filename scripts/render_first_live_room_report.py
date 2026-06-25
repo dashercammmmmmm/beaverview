@@ -165,18 +165,51 @@ def readiness_is_pass(snapshot: dict[str, Any] | None) -> bool:
         return False
 
 
-def decision_lines(preflight: dict[str, Any], snapshot: dict[str, Any] | None) -> list[str]:
+def candidate_matches_selection(snapshot: dict[str, Any] | None, selected_room: str, selected_connector: str) -> bool:
+    if snapshot is None:
+        return False
+    if snapshot.get("status") != "pass":
+        return False
+    candidates = snapshot.get("candidates")
+    if not isinstance(candidates, list):
+        return False
+
+    normalized_room = selected_room.strip().lower()
+    normalized_connector = selected_connector.strip().lower()
+    for item in candidates:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("room_id", "")).strip().lower() != normalized_room:
+            continue
+        connectors = item.get("eligible_connectors")
+        if normalized_connector and isinstance(connectors, list):
+            return normalized_connector in {str(value).strip().lower() for value in connectors}
+        return True
+    return False
+
+
+def decision_lines(
+    preflight: dict[str, Any],
+    readiness_snapshot: dict[str, Any] | None,
+    candidates_snapshot: dict[str, Any] | None,
+    selected_room: str,
+    selected_connector: str,
+) -> list[str]:
     reasons: list[str] = []
     if preflight.get("status") != "pass":
         reasons.append(f"selected-room preflight is {safe_text(preflight.get('status'), 'unknown')}")
-    if snapshot is None:
+    if readiness_snapshot is None:
         reasons.append("readiness JSON snapshot is not attached")
-    elif not readiness_is_pass(snapshot):
+    elif not readiness_is_pass(readiness_snapshot):
         reasons.append(
             "pilot readiness is "
-            f"{safe_text(snapshot.get('status'), 'unknown')} with "
-            f"{safe_text(snapshot.get('failure_count'), 'unknown')} local failure(s)"
+            f"{safe_text(readiness_snapshot.get('status'), 'unknown')} with "
+            f"{safe_text(readiness_snapshot.get('failure_count'), 'unknown')} local failure(s)"
         )
+    if candidates_snapshot is None:
+        reasons.append("candidate JSON snapshot is not attached")
+    elif not candidate_matches_selection(candidates_snapshot, selected_room, selected_connector):
+        reasons.append("selected room and connector are not present in the candidate snapshot")
 
     if reasons:
         return [
@@ -189,7 +222,7 @@ def decision_lines(preflight: dict[str, Any], snapshot: dict[str, Any] | None) -
         "## Decision",
         "",
         "- Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`",
-        "- Reason: selected-room preflight is `pass` and pilot readiness has zero local failures.",
+        "- Reason: selected-room preflight is `pass`, pilot readiness has zero local failures, and the selected room/connector appears in the candidate snapshot.",
     ]
 
 
@@ -223,7 +256,7 @@ def render_report(room_id: str, connector: str, readiness_json: str = "", candid
         "",
         *readiness_lines(readiness_snapshot),
         "",
-        *decision_lines(preflight, readiness_snapshot),
+        *decision_lines(preflight, readiness_snapshot, candidates_snapshot, str(selected_room), str(selected_connector)),
         "",
         "## Required Commands",
         "",
