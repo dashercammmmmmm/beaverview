@@ -27,6 +27,16 @@ def expect(condition: bool, message: str) -> None:
         fail(message)
 
 
+def expect_order(text: str, first: str, second: str) -> None:
+    first_index = text.find(first)
+    second_index = text.find(second)
+    if first_index == -1 or second_index == -1:
+        missing = first if first_index == -1 else second
+        fail(f"report renderer output is missing ordered term: {missing}")
+    if first_index > second_index:
+        fail(f"report renderer output must list {first!r} before {second!r}")
+
+
 def create_db(path: Path) -> None:
     con = sqlite3.connect(path)
     try:
@@ -182,12 +192,25 @@ def main() -> int:
         "scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
         "scripts/check_hardware_ip_import.sh",
+        "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)",
         "Required Private Evidence",
         "admin audit log row",
         "PROJECT-LOG.md",
     )
     missing = [term for term in required_terms if term not in output]
     expect(not missing, "report renderer output is missing terms: " + ", ".join(missing))
+    expect_order(output, "scripts/check_hardware_ip_import.sh", "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)")
+    expect_order(output, "(cd api && venv/bin/python import_device_ips.py hardware_ips.csv)", "scripts/check_first_live_room_preflight.py")
+    expect_order(
+        output,
+        "scripts/check_first_live_room_preflight.py",
+        "scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json",
+    )
+    expect_order(
+        output,
+        "scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json",
+        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
+    )
 
     expect(mismatch_result.returncode == 0, f"mismatch report renderer exited {mismatch_result.returncode}: {mismatch_result.stderr}")
     mismatch_output = mismatch_result.stdout

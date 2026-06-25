@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First-live report command ordering
+
+- Updated the private first live-room report template so its Required Commands section validates and imports Hardware IP rows before selected-room preflight and candidate JSON generation.
+- Strengthened `scripts/check_first_live_room_report.py` to verify the required command order inside rendered reports.
+
+### Next
+
+- Keep generated private report commands aligned with `docs/examples/first-live-room-validation.md` whenever the first-live operator sequence changes.
+
 ## 2026-06-24 - Hardware IP validation output guard
 
 - Extended `scripts/check_hardware_ip_import.sh` with a reusable raw-IPv4 output assertion.
