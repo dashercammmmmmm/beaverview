@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Pilot intake packet renderer
+
+- Added `scripts/render_pilot_intake_packet.py` to render a sanitized OSU input-request packet from current pilot-readiness JSON.
+- Added `scripts/check_pilot_intake_packet.py` to verify the packet covers all canonical readiness pending actions and redacts raw IP and secret-shaped values.
+- Wired the intake packet validator into pilot readiness and the pilot inputs checklist final verification sequence.
+
+### Next
+
+- Use the generated intake packet when requesting remaining OSU/VM inputs so the handoff stays aligned with readiness pending actions.
+
 ## 2026-06-25 - First-live preflight output redaction
 
 - Updated `scripts/check_first_live_room_preflight.py` so text and JSON output sanitize messages, details, and candidate-list fields before printing.

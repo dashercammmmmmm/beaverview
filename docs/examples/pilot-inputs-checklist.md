@@ -12,6 +12,8 @@ For a handoff report with next actions for each remaining external input, run:
 
 ```bash
 python3 scripts/check_pilot_readiness.py --markdown
+python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json
+scripts/render_pilot_intake_packet.py --readiness-json /tmp/beaverview-readiness.json
 ```
 
 ## Local Secret Baseline
@@ -265,6 +267,7 @@ scripts/check_admin_browser.sh
 python3 scripts/check_env_template.py
 python3 scripts/check_init_local_env.py
 python3 scripts/check_pilot_inputs_doc.py
+python3 scripts/check_pilot_intake_packet.py
 python3 scripts/check_playbook_html.py
 python3 scripts/check_project_log.py
 python3 scripts/check_readiness_actions.py

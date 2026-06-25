@@ -57,6 +57,7 @@ INIT_LOCAL_ENV_SCRIPT = ROOT / "scripts" / "check_init_local_env.py"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
+PILOT_INTAKE_PACKET_SCRIPT = ROOT / "scripts" / "check_pilot_intake_packet.py"
 PLAYBOOK_HTML_SCRIPT = ROOT / "scripts" / "check_playbook_html.py"
 PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 PROJECT_LOG_SCRIPT = ROOT / "scripts" / "check_project_log.py"
@@ -448,6 +449,18 @@ def check_pilot_inputs_doc() -> None:
         fail_with_result("pilot input checklist validation failed", result)
 
 
+def check_pilot_intake_packet() -> None:
+    if not PILOT_INTAKE_PACKET_SCRIPT.exists():
+        fail("pilot intake packet validator is missing")
+        return
+
+    result = run([sys.executable, str(PILOT_INTAKE_PACKET_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("pilot intake packet covers readiness handoff actions")
+    else:
+        fail_with_result("pilot intake packet validation failed", result)
+
+
 def check_playbook_html() -> None:
     if not PLAYBOOK_HTML_SCRIPT.exists():
         fail("playbook HTML validator is missing")
@@ -754,6 +767,7 @@ def run_checks() -> None:
     check_env_template()
     check_init_local_env()
     check_pilot_inputs_doc()
+    check_pilot_intake_packet()
     check_playbook_html()
     check_project_log()
     check_readiness_actions()
