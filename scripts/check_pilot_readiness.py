@@ -18,6 +18,7 @@ import sqlite3
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 from sanitize_output import redact_line
 
@@ -673,8 +674,18 @@ def cors_origins_are_restricted(value: str | None) -> bool:
     return all(origin.startswith("https://") for origin in origins)
 
 
+def is_url_with_scheme(value: str | None, allowed_schemes: set[str]) -> bool:
+    if not is_configured(value):
+        return False
+    cleaned = value.strip()
+    if any(character.isspace() for character in cleaned):
+        return False
+    parsed = urlparse(cleaned)
+    return parsed.scheme.lower() in allowed_schemes and bool(parsed.netloc)
+
+
 def is_https_url(value: str | None) -> bool:
-    return is_configured(value) and value.strip().lower().startswith("https://")
+    return is_url_with_scheme(value, {"https"})
 
 
 def servicenow_instance_is_host(value: str | None) -> bool:
@@ -779,7 +790,10 @@ def check_env_prereqs() -> None:
             pending(f"{label} is not configured")
 
     if is_configured(env.get("CHAT_BASE_URL")):
-        pass_("Hermes chat base URL is configured")
+        if is_url_with_scheme(env.get("CHAT_BASE_URL"), {"http", "https"}):
+            pass_("Hermes chat base URL is configured")
+        else:
+            fail("Hermes chat base URL must be an http or https URL")
     else:
         pending("Hermes chat base URL is not configured")
 

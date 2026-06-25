@@ -232,6 +232,11 @@ Required `api/.env` value:
 
 - `CHAT_BASE_URL`
 
+Required URL shape:
+
+- Must start with `http://` or `https://`
+- Must include a host name
+
 Optional `api/.env` values:
 
 - `CHAT_MODEL`

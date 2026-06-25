@@ -88,6 +88,8 @@ REQUIRED_TERMS = (
     "LIVE25_PASSWORD",
     "SHAREPOINT_BASE_URL",
     "CHAT_BASE_URL",
+    "Must start with `http://` or `https://`",
+    "Must include a host name",
     "SN_INSTANCE",
     "Host name only",
     "Do not include `https://` or a path",

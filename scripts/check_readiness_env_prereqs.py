@@ -111,15 +111,33 @@ def main() -> int:
 
         malformed_cases = {
             "live25-http.env": ("LIVE25_BASE_URL", "http://25live.example.edu", "25Live base URL must use https"),
+            "live25-empty-host.env": ("LIVE25_BASE_URL", "https://", "25Live base URL must use https"),
+            "live25-whitespace.env": (
+                "LIVE25_BASE_URL",
+                "https://25live.example.edu/pilot path",
+                "25Live base URL must use https",
+            ),
             "screenconnect-http.env": (
                 "SC_BASE_URL",
                 "http://screenconnect.example.edu",
                 "ScreenConnect base URL must use https",
             ),
+            "screenconnect-empty-host.env": ("SC_BASE_URL", "https://", "ScreenConnect base URL must use https"),
             "sharepoint-http.env": (
                 "SHAREPOINT_BASE_URL",
                 "http://sharepoint.example.edu/sites/AVSupport",
                 "SharePoint base URL must use https",
+            ),
+            "sharepoint-empty-host.env": ("SHAREPOINT_BASE_URL", "https://", "SharePoint base URL must use https"),
+            "chat-missing-scheme.env": (
+                "CHAT_BASE_URL",
+                "localhost:8080",
+                "Hermes chat base URL must be an http or https URL",
+            ),
+            "chat-empty-host.env": (
+                "CHAT_BASE_URL",
+                "http://",
+                "Hermes chat base URL must be an http or https URL",
             ),
             "servicenow-scheme.env": (
                 "SN_INSTANCE",

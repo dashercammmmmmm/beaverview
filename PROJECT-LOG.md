@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Parsed external URL readiness guard
+
+- Updated `scripts/check_pilot_readiness.py` to parse configured external URLs and reject missing hosts or whitespace instead of relying on scheme prefixes only.
+- Added Hermes `CHAT_BASE_URL` shape validation so configured chat endpoints must be real `http://` or `https://` URLs with a host.
+- Extended `scripts/check_readiness_env_prereqs.py` and the pilot inputs checklist to cover malformed URL edge cases.
+
+### Next
+
+- Keep any new URL-like pilot input behind parsed URL validation so malformed configured values fail locally instead of looking pilot-ready.
+
 ## 2026-06-25 - External URL shape readiness guard
 
 - Updated `scripts/check_pilot_readiness.py` so 25Live, ScreenConnect, and SharePoint configured URLs must use `https://` before they can clear readiness.
