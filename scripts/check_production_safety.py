@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 API_MAIN = ROOT / "api" / "main.py"
+ENV_EXAMPLE = ROOT / "api" / ".env.example"
 APP_JS = ROOT / "dashboard" / "app.js"
 INDEX_HTML = ROOT / "dashboard" / "index.html"
 PLAYBOOK = ROOT / "PLAYBOOK-DEPLOYMENT.md"
@@ -33,6 +34,7 @@ def read(path: Path) -> str:
 
 def main() -> int:
     api_main = read(API_MAIN)
+    env_example = read(ENV_EXAMPLE)
     app_js = read(APP_JS)
     index_html = read(INDEX_HTML)
     playbook = read(PLAYBOOK)
@@ -48,6 +50,14 @@ def main() -> int:
     expect(
         'allow_origins=["*"]' not in api_main,
         "api/main.py still hardcodes wildcard CORS origins",
+    )
+    expect(
+        "BEAVERVIEW_DB_PATH" not in env_example,
+        "api/.env.example must not document the test-only BEAVERVIEW_DB_PATH override",
+    )
+    expect(
+        "BEAVERVIEW_DB_PATH" not in playbook,
+        "deployment playbook must not use the test-only BEAVERVIEW_DB_PATH override",
     )
 
     dev_helper_guard = re.search(

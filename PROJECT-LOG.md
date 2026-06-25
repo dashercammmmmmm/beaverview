@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Test-only DB override production guard
+
+- Strengthened `scripts/check_production_safety.py` so `BEAVERVIEW_DB_PATH` remains a test-only override and is not documented in `api/.env.example` or the deployment playbook.
+- Kept the API contract isolation support while preventing that temporary database override from becoming a pilot deployment input.
+
+### Next
+
+- Keep local validator-only environment variables out of OSU handoff material unless they are explicitly approved as deployment settings.
+
 ## 2026-06-25 - API contract DB isolation
 
 - Updated `api/main.py` to honor `BEAVERVIEW_DB_PATH` so local validators can run against isolated SQLite copies.
