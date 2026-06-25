@@ -28,6 +28,18 @@ def code(value: Any, fallback: str = "not selected") -> str:
     return f"`{text}`"
 
 
+def normalize_connector(value: Any) -> str:
+    normalized = str(value or "").strip().lower().replace("-", "_")
+    aliases = {
+        "live25": "25live",
+        "25_live": "25live",
+        "crestron": "crestron_poll",
+        "crestron_polling": "crestron_poll",
+        "service_now": "servicenow",
+    }
+    return aliases.get(normalized, normalized)
+
+
 def run_preflight(room_id: str, connector: str) -> tuple[int, dict[str, Any]]:
     cmd = [sys.executable, str(PREFLIGHT_SCRIPT), "--json"]
     if room_id:
@@ -175,7 +187,7 @@ def candidate_matches_selection(snapshot: dict[str, Any] | None, selected_room: 
         return False
 
     normalized_room = selected_room.strip().lower()
-    normalized_connector = selected_connector.strip().lower()
+    normalized_connector = normalize_connector(selected_connector)
     for item in candidates:
         if not isinstance(item, dict):
             continue
@@ -232,7 +244,7 @@ def render_report(room_id: str, connector: str, readiness_json: str = "", candid
     candidates_snapshot = load_candidates_snapshot(candidates_json)
     details = preflight.get("details") if isinstance(preflight.get("details"), dict) else {}
     selected_room = room_id or details.get("room_id") or "not selected"
-    selected_connector = connector or details.get("connector") or "not selected"
+    selected_connector = normalize_connector(connector or details.get("connector")) or "not selected"
     generated_at = datetime.now(UTC).replace(microsecond=0).isoformat()
 
     lines = [

@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room report connector aliases
+
+- Updated `scripts/render_first_live_room_report.py` to normalize first-connector aliases before displaying the selection and matching it against the attached candidate snapshot.
+- Extended `scripts/check_first_live_room_report.py` to verify `crestron` correctly matches a `crestron_poll` candidate without leaking raw Hardware IP data.
+
+### Next
+
+- Keep report connector alias handling aligned with `scripts/check_first_live_room_preflight.py` whenever new first connector names or aliases are added.
+
 ## 2026-06-24 - First live-room decision candidate match
 
 - Tightened `scripts/render_first_live_room_report.py` so a `GO FOR FIRST CONNECTOR VALIDATION` decision now requires the selected room and connector to appear in the attached candidate snapshot.

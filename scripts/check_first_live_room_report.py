@@ -117,6 +117,8 @@ def run_report(db_path: Path, readiness_json: Path, candidates_json: Path, *, ro
     env["BEAVERVIEW_DB_PATH"] = str(db_path)
     env["CRESTRON_PROXY_USERNAME"] = "contract-user"
     env["CRESTRON_PROXY_PASSWORD"] = SECRET_SENTINEL
+    env["CRESTRON_POLL_USERNAME"] = "contract-user"
+    env["CRESTRON_POLL_PASSWORD"] = SECRET_SENTINEL
     return subprocess.run(
         [
             sys.executable,
@@ -156,6 +158,10 @@ def main() -> int:
         write_candidates_json(mismatch_candidates, room_id="corvallis-kad-999")
         mismatch_result = run_report(db_path, readiness_json, mismatch_candidates)
 
+        alias_candidates = Path(tmp) / "candidates-alias.json"
+        write_candidates_json(alias_candidates, connector="crestron_poll")
+        alias_result = run_report(db_path, readiness_json, alias_candidates, connector="crestron")
+
     expect(result.returncode == 0, f"report renderer exited {result.returncode}: {result.stderr}")
     output = result.stdout
     expect(RAW_IP_SENTINEL not in output, "report renderer leaked a raw IP address")
@@ -191,6 +197,12 @@ def main() -> int:
         "candidate mismatch no-go reason is missing",
     )
     expect(RAW_IP_SENTINEL not in mismatch_output, "candidate mismatch output leaked a raw IP address")
+
+    expect(alias_result.returncode == 0, f"alias report renderer exited {alias_result.returncode}: {alias_result.stderr}")
+    alias_output = alias_result.stdout
+    expect("First connector: `crestron_poll`" in alias_output, "connector alias should be normalized in report output")
+    expect("Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`" in alias_output, "connector alias should match normalized candidate")
+    expect(RAW_IP_SENTINEL not in alias_output, "connector alias output leaked a raw IP address")
 
     print("First live-room report renderer verified")
     return 0
