@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from first_live_connectors import normalize_connector
+from sanitize_output import redact_line
 
 ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
@@ -115,12 +116,31 @@ def has_key_set(env: dict[str, str], keys: tuple[str, ...]) -> bool:
     return all(is_configured(env.get(key)) for key in keys)
 
 
+def safe_text(value: Any) -> str:
+    return redact_line(str(value))
+
+
+def sanitized_json(value: Any) -> Any:
+    if isinstance(value, str):
+        return safe_text(value)
+    if isinstance(value, list):
+        return [sanitized_json(item) for item in value]
+    if isinstance(value, dict):
+        return {safe_text(key): sanitized_json(item) for key, item in value.items()}
+    return value
+
+
 def emit(status: str, message: str, *, details: dict[str, Any] | None = None, as_json: bool = False) -> int:
     code = 0 if status == "pass" else 2 if status == "pending" else 1
+    payload = {
+        "status": status,
+        "message": safe_text(message),
+        "details": sanitized_json(details or {}),
+    }
     if as_json:
-        print(json.dumps({"status": status, "message": message, "details": details or {}}, indent=2, sort_keys=True))
+        print(json.dumps(payload, indent=2, sort_keys=True))
     else:
-        print(f"{status.upper()} {message}")
+        print(f"{status.upper()} {payload['message']}")
     return code
 
 
@@ -271,7 +291,7 @@ def list_candidates(
         "candidates": candidates,
     }
     if as_json:
-        print(json.dumps(payload, indent=2, sort_keys=True))
+        print(json.dumps(sanitized_json(payload), indent=2, sort_keys=True))
     else:
         print("PASS first live-room candidates listed")
         if not candidates:
@@ -279,9 +299,9 @@ def list_candidates(
         for item in candidates:
             scope = f" for {connector_filter}" if connector_filter else ""
             print(
-                f"- {item['room_id']} ({item['building_code']} {item['room_number']}): "
-                f"{item['status']}, health {item['health']}, "
-                f"connectors{scope}: {', '.join(item['eligible_connectors'])}"
+                f"- {safe_text(item['room_id'])} ({safe_text(item['building_code'])} {safe_text(item['room_number'])}): "
+                f"{safe_text(item['status'])}, health {safe_text(item['health'])}, "
+                f"connectors{scope}: {safe_text(', '.join(item['eligible_connectors']))}"
             )
     return 0
 

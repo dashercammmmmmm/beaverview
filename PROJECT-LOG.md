@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - First-live preflight output redaction
+
+- Updated `scripts/check_first_live_room_preflight.py` so text and JSON output sanitize messages, details, and candidate-list fields before printing.
+- Extended `scripts/check_first_live_room_preflight_cases.py` with raw-IP and secret-shaped input cases for selected-room and connector output.
+
+### Next
+
+- Keep first-live preflight output sanitized whenever new selected-room, connector, candidate, or Hardware CSV preview fields are added.
+
 ## 2026-06-25 - Readiness handoff output redaction
 
 - Updated readiness text and Markdown rendering to pass displayed passed, pending, failure, pending-action, and reference strings through the shared output sanitizer.

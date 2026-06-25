@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
 RAW_IP_SENTINEL = "10.77.1.25"
+SECRET_SENTINEL = "super-secret-value"
 
 
 def fail(message: str) -> None:
@@ -110,6 +111,8 @@ def run_case(db_path: Path, *args: str, env_extra: dict[str, str] | None = None)
     )
     expect(RAW_IP_SENTINEL not in result.stdout, "preflight stdout leaked a raw IP address")
     expect(RAW_IP_SENTINEL not in result.stderr, "preflight stderr leaked a raw IP address")
+    expect(SECRET_SENTINEL not in result.stdout, "preflight stdout leaked a secret-like value")
+    expect(SECRET_SENTINEL not in result.stderr, "preflight stderr leaked a secret-like value")
     try:
         payload = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
@@ -154,6 +157,11 @@ def expect_candidate_list(db_path: Path) -> None:
     code, payload = run_case(db_path, "--list-candidates", "--connector", "not-a-connector")
     expect(code == 1, f"invalid connector candidate filter returned exit {code}: {payload}")
     expect(payload.get("status") == "fail", f"invalid connector candidate filter should fail: {payload}")
+
+    code, payload = run_case(db_path, "--list-candidates", "--connector", f"CLIENT_SECRET={SECRET_SENTINEL}")
+    expect(code == 1, f"secret-shaped connector candidate filter returned exit {code}: {payload}")
+    expect(payload.get("status") == "fail", f"secret-shaped connector candidate filter should fail: {payload}")
+    expect(SECRET_SENTINEL not in json.dumps(payload), "candidate filter output leaked a secret-like connector value")
 
 
 def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
@@ -237,6 +245,35 @@ def expect_hardware_csv_preview(db_path: Path, csv_path: Path) -> None:
     expect("invalid IP address" in payload.get("message", ""), f"invalid-IP preview message changed: {payload}")
 
 
+def expect_sanitized_preflight_output(db_path: Path) -> None:
+    code, payload = run_case(db_path, "--room-id", RAW_IP_SENTINEL, "--connector", "xpanel")
+    expect(code == 1, f"raw-IP room preflight returned exit {code}: {payload}")
+    serialized = json.dumps(payload)
+    expect(RAW_IP_SENTINEL not in serialized, f"raw-IP room preflight leaked a raw IP address: {payload}")
+    expect("<redacted-ip>" in serialized, f"raw-IP room preflight did not redact the room value: {payload}")
+
+    code, payload = run_case(db_path, "--room-id", "corvallis-kad-101", "--connector", f"CLIENT_SECRET={SECRET_SENTINEL}")
+    expect(code == 1, f"secret-shaped connector preflight returned exit {code}: {payload}")
+    serialized = json.dumps(payload)
+    expect(SECRET_SENTINEL not in serialized, f"secret-shaped connector preflight leaked a secret value: {payload}")
+    expect("<redacted>" in serialized, f"secret-shaped connector preflight did not redact the connector value: {payload}")
+
+    env = os.environ.copy()
+    env["PYTHON_DOTENV_DISABLED"] = "1"
+    env["BEAVERVIEW_DB_PATH"] = str(db_path)
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--room-id", RAW_IP_SENTINEL, "--connector", "xpanel"],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+    )
+    expect(result.returncode == 1, f"text preflight returned exit {result.returncode}: {result.stdout}")
+    expect(RAW_IP_SENTINEL not in result.stdout, "text preflight stdout leaked a raw IP address")
+    expect(RAW_IP_SENTINEL not in result.stderr, "text preflight stderr leaked a raw IP address")
+    expect("<redacted-ip>" in result.stdout, f"text preflight did not redact raw IP output: {result.stdout}")
+
+
 def main() -> int:
     if not SCRIPT.exists():
         fail("first live-room preflight script is missing")
@@ -271,6 +308,7 @@ def main() -> int:
         )
         expect_candidate_list(db_path)
         expect_hardware_csv_preview(db_path, Path(tmp) / "hardware_ips.preview.csv")
+        expect_sanitized_preflight_output(db_path)
 
         duplicate_db = Path(tmp) / "beaverview.duplicate.db"
         create_db(duplicate_db, duplicate=True)
