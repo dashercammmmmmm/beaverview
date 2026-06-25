@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from first_live_connectors import normalize_connector
+
 
 ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
@@ -282,18 +284,6 @@ def list_candidates(
                 f"connectors{scope}: {', '.join(item['eligible_connectors'])}"
             )
     return 0
-
-
-def normalize_connector(value: str) -> str:
-    normalized = value.strip().lower().replace("-", "_")
-    aliases = {
-        "live25": "25live",
-        "25_live": "25live",
-        "crestron": "crestron_poll",
-        "crestron_polling": "crestron_poll",
-        "service_now": "servicenow",
-    }
-    return aliases.get(normalized, normalized)
 
 
 def main() -> int:

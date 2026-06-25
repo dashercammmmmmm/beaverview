@@ -47,6 +47,7 @@ ADMIN_BROWSER_SMOKE_SCRIPT = ROOT / "scripts" / "check_admin_browser.sh"
 DATA_MIGRATION_SCRIPT = ROOT / "scripts" / "check_data_migration.sh"
 DEPLOYMENT_PLAYBOOK_SCRIPT = ROOT / "scripts" / "check_deployment_playbook.py"
 ENV_TEMPLATE_SCRIPT = ROOT / "scripts" / "check_env_template.py"
+FIRST_LIVE_CONNECTORS_SCRIPT = ROOT / "scripts" / "check_first_live_connectors.py"
 FIRST_LIVE_ROOM_CASES_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight_cases.py"
 FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
 FIRST_LIVE_ROOM_REPORT_SCRIPT = ROOT / "scripts" / "check_first_live_room_report.py"
@@ -474,6 +475,18 @@ def check_live_validation_doc() -> None:
         fail_with_result("first live-room validation runbook validation failed", result)
 
 
+def check_first_live_connectors() -> None:
+    if not FIRST_LIVE_CONNECTORS_SCRIPT.exists():
+        fail("first live-room connector alias validator is missing")
+        return
+
+    result = run([sys.executable, str(FIRST_LIVE_CONNECTORS_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("first live-room connector aliases validate")
+    else:
+        fail_with_result("first live-room connector alias validation failed", result)
+
+
 def check_first_live_room_preflight(env: dict[str, str]) -> None:
     if not FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT.exists():
         fail("first live-room preflight validator is missing")
@@ -675,6 +688,7 @@ def run_checks() -> None:
     check_readiness_diagnostics()
     check_production_safety()
     check_live_validation_doc()
+    check_first_live_connectors()
     check_first_live_room_preflight_cases()
     check_first_live_room_report()
     check_env_prereqs()

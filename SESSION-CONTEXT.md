@@ -328,6 +328,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `api/.env.example` documents `FIRST_LIVE_ROOM_ID` and `FIRST_LIVE_CONNECTOR` for the first non-critical room validation target.
 - `scripts/check_first_live_room_preflight.py --list-candidates` lists sanitized candidate rooms and connector hints before OSU selects the target; add `--connector <name>` for a connector-specific shortlist and `--hardware-csv api/hardware_ips.csv` for a no-raw-IP preview from the validated secure CSV.
 - `scripts/check_first_live_room_preflight.py` checks the selected room exists, the connector is allowlisted, required credential keys are present, and any device-backed connector has exactly one matching `device_ips` row.
+- `scripts/first_live_connectors.py` owns connector alias normalization for both preflight and report rendering; `scripts/check_first_live_connectors.py` validates those aliases in pilot readiness.
 - The script exits `0` for pass, `2` for pending external prerequisites, and `1` for local/configuration failures; it does not print secrets or raw IPs.
 - `scripts/check_pilot_readiness.py` reports the target as pending until those two `.env` values are set.
 - `scripts/check_first_live_room_preflight_cases.py` validates pass/pending/fail behavior against a temporary SQLite DB using the test-only `BEAVERVIEW_DB_PATH` override, without touching ignored local project data.

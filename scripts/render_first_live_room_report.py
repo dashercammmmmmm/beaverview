@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from first_live_connectors import normalize_connector
 from sanitize_output import redact_line
 
 
@@ -26,18 +27,6 @@ def safe_text(value: Any, fallback: str = "not selected") -> str:
 def code(value: Any, fallback: str = "not selected") -> str:
     text = safe_text(value, fallback).replace("`", "'")
     return f"`{text}`"
-
-
-def normalize_connector(value: Any) -> str:
-    normalized = str(value or "").strip().lower().replace("-", "_")
-    aliases = {
-        "live25": "25live",
-        "25_live": "25live",
-        "crestron": "crestron_poll",
-        "crestron_polling": "crestron_poll",
-        "service_now": "servicenow",
-    }
-    return aliases.get(normalized, normalized)
 
 
 def run_preflight(room_id: str, connector: str) -> tuple[int, dict[str, Any]]:

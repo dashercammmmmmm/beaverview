@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Shared first-live connector aliases
+
+- Added `scripts/first_live_connectors.py` as the shared first live-room connector alias normalizer.
+- Updated first live-room preflight and report rendering to use the same alias helper before validation, display, and candidate matching.
+- Added `scripts/check_first_live_connectors.py` and wired it into pilot readiness.
+
+### Next
+
+- Add future first-live connector aliases only through `scripts/first_live_connectors.py` so preflight and reports stay aligned.
+
 ## 2026-06-24 - First live-room report connector aliases
 
 - Updated `scripts/render_first_live_room_report.py` to normalize first-connector aliases before displaying the selection and matching it against the attached candidate snapshot.
