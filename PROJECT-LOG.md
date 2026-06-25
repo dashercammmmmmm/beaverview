@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Hardware IP validation output guard
+
+- Extended `scripts/check_hardware_ip_import.sh` with a reusable raw-IPv4 output assertion.
+- The Hardware IP check now verifies successful sample dry-runs, real ignored CSV dry-runs, duplicate mapping failures, and public-IP failures do not print raw IP values.
+- Updated handoff notes to document the stronger no-raw-IP validation boundary.
+
+### Next
+
+- Keep new Hardware IP validation messages row/count based; do not echo device addresses in success or error output.
+
 ## 2026-06-24 - First-live hardware import ordering
 
 - Updated the first live-room validation runbook so validated Hardware IP rows are imported before selected-room preflight and report rendering.
