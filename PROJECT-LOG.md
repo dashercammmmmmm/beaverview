@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Shared Hardware IP CSV validator
+
+- Added `scripts/check_hardware_ip_csv.py` to directly validate the shared `api/hardware_ip_csv.py` parser and error behavior.
+- Wired the focused shared CSV validator into pilot readiness before the import smoke check.
+- Covered valid rows, device counts, duplicate mappings, blank fields, missing columns, invalid IPs, public-IP review behavior, and non-proxyable IPs without printing raw addresses.
+
+### Next
+
+- Run `scripts/check_hardware_ip_csv.py` after changing shared CSV parsing rules, then run the import and first-live preflight validators.
+
 ## 2026-06-24 - Shared Hardware IP CSV validation
 
 - Added `api/hardware_ip_csv.py` as the shared parser and validator for Hardware IP CSV rows.

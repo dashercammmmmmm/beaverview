@@ -73,7 +73,7 @@ Run this after changing `api/import_device_ips.py`, `docs/examples/hardware_ips.
 scripts/check_hardware_ip_import.sh
 ```
 
-It dry-runs the committed sample and dry-runs the real ignored CSV if present, without replacing `device_ips`. It also verifies that sample, real, duplicate-mapping, and unreviewed-public-IP validation output does not print raw IP values. Hardware IP CSV parsing and row validation live in `api/hardware_ip_csv.py`, shared by import and first-live preview.
+It dry-runs the committed sample and dry-runs the real ignored CSV if present, without replacing `device_ips`. It also verifies that sample, real, duplicate-mapping, and unreviewed-public-IP validation output does not print raw IP values. Hardware IP CSV parsing and row validation live in `api/hardware_ip_csv.py`, shared by import and first-live preview; `scripts/check_hardware_ip_csv.py` directly validates that shared parser and is part of readiness.
 
 Run this for a broader local readiness snapshot before deployment work:
 

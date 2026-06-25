@@ -52,6 +52,7 @@ FIRST_LIVE_ROOM_CASES_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflig
 FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_preflight.py"
 FIRST_LIVE_ROOM_REPORT_SCRIPT = ROOT / "scripts" / "check_first_live_room_report.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
+HARDWARE_IP_CSV_SCRIPT = ROOT / "scripts" / "check_hardware_ip_csv.py"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
@@ -310,6 +311,18 @@ def check_hardware_ip_import() -> None:
         pass_("hardware IP import validation passes")
     else:
         fail_with_result("hardware IP import validation failed", result)
+
+
+def check_hardware_ip_csv() -> None:
+    if not HARDWARE_IP_CSV_SCRIPT.exists():
+        fail("shared Hardware IP CSV validator is missing")
+        return
+
+    result = run([sys.executable, str(HARDWARE_IP_CSV_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("shared Hardware IP CSV validation rules pass")
+    else:
+        fail_with_result("shared Hardware IP CSV validation failed", result)
 
 
 def check_deployment_assets() -> None:
@@ -674,6 +687,7 @@ def run_checks() -> None:
     check_python_env()
     check_data_migration()
     check_db()
+    check_hardware_ip_csv()
     check_hardware_ip_import()
     check_deployment_assets()
     check_deployment_playbook()
