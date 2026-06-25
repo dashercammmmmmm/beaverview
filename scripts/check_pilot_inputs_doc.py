@@ -28,6 +28,7 @@ REQUIRED_TERMS = (
     "FIRST_LIVE_CONNECTOR",
     "scripts/check_first_live_room_preflight.py",
     "scripts/render_first_live_room_report.py",
+    "--candidates-json",
     "--readiness-json",
     "--list-candidates",
     "--connector",

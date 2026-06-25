@@ -98,6 +98,27 @@ def main() -> int:
             ']'
             "}"
         )
+        candidates_json = Path(tmp) / "candidates.json"
+        candidates_json.write_text(
+            "{"
+            '"status": "pass",'
+            '"connector_filter": "xpanel",'
+            '"hardware_source": "csv",'
+            '"count": 1,'
+            '"candidates": ['
+            '{'
+            '"room_id": "corvallis-kad-101",'
+            '"building_code": "KAd",'
+            '"room_number": "101",'
+            '"status": "available",'
+            '"health": 91,'
+            '"eligible_connectors": ["xpanel", "crestron_poll"],'
+            '"hardware_ip_device_types": ["xpanel"],'
+            f'"ignored_raw_ip": "{RAW_IP_SENTINEL}"'
+            '}'
+            ']'
+            "}"
+        )
 
         result = subprocess.run(
             [
@@ -109,6 +130,8 @@ def main() -> int:
                 "xpanel",
                 "--readiness-json",
                 str(readiness_json),
+                "--candidates-json",
+                str(candidates_json),
             ],
             cwd=ROOT,
             env=env,
@@ -122,6 +145,9 @@ def main() -> int:
     expect(SECRET_SENTINEL not in output, "report renderer leaked a credential value")
     required_terms = (
         "# BeaverView First Live-Room Validation Report",
+        "Candidate Snapshot",
+        "Connector filter: `xpanel`",
+        "corvallis-kad-101 (KAd 101): available, health 91, connectors xpanel, crestron_poll, device types xpanel",
         "Preflight status: `pass`",
         "Readiness Snapshot",
         "Status: `pass`",
@@ -130,7 +156,7 @@ def main() -> int:
         "Place export containing <redacted-ip> with PASSWORD=<redacted> in ignored api/hardware_ips.csv",
         "Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`",
         "scripts/check_pilot_readiness.py --markdown",
-        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json",
+        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
         "scripts/check_hardware_ip_import.sh",
         "Required Private Evidence",
         "admin audit log row",

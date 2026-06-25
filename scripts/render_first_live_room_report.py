@@ -47,7 +47,7 @@ def run_preflight(room_id: str, connector: str) -> tuple[int, dict[str, Any]]:
     return result.returncode, payload
 
 
-def load_readiness_snapshot(path: str) -> dict[str, Any] | None:
+def load_json_snapshot(path: str, label: str) -> dict[str, Any] | None:
     if not path:
         return None
     try:
@@ -55,9 +55,17 @@ def load_readiness_snapshot(path: str) -> dict[str, Any] | None:
     except (OSError, json.JSONDecodeError) as exc:
         return {
             "status": "unavailable",
-            "error": f"could not read readiness JSON: {exc}",
+            "error": f"could not read {label} JSON: {exc}",
         }
-    return payload if isinstance(payload, dict) else {"status": "unavailable", "error": "readiness JSON is not an object"}
+    return payload if isinstance(payload, dict) else {"status": "unavailable", "error": f"{label} JSON is not an object"}
+
+
+def load_readiness_snapshot(path: str) -> dict[str, Any] | None:
+    return load_json_snapshot(path, "readiness")
+
+
+def load_candidates_snapshot(path: str) -> dict[str, Any] | None:
+    return load_json_snapshot(path, "candidate")
 
 
 def readiness_lines(snapshot: dict[str, Any] | None) -> list[str]:
@@ -103,6 +111,49 @@ def readiness_lines(snapshot: dict[str, Any] | None) -> list[str]:
     return lines
 
 
+def candidate_lines(snapshot: dict[str, Any] | None) -> list[str]:
+    if snapshot is None:
+        return [
+            "## Candidate Snapshot",
+            "",
+            "- Candidate JSON: `not attached`",
+            "- Attach one with `scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json` and `scripts/render_first_live_room_report.py --candidates-json /tmp/beaverview-candidates.json`.",
+        ]
+
+    lines = [
+        "## Candidate Snapshot",
+        "",
+        f"- Status: {code(snapshot.get('status'), 'unknown')}",
+        f"- Connector filter: {code(snapshot.get('connector_filter'), 'none')}",
+        f"- Hardware source: {code(snapshot.get('hardware_source'), 'unknown')}",
+        f"- Candidate count: {code(snapshot.get('count'), 'unknown')}",
+    ]
+    if snapshot.get("error"):
+        lines.append(f"- Candidate JSON error: {safe_text(snapshot.get('error'), 'unknown error')}")
+
+    candidates = snapshot.get("candidates")
+    if isinstance(candidates, list):
+        lines.extend(["", "Candidates:"])
+        if not candidates:
+            lines.append("- None")
+        for item in candidates[:8]:
+            if not isinstance(item, dict):
+                continue
+            connectors = item.get("eligible_connectors") if isinstance(item.get("eligible_connectors"), list) else []
+            device_types = item.get("hardware_ip_device_types") if isinstance(item.get("hardware_ip_device_types"), list) else []
+            lines.append(
+                "- "
+                f"{safe_text(item.get('room_id'), 'unknown room')} "
+                f"({safe_text(item.get('building_code'), 'unknown building')} "
+                f"{safe_text(item.get('room_number'), 'unknown room number')}): "
+                f"{safe_text(item.get('status'), 'unknown status')}, "
+                f"health {safe_text(item.get('health'), 'unknown')}, "
+                f"connectors {safe_text(', '.join(str(value) for value in connectors), 'none')}, "
+                f"device types {safe_text(', '.join(str(value) for value in device_types), 'none')}"
+            )
+    return lines
+
+
 def readiness_is_pass(snapshot: dict[str, Any] | None) -> bool:
     if snapshot is None:
         return False
@@ -142,9 +193,10 @@ def decision_lines(preflight: dict[str, Any], snapshot: dict[str, Any] | None) -
     ]
 
 
-def render_report(room_id: str, connector: str, readiness_json: str = "") -> str:
+def render_report(room_id: str, connector: str, readiness_json: str = "", candidates_json: str = "") -> str:
     preflight_exit, preflight = run_preflight(room_id, connector)
     readiness_snapshot = load_readiness_snapshot(readiness_json)
+    candidates_snapshot = load_candidates_snapshot(candidates_json)
     details = preflight.get("details") if isinstance(preflight.get("details"), dict) else {}
     selected_room = room_id or details.get("room_id") or "not selected"
     selected_connector = connector or details.get("connector") or "not selected"
@@ -161,6 +213,8 @@ def render_report(room_id: str, connector: str, readiness_json: str = "") -> str
         f"- Room ID: {code(selected_room)}",
         f"- First connector: {code(selected_connector)}",
         "",
+        *candidate_lines(candidates_snapshot),
+        "",
         "## Preflight Result",
         "",
         f"- Preflight status: {code(preflight.get('status'), 'unknown')}",
@@ -176,9 +230,10 @@ def render_report(room_id: str, connector: str, readiness_json: str = "") -> str
         "```bash",
         "python3 scripts/check_pilot_readiness.py --markdown",
         "python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json",
+        "scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json",
         "scripts/check_hardware_ip_import.sh",
         "scripts/check_first_live_room_preflight.py",
-        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json",
+        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json",
         "```",
         "",
         "## Required Private Evidence",
@@ -208,13 +263,17 @@ def main() -> int:
     parser.add_argument("--room-id", help="selected BeaverView room ID; defaults to FIRST_LIVE_ROOM_ID in api/.env")
     parser.add_argument("--connector", help="selected first connector; defaults to FIRST_LIVE_CONNECTOR in api/.env")
     parser.add_argument("--readiness-json", help="optional path to output from python3 scripts/check_pilot_readiness.py --json")
+    parser.add_argument(
+        "--candidates-json",
+        help="optional path to output from scripts/check_first_live_room_preflight.py --list-candidates --json",
+    )
     args = parser.parse_args()
 
     if not PREFLIGHT_SCRIPT.exists():
         print("FAIL first live-room preflight script is missing", file=sys.stderr)
         return 1
 
-    print(render_report(args.room_id or "", args.connector or "", args.readiness_json or ""), end="")
+    print(render_report(args.room_id or "", args.connector or "", args.readiness_json or "", args.candidates_json or ""), end="")
     return 0
 
 

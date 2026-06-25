@@ -106,7 +106,8 @@ Validate the selected room and connector prerequisites:
 ```bash
 scripts/check_first_live_room_preflight.py
 python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json
-scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json
+scripts/check_first_live_room_preflight.py --list-candidates --json > /tmp/beaverview-candidates.json
+scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json --candidates-json /tmp/beaverview-candidates.json
 ```
 
 ## Azure / Entra App

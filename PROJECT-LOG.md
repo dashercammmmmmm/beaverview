@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room report candidate snapshot
+
+- Extended `scripts/render_first_live_room_report.py` with `--candidates-json` so private first-live reports can preserve the sanitized candidate shortlist used for room selection.
+- Updated `scripts/check_first_live_room_report.py` to verify candidate snapshot output while ignoring raw-IP-shaped fields that should never be printed.
+- Updated the pilot input checklist and first live-room validation runbook to save `/tmp/beaverview-candidates.json` before rendering the private report.
+
+### Next
+
+- Generate candidate JSON after the secure Hardware IP preview command when OSU is actively selecting the first target so the private report captures the exact shortlist used for approval.
+
 ## 2026-06-24 - First live-room report pending actions
 
 - Extended `scripts/render_first_live_room_report.py` so attached readiness JSON contributes a sanitized `Pending next actions` section to the private first-live report.
