@@ -24,6 +24,7 @@ Complete these fields in a private deployment note, not in this committed file:
 - Ignored `api/hardware_ips.csv` contains the selected room and the first connector device type.
 - Ignored `api/hardware_ips.csv` has exactly one row for each selected `room_id` / `device_type` pair.
 - Device IP rows are private or link-local unless public addressing has been explicitly reviewed and `--allow-public` is intentionally used.
+- Hardware CSV preview and import both use `api/hardware_ip_csv.py`, reject blank required fields, duplicate room/device mappings, invalid or non-proxyable IP rows, and avoid printing raw IP values.
 - VLAN route from the Ubuntu VM to the AV device network is confirmed.
 - Room is empty or the test is explicitly read-only.
 - `python3 scripts/check_pilot_readiness.py` passes locally before live testing.
@@ -36,6 +37,7 @@ Run from `/home/beaverview/app` on the VM unless noted:
 python3 scripts/check_pilot_readiness.py --markdown
 python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json
 scripts/check_first_live_room_preflight.py --list-candidates
+scripts/check_hardware_ip_csv.py
 scripts/check_hardware_ip_import.sh
 scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv
 (cd api && venv/bin/python import_device_ips.py hardware_ips.csv)
@@ -46,7 +48,7 @@ sudo systemctl status beaverview --no-pager
 sudo nginx -t
 ```
 
-Use `--list-candidates --json` after the Hardware IP import when the selected room and connector need to be reviewed by another tool or pasted into a private deployment note. Add `--connector <name>` to filter the shortlist to one first connector. Add `--hardware-csv api/hardware_ips.csv` after `scripts/check_hardware_ip_import.sh` passes to preview device-backed connector matches before importing the secure CSV. The candidate list is built from sanitized SQLite room data and Hardware IP device types only; it does not print raw IP addresses.
+Use `--list-candidates --json` after the Hardware IP import when the selected room and connector need to be reviewed by another tool or pasted into a private deployment note. Add `--connector <name>` to filter the shortlist to one first connector. Add `--hardware-csv api/hardware_ips.csv` after `scripts/check_hardware_ip_csv.py` and `scripts/check_hardware_ip_import.sh` pass to preview device-backed connector matches before importing the secure CSV. The candidate list is built from sanitized SQLite room data and Hardware IP device types only; it does not print raw IP addresses. Unknown room IDs must be corrected before import or preview approval.
 
 Expected result: local checks pass, the candidate list identifies non-critical room IDs and eligible connector hints, the selected non-critical room and first connector pass preflight, imported Hardware IP records include the selected non-critical room, duplicate or unreviewed public rows are rejected, and only unrelated external prerequisites remain pending.
 

@@ -44,6 +44,7 @@ Target file: ignored `api/hardware_ips.csv`
 Validate before import:
 
 ```bash
+scripts/check_hardware_ip_csv.py
 scripts/check_hardware_ip_import.sh
 ```
 
@@ -62,9 +63,14 @@ Required pilot device types:
 
 CSV rules enforced by validation:
 
+- Shared parsing rules live in `api/hardware_ip_csv.py`.
+- Blank required fields fail validation.
 - Each `room_id` must already exist in the migrated SQLite room inventory.
+- Unknown room IDs fail import and first-live Hardware CSV preview.
 - Each `room_id` / `device_type` pair must appear only once.
+- Device IP addresses must be valid IPv4 values.
 - Device IP addresses must be private or link-local by default.
+- Invalid, non-proxyable, or unreviewed public IP rows fail validation.
 - `--allow-public` may be used only after explicit network review.
 - Validation errors identify CSV rows without printing raw IP values.
 
@@ -104,6 +110,7 @@ Allowed connector values:
 Validate the selected room and connector prerequisites:
 
 ```bash
+scripts/check_hardware_ip_csv.py
 scripts/check_hardware_ip_import.sh
 (cd api && venv/bin/python import_device_ips.py hardware_ips.csv)
 scripts/check_first_live_room_preflight.py
@@ -244,6 +251,7 @@ Run all local gates:
 ```bash
 scripts/smoke_check.sh
 scripts/check_data_migration.sh
+scripts/check_hardware_ip_csv.py
 scripts/check_hardware_ip_import.sh
 scripts/check_deployment_assets.sh
 scripts/check_api_contracts.py

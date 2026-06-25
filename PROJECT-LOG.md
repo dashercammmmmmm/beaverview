@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - Hardware CSV validator runbook coverage
+
+- Updated the first live-room validation runbook to run `scripts/check_hardware_ip_csv.py` before the import smoke check.
+- Updated the pilot inputs checklist to name the shared `api/hardware_ip_csv.py` parser and its blank-field, duplicate, invalid-IP, non-proxyable, public-IP-review, and no-raw-IP rules.
+- Strengthened the documentation validators so future runbook edits keep the shared Hardware IP CSV validation step and rule names visible.
+
+### Next
+
+- Update the runbooks and doc validators in the same commit as any future Hardware IP CSV rule change.
+
 ## 2026-06-24 - Shared Hardware IP CSV validator
 
 - Added `scripts/check_hardware_ip_csv.py` to directly validate the shared `api/hardware_ip_csv.py` parser and error behavior.

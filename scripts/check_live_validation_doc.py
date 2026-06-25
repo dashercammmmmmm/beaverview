@@ -16,8 +16,10 @@ REQUIRED_TERMS = (
     "FIRST_LIVE_ROOM_ID",
     "FIRST_LIVE_CONNECTOR",
     "api/hardware_ips.csv",
+    "api/hardware_ip_csv.py",
     "VLAN route",
     "python3 scripts/check_pilot_readiness.py",
+    "scripts/check_hardware_ip_csv.py",
     "scripts/check_hardware_ip_import.sh",
     "scripts/check_first_live_room_preflight.py",
     "scripts/render_first_live_room_report.py",
@@ -34,6 +36,9 @@ REQUIRED_TERMS = (
     "SharePoint",
     "PTZ",
     "WattBox/OvrC",
+    "blank required fields",
+    "invalid or non-proxyable IP rows",
+    "Unknown room IDs",
     "raw device IP",
     "admin audit log",
     "sanitized first live-room validation report",
@@ -66,6 +71,11 @@ def main() -> int:
     missing = [term for term in REQUIRED_TERMS if term not in text]
     if missing:
         fail("first live-room validation runbook is missing terms: " + ", ".join(missing))
+    expect_order(
+        text,
+        "scripts/check_hardware_ip_csv.py",
+        "scripts/check_hardware_ip_import.sh",
+    )
     expect_order(
         text,
         "scripts/check_hardware_ip_import.sh",
