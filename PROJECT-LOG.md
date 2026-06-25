@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room report go/no-go decision
+
+- Updated `scripts/render_first_live_room_report.py` to compute an explicit `GO FOR FIRST CONNECTOR VALIDATION` or `NO-GO` decision from the selected-room preflight result and saved readiness snapshot.
+- The decision stays conservative: missing readiness JSON, non-pass preflight, or any local readiness failure produces a no-go reason.
+- Updated `scripts/check_first_live_room_report.py` to verify the pass-path decision output while still checking no secret/raw-IP leakage.
+
+### Next
+
+- During first live validation, treat the report `Decision` section as the private operator-facing go/no-go summary and keep only sanitized results in `PROJECT-LOG.md`.
+
 ## 2026-06-24 - First live-room readiness snapshot report
 
 - Extended `scripts/render_first_live_room_report.py` with `--readiness-json` so private validation notes can include saved pilot-readiness status, counts, and pending external prerequisites without re-running readiness from inside the report command.

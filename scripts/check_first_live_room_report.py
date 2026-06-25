@@ -119,6 +119,7 @@ def main() -> int:
         "Readiness Snapshot",
         "Status: `pass`",
         "Pending external prerequisites: `2`",
+        "Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`",
         "scripts/check_pilot_readiness.py --markdown",
         "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json",
         "scripts/check_hardware_ip_import.sh",

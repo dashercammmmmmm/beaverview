@@ -90,6 +90,45 @@ def readiness_lines(snapshot: dict[str, Any] | None) -> list[str]:
     return lines
 
 
+def readiness_is_pass(snapshot: dict[str, Any] | None) -> bool:
+    if snapshot is None:
+        return False
+    if snapshot.get("status") != "pass":
+        return False
+    try:
+        return int(snapshot.get("failure_count", 1)) == 0
+    except (TypeError, ValueError):
+        return False
+
+
+def decision_lines(preflight: dict[str, Any], snapshot: dict[str, Any] | None) -> list[str]:
+    reasons: list[str] = []
+    if preflight.get("status") != "pass":
+        reasons.append(f"selected-room preflight is {safe_text(preflight.get('status'), 'unknown')}")
+    if snapshot is None:
+        reasons.append("readiness JSON snapshot is not attached")
+    elif not readiness_is_pass(snapshot):
+        reasons.append(
+            "pilot readiness is "
+            f"{safe_text(snapshot.get('status'), 'unknown')} with "
+            f"{safe_text(snapshot.get('failure_count'), 'unknown')} local failure(s)"
+        )
+
+    if reasons:
+        return [
+            "## Decision",
+            "",
+            "- Go/no-go: `NO-GO`",
+            *[f"- Reason: {reason}" for reason in reasons],
+        ]
+    return [
+        "## Decision",
+        "",
+        "- Go/no-go: `GO FOR FIRST CONNECTOR VALIDATION`",
+        "- Reason: selected-room preflight is `pass` and pilot readiness has zero local failures.",
+    ]
+
+
 def render_report(room_id: str, connector: str, readiness_json: str = "") -> str:
     preflight_exit, preflight = run_preflight(room_id, connector)
     readiness_snapshot = load_readiness_snapshot(readiness_json)
@@ -117,6 +156,8 @@ def render_report(room_id: str, connector: str, readiness_json: str = "") -> str
         "",
         *readiness_lines(readiness_snapshot),
         "",
+        *decision_lines(preflight, readiness_snapshot),
+        "",
         "## Required Commands",
         "",
         "```bash",
@@ -135,7 +176,7 @@ def render_report(room_id: str, connector: str, readiness_json: str = "") -> str
         "- technician notes",
         "- screenshots with private details redacted",
         "",
-        "## Go / No-Go",
+        "## Guardrails",
         "",
         "- Go only if pilot readiness has zero local failures and the selected first connector preflight is `pass`.",
         "- Keep unselected connectors guarded or pending.",
