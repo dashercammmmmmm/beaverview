@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Local env bootstrap readiness validation
+
+- Added `scripts/check_init_local_env.py` to validate `scripts/init_local_env.sh` in a temporary repo-shaped directory without touching real ignored `api/.env`.
+- The validator confirms `PROXY_SECRET` and `SESSION_SECRET_KEY` are generated as distinct secret values, `api/.env` is mode `600`, reruns do not rewrite existing secrets, and generated values are not printed.
+- Wired the local env bootstrap validator into `scripts/check_pilot_readiness.py`.
+
+### Next
+
+- Run pilot readiness after changing `scripts/init_local_env.sh` or the local secret baseline in `api/.env.example`.
+
 ## 2026-06-25 - Playbook HTML readiness validation
 
 - Added `scripts/check_playbook_html.py` to rebuild playbook HTML into a temporary directory and compare it against committed `docs/html` files.

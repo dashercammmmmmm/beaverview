@@ -53,6 +53,7 @@ FIRST_LIVE_ROOM_PREFLIGHT_SCRIPT = ROOT / "scripts" / "check_first_live_room_pre
 FIRST_LIVE_ROOM_REPORT_SCRIPT = ROOT / "scripts" / "check_first_live_room_report.py"
 HARDWARE_IP_IMPORT_SCRIPT = ROOT / "scripts" / "check_hardware_ip_import.sh"
 HARDWARE_IP_CSV_SCRIPT = ROOT / "scripts" / "check_hardware_ip_csv.py"
+INIT_LOCAL_ENV_SCRIPT = ROOT / "scripts" / "check_init_local_env.py"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
@@ -418,6 +419,18 @@ def check_env_template() -> None:
         fail_with_result("environment template validation failed", result)
 
 
+def check_init_local_env() -> None:
+    if not INIT_LOCAL_ENV_SCRIPT.exists():
+        fail("local env bootstrap validator is missing")
+        return
+
+    result = run([sys.executable, str(INIT_LOCAL_ENV_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("local env bootstrap generates required secrets safely")
+    else:
+        fail_with_result("local env bootstrap validation failed", result)
+
+
 def check_pilot_inputs_doc() -> None:
     if not PILOT_INPUTS_SCRIPT.exists():
         fail("pilot input checklist validator is missing")
@@ -722,6 +735,7 @@ def run_checks() -> None:
     check_dashboard_browser()
     check_admin_browser()
     check_env_template()
+    check_init_local_env()
     check_pilot_inputs_doc()
     check_playbook_html()
     check_project_log()
