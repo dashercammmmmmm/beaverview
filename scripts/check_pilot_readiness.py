@@ -673,6 +673,17 @@ def cors_origins_are_restricted(value: str | None) -> bool:
     return all(origin.startswith("https://") for origin in origins)
 
 
+def is_https_url(value: str | None) -> bool:
+    return is_configured(value) and value.strip().lower().startswith("https://")
+
+
+def servicenow_instance_is_host(value: str | None) -> bool:
+    if not is_configured(value):
+        return False
+    cleaned = value.strip()
+    return "://" not in cleaned and "/" not in cleaned and "." in cleaned
+
+
 def check_azure_template() -> None:
     if AZURE_CHECKLIST_PATH.exists():
         pass_("Azure/Entra app registration checklist exists")
@@ -734,7 +745,6 @@ def check_env_prereqs() -> None:
         "XPanel proxy": ("CRESTRON_PROXY_USERNAME", "CRESTRON_PROXY_PASSWORD"),
         "WattBox direct proxy": ("WATTBOX_DIRECT_USERNAME", "WATTBOX_DIRECT_PASSWORD"),
         "PTZ proxy": ("PTZ_PROXY_USERNAME", "PTZ_PROXY_PASSWORD"),
-        "25Live": ("LIVE25_BASE_URL", "LIVE25_USERNAME", "LIVE25_PASSWORD"),
     }
     for label, keys in connector_sets.items():
         if has_all(env, keys):
@@ -742,21 +752,44 @@ def check_env_prereqs() -> None:
         else:
             pending(f"{label} credentials are not complete")
 
+    if has_all(env, ("LIVE25_BASE_URL", "LIVE25_USERNAME", "LIVE25_PASSWORD")):
+        if is_https_url(env.get("LIVE25_BASE_URL")):
+            pass_("25Live credentials are present")
+        else:
+            fail("25Live base URL must use https")
+    elif is_configured(env.get("LIVE25_BASE_URL")) and not is_https_url(env.get("LIVE25_BASE_URL")):
+        fail("25Live base URL must use https")
+    else:
+        pending("25Live credentials are not complete")
+
     launch_urls = {
         "ScreenConnect base URL": "SC_BASE_URL",
         "SharePoint base URL": "SHAREPOINT_BASE_URL",
         "Hermes chat base URL": "CHAT_BASE_URL",
     }
     for label, key in launch_urls.items():
+        if key == "CHAT_BASE_URL":
+            continue
         if is_configured(env.get(key)):
-            pass_(f"{label} is configured")
+            if is_https_url(env.get(key)):
+                pass_(f"{label} is configured")
+            else:
+                fail(f"{label} must use https")
         else:
             pending(f"{label} is not configured")
+
+    if is_configured(env.get("CHAT_BASE_URL")):
+        pass_("Hermes chat base URL is configured")
+    else:
+        pending("Hermes chat base URL is not configured")
 
     servicenow_oauth = has_all(env, ("SN_INSTANCE", "SN_CLIENT_ID", "SN_CLIENT_SECRET"))
     servicenow_basic = has_all(env, ("SN_INSTANCE", "SN_USERNAME", "SN_PASSWORD"))
     if servicenow_oauth or servicenow_basic:
-        pass_("ServiceNow credentials are present")
+        if servicenow_instance_is_host(env.get("SN_INSTANCE")):
+            pass_("ServiceNow credentials are present")
+        else:
+            fail("ServiceNow instance must be a host name without scheme or path")
     else:
         pending("ServiceNow credentials are not complete")
 

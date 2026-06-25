@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - External URL shape readiness guard
+
+- Updated `scripts/check_pilot_readiness.py` so 25Live, ScreenConnect, and SharePoint configured URLs must use `https://` before they can clear readiness.
+- Added ServiceNow instance shape validation so `SN_INSTANCE` must be a host name without `https://` or a path.
+- Extended `scripts/check_readiness_env_prereqs.py` and the pilot inputs checklist to cover these malformed external-input cases.
+
+### Next
+
+- Treat malformed configured external URLs as local correction work before first live-room validation; missing values still remain external pending prerequisites.
+
 ## 2026-06-25 - Azure group placeholder readiness guard
 
 - Updated `scripts/check_pilot_readiness.py` so Azure technician/admin group values use the same placeholder rejection as the other env prerequisites.

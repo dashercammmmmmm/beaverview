@@ -34,38 +34,37 @@ def load_readiness_module():
     return module
 
 
-def env_text(*, technician_group: str, admin_group: str) -> str:
-    return "\n".join(
-        [
-            "PROXY_SECRET=local-generated-proxy-secret",
-            "SESSION_SECRET_KEY=local-generated-session-secret",
-            "BEAVERVIEW_CORS_ORIGINS=https://beaverview",
-            "AZURE_TENANT_ID=00000000-0000-0000-0000-000000000001",
-            "AZURE_CLIENT_ID=00000000-0000-0000-0000-000000000002",
-            "AZURE_CLIENT_SECRET=local-client-secret",
-            "AZURE_REDIRECT_URI=https://beaverview/auth/callback",
-            f"AZURE_GROUP_TECHNICIAN={technician_group}",
-            f"AZURE_GROUP_ADMIN={admin_group}",
-            "CRESTRON_POLL_USERNAME=svc-crestron",
-            "CRESTRON_POLL_PASSWORD=local-crestron-password",
-            "CRESTRON_PROXY_USERNAME=svc-xpanel",
-            "CRESTRON_PROXY_PASSWORD=local-xpanel-password",
-            "WATTBOX_DIRECT_USERNAME=svc-wattbox",
-            "WATTBOX_DIRECT_PASSWORD=local-wattbox-password",
-            "PTZ_PROXY_USERNAME=svc-ptz",
-            "PTZ_PROXY_PASSWORD=local-ptz-password",
-            "LIVE25_BASE_URL=https://25live.example.edu",
-            "LIVE25_USERNAME=svc-25live",
-            "LIVE25_PASSWORD=local-25live-password",
-            "SC_BASE_URL=https://screenconnect.example.edu",
-            "SHAREPOINT_BASE_URL=https://sharepoint.example.edu/sites/AVSupport",
-            "CHAT_BASE_URL=http://localhost:8080",
-            "SN_INSTANCE=example.service-now.com",
-            "SN_CLIENT_ID=00000000-0000-0000-0000-000000000003",
-            "SN_CLIENT_SECRET=local-servicenow-secret",
-            "",
-        ]
-    )
+def env_text(*, technician_group: str, admin_group: str, overrides: dict[str, str] | None = None) -> str:
+    values = {
+        "PROXY_SECRET": "local-generated-proxy-secret",
+        "SESSION_SECRET_KEY": "local-generated-session-secret",
+        "BEAVERVIEW_CORS_ORIGINS": "https://beaverview",
+        "AZURE_TENANT_ID": "00000000-0000-0000-0000-000000000001",
+        "AZURE_CLIENT_ID": "00000000-0000-0000-0000-000000000002",
+        "AZURE_CLIENT_SECRET": "local-client-secret",
+        "AZURE_REDIRECT_URI": "https://beaverview/auth/callback",
+        "AZURE_GROUP_TECHNICIAN": technician_group,
+        "AZURE_GROUP_ADMIN": admin_group,
+        "CRESTRON_POLL_USERNAME": "svc-crestron",
+        "CRESTRON_POLL_PASSWORD": "local-crestron-password",
+        "CRESTRON_PROXY_USERNAME": "svc-xpanel",
+        "CRESTRON_PROXY_PASSWORD": "local-xpanel-password",
+        "WATTBOX_DIRECT_USERNAME": "svc-wattbox",
+        "WATTBOX_DIRECT_PASSWORD": "local-wattbox-password",
+        "PTZ_PROXY_USERNAME": "svc-ptz",
+        "PTZ_PROXY_PASSWORD": "local-ptz-password",
+        "LIVE25_BASE_URL": "https://25live.example.edu",
+        "LIVE25_USERNAME": "svc-25live",
+        "LIVE25_PASSWORD": "local-25live-password",
+        "SC_BASE_URL": "https://screenconnect.example.edu",
+        "SHAREPOINT_BASE_URL": "https://sharepoint.example.edu/sites/AVSupport",
+        "CHAT_BASE_URL": "http://localhost:8080",
+        "SN_INSTANCE": "example.service-now.com",
+        "SN_CLIENT_ID": "00000000-0000-0000-0000-000000000003",
+        "SN_CLIENT_SECRET": "local-servicenow-secret",
+    }
+    values.update(overrides or {})
+    return "\n".join(f"{key}={value}" for key, value in values.items()) + "\n"
 
 
 def run_env_case(readiness, env_path: Path) -> tuple[list[str], list[str], list[str]]:
@@ -81,6 +80,8 @@ def main() -> int:
     readiness = load_readiness_module()
     pending_message = "Azure technician/admin group object IDs are not complete"
     pass_message = "Azure group object IDs are present"
+    technician_group = "00000000-0000-0000-0000-000000000004"
+    admin_group = "00000000-0000-0000-0000-000000000005"
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -99,14 +100,49 @@ def main() -> int:
         configured_env = tmp_path / "configured.env"
         configured_env.write_text(
             env_text(
-                technician_group="00000000-0000-0000-0000-000000000004",
-                admin_group="00000000-0000-0000-0000-000000000005",
+                technician_group=technician_group,
+                admin_group=admin_group,
             )
         )
         passed, pending, failures = run_env_case(readiness, configured_env)
         expect(not failures, "configured group env case produced local failures: " + ", ".join(failures))
         expect(pass_message in passed, "configured Azure group values should pass readiness")
         expect(pending_message not in pending, "configured Azure group values should not remain pending")
+
+        malformed_cases = {
+            "live25-http.env": ("LIVE25_BASE_URL", "http://25live.example.edu", "25Live base URL must use https"),
+            "screenconnect-http.env": (
+                "SC_BASE_URL",
+                "http://screenconnect.example.edu",
+                "ScreenConnect base URL must use https",
+            ),
+            "sharepoint-http.env": (
+                "SHAREPOINT_BASE_URL",
+                "http://sharepoint.example.edu/sites/AVSupport",
+                "SharePoint base URL must use https",
+            ),
+            "servicenow-scheme.env": (
+                "SN_INSTANCE",
+                "https://example.service-now.com",
+                "ServiceNow instance must be a host name without scheme or path",
+            ),
+            "servicenow-path.env": (
+                "SN_INSTANCE",
+                "example.service-now.com/nav_to.do",
+                "ServiceNow instance must be a host name without scheme or path",
+            ),
+        }
+        for filename, (key, value, expected_failure) in malformed_cases.items():
+            env_path = tmp_path / filename
+            env_path.write_text(
+                env_text(
+                    technician_group=technician_group,
+                    admin_group=admin_group,
+                    overrides={key: value},
+                )
+            )
+            _, _, failures = run_env_case(readiness, env_path)
+            expect(expected_failure in failures, f"{filename} did not produce expected failure: {failures}")
 
     print("Readiness env prerequisite classification verified")
     return 0

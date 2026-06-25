@@ -175,6 +175,10 @@ Required `api/.env` value:
 
 - `SC_BASE_URL`
 
+Required shape:
+
+- Must start with `https://`
+
 No ScreenConnect service password is stored in BeaverView. Technicians authenticate through their existing OSU browser session when the live launch URL opens.
 
 ## WattBox Direct Proxy Credentials
@@ -206,11 +210,19 @@ Required `api/.env` values:
 - `LIVE25_USERNAME`
 - `LIVE25_PASSWORD`
 
+Required URL shape:
+
+- `LIVE25_BASE_URL` must start with `https://`
+
 ## SharePoint Launch URL
 
 Required `api/.env` value:
 
 - `SHAREPOINT_BASE_URL`
+
+Required shape:
+
+- Must start with `https://`
 
 No SharePoint password is stored in BeaverView. Technicians authenticate through their existing OSU O365 browser session when the live documentation URL opens.
 
@@ -232,6 +244,11 @@ Hermes uses a local OpenAI-compatible endpoint. Do not route room context to a p
 Required instance value:
 
 - `SN_INSTANCE`
+
+Required instance shape:
+
+- Host name only, such as `oregonstate.service-now.com`
+- Do not include `https://` or a path
 
 OAuth option:
 
