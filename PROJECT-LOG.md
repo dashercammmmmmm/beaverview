@@ -2,6 +2,16 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-24 - First live-room readiness snapshot report
+
+- Extended `scripts/render_first_live_room_report.py` with `--readiness-json` so private validation notes can include saved pilot-readiness status, counts, and pending external prerequisites without re-running readiness from inside the report command.
+- Updated `scripts/check_first_live_room_report.py` to verify readiness snapshot content is included and still redacts raw Hardware IP and credential-looking text.
+- Updated the pilot input checklist and first live-room validation runbook to save readiness JSON to `/tmp/beaverview-readiness.json` before rendering the private report.
+
+### Next
+
+- When OSU provides the first target inputs, generate the readiness JSON immediately before the private first-live report so the handoff captures the same preflight state used for go/no-go.
+
 ## 2026-06-24 - Shared no-secrets output sanitizer
 
 - Added `scripts/sanitize_output.py` as the shared redaction helper for readiness diagnostics and first live-room handoff reports.

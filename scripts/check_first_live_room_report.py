@@ -81,6 +81,16 @@ def main() -> int:
         env["BEAVERVIEW_DB_PATH"] = str(db_path)
         env["CRESTRON_PROXY_USERNAME"] = "contract-user"
         env["CRESTRON_PROXY_PASSWORD"] = SECRET_SENTINEL
+        readiness_json = Path(tmp) / "readiness.json"
+        readiness_json.write_text(
+            "{"
+            '"status": "pass",'
+            '"passed_count": 28,'
+            '"failure_count": 0,'
+            '"pending_count": 2,'
+            f'"pending": ["hardware IP records are not loaded yet", "device at {RAW_IP_SENTINEL} has PASSWORD=secret"]'
+            "}"
+        )
 
         result = subprocess.run(
             [
@@ -90,6 +100,8 @@ def main() -> int:
                 "corvallis-kad-101",
                 "--connector",
                 "xpanel",
+                "--readiness-json",
+                str(readiness_json),
             ],
             cwd=ROOT,
             env=env,
@@ -104,7 +116,11 @@ def main() -> int:
     required_terms = (
         "# BeaverView First Live-Room Validation Report",
         "Preflight status: `pass`",
+        "Readiness Snapshot",
+        "Status: `pass`",
+        "Pending external prerequisites: `2`",
         "scripts/check_pilot_readiness.py --markdown",
+        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json",
         "scripts/check_hardware_ip_import.sh",
         "Required Private Evidence",
         "admin audit log row",

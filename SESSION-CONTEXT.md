@@ -236,7 +236,7 @@ Device IPs go in via `import_device_ips.py` with a `hardware_ips.csv` file.
 - `scripts/check_first_live_room_preflight.py --list-candidates` lists non-critical candidate room IDs and eligible connector hints from sanitized SQLite inventory.
 - `scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel` filters candidates to a specific first connector; device-backed connectors require imported Hardware IP device-type rows before matching.
 - `scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv` previews device-backed matches from a validated secure CSV before importing it.
-- `scripts/render_first_live_room_report.py` renders a private no-secrets Markdown report template around the selected first live-room preflight result.
+- `scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json` renders a private no-secrets Markdown report template around the selected first live-room preflight result and a saved readiness snapshot.
 - Candidate output includes building code, room number, status, health, eligible connector names, and Hardware IP device types only; it does not print raw IP addresses.
 - `scripts/check_first_live_room_preflight_cases.py` now verifies candidate-list JSON behavior against an isolated temp DB.
 - `scripts/check_first_live_room_report.py` verifies the report renderer does not leak raw IPs or credential values.

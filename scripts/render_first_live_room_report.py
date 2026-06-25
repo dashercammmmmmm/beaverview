@@ -47,8 +47,52 @@ def run_preflight(room_id: str, connector: str) -> tuple[int, dict[str, Any]]:
     return result.returncode, payload
 
 
-def render_report(room_id: str, connector: str) -> str:
+def load_readiness_snapshot(path: str) -> dict[str, Any] | None:
+    if not path:
+        return None
+    try:
+        payload = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        return {
+            "status": "unavailable",
+            "error": f"could not read readiness JSON: {exc}",
+        }
+    return payload if isinstance(payload, dict) else {"status": "unavailable", "error": "readiness JSON is not an object"}
+
+
+def readiness_lines(snapshot: dict[str, Any] | None) -> list[str]:
+    if snapshot is None:
+        return [
+            "## Readiness Snapshot",
+            "",
+            "- Readiness JSON: `not attached`",
+            "- Attach one with `python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json` and `scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json`.",
+        ]
+
+    lines = [
+        "## Readiness Snapshot",
+        "",
+        f"- Status: {code(snapshot.get('status'), 'unknown')}",
+        f"- Passed checks: {code(snapshot.get('passed_count'), 'unknown')}",
+        f"- Local failures: {code(snapshot.get('failure_count'), 'unknown')}",
+        f"- Pending external prerequisites: {code(snapshot.get('pending_count'), 'unknown')}",
+    ]
+    if snapshot.get("error"):
+        lines.append(f"- Readiness JSON error: {safe_text(snapshot.get('error'), 'unknown error')}")
+
+    pending_items = snapshot.get("pending")
+    if isinstance(pending_items, list):
+        lines.extend(["", "Pending external prerequisites:"])
+        if pending_items:
+            lines.extend(f"- {safe_text(item, 'unknown pending item')}" for item in pending_items)
+        else:
+            lines.append("- None")
+    return lines
+
+
+def render_report(room_id: str, connector: str, readiness_json: str = "") -> str:
     preflight_exit, preflight = run_preflight(room_id, connector)
+    readiness_snapshot = load_readiness_snapshot(readiness_json)
     details = preflight.get("details") if isinstance(preflight.get("details"), dict) else {}
     selected_room = room_id or details.get("room_id") or "not selected"
     selected_connector = connector or details.get("connector") or "not selected"
@@ -71,13 +115,16 @@ def render_report(room_id: str, connector: str) -> str:
         f"- Preflight exit code: {code(preflight_exit, 'unknown')}",
         f"- Message: {safe_text(preflight.get('message'), 'no message returned')}",
         "",
+        *readiness_lines(readiness_snapshot),
+        "",
         "## Required Commands",
         "",
         "```bash",
         "python3 scripts/check_pilot_readiness.py --markdown",
+        "python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json",
         "scripts/check_hardware_ip_import.sh",
         "scripts/check_first_live_room_preflight.py",
-        "scripts/render_first_live_room_report.py",
+        "scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json",
         "```",
         "",
         "## Required Private Evidence",
@@ -106,13 +153,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Render a sanitized first live-room validation report template.")
     parser.add_argument("--room-id", help="selected BeaverView room ID; defaults to FIRST_LIVE_ROOM_ID in api/.env")
     parser.add_argument("--connector", help="selected first connector; defaults to FIRST_LIVE_CONNECTOR in api/.env")
+    parser.add_argument("--readiness-json", help="optional path to output from python3 scripts/check_pilot_readiness.py --json")
     args = parser.parse_args()
 
     if not PREFLIGHT_SCRIPT.exists():
         print("FAIL first live-room preflight script is missing", file=sys.stderr)
         return 1
 
-    print(render_report(args.room_id or "", args.connector or ""), end="")
+    print(render_report(args.room_id or "", args.connector or "", args.readiness_json or ""), end="")
     return 0
 
 

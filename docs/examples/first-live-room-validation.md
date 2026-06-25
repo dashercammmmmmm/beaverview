@@ -34,11 +34,12 @@ Run from `/home/beaverview/app` on the VM unless noted:
 
 ```bash
 python3 scripts/check_pilot_readiness.py --markdown
+python3 scripts/check_pilot_readiness.py --json > /tmp/beaverview-readiness.json
 scripts/check_first_live_room_preflight.py --list-candidates
 scripts/check_hardware_ip_import.sh
 scripts/check_first_live_room_preflight.py --list-candidates --connector xpanel --hardware-csv api/hardware_ips.csv
 scripts/check_first_live_room_preflight.py
-scripts/render_first_live_room_report.py
+scripts/render_first_live_room_report.py --readiness-json /tmp/beaverview-readiness.json
 cd api && venv/bin/python import_device_ips.py hardware_ips.csv
 sudo systemctl status beaverview --no-pager
 sudo nginx -t

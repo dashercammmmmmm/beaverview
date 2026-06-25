@@ -21,6 +21,7 @@ REQUIRED_TERMS = (
     "scripts/check_hardware_ip_import.sh",
     "scripts/check_first_live_room_preflight.py",
     "scripts/render_first_live_room_report.py",
+    "--readiness-json",
     "--list-candidates",
     "--connector",
     "--hardware-csv",
