@@ -2,6 +2,15 @@
 
 This is the durable local work log for BeaverView v2. Add an entry every time the project changes materially so the Mac Mini checkout remains the source of truth between assistant sessions.
 
+## 2026-06-25 - Playbook HTML readiness validation
+
+- Added `scripts/check_playbook_html.py` to rebuild playbook HTML into a temporary directory and compare it against committed `docs/html` files.
+- Wired the playbook HTML validator into `scripts/check_pilot_readiness.py` so Markdown/HTML documentation drift is caught before push or deployment work.
+
+### Next
+
+- Run `python3 scripts/build_playbook_html.py` after editing playbook Markdown, then run pilot readiness.
+
 ## 2026-06-25 - Project log readiness validation
 
 - Added `scripts/check_project_log.py` to validate the durable work log exists, stays newest-first, keeps entry summaries and `Next` bullets, and avoids unredacted sensitive-looking text.

@@ -56,6 +56,7 @@ HARDWARE_IP_CSV_SCRIPT = ROOT / "scripts" / "check_hardware_ip_csv.py"
 INVENTORY_PARITY_SCRIPT = ROOT / "scripts" / "check_inventory_parity.py"
 LIVE_VALIDATION_SCRIPT = ROOT / "scripts" / "check_live_validation_doc.py"
 PILOT_INPUTS_SCRIPT = ROOT / "scripts" / "check_pilot_inputs_doc.py"
+PLAYBOOK_HTML_SCRIPT = ROOT / "scripts" / "check_playbook_html.py"
 PRODUCTION_SAFETY_SCRIPT = ROOT / "scripts" / "check_production_safety.py"
 PROJECT_LOG_SCRIPT = ROOT / "scripts" / "check_project_log.py"
 READINESS_ACTIONS_SCRIPT = ROOT / "scripts" / "check_readiness_actions.py"
@@ -429,6 +430,18 @@ def check_pilot_inputs_doc() -> None:
         fail_with_result("pilot input checklist validation failed", result)
 
 
+def check_playbook_html() -> None:
+    if not PLAYBOOK_HTML_SCRIPT.exists():
+        fail("playbook HTML validator is missing")
+        return
+
+    result = run([sys.executable, str(PLAYBOOK_HTML_SCRIPT)], cwd=ROOT)
+    if result.returncode == 0:
+        pass_("playbook HTML matches Markdown sources")
+    else:
+        fail_with_result("playbook HTML validation failed", result)
+
+
 def check_project_log() -> None:
     if not PROJECT_LOG_SCRIPT.exists():
         fail("project log validator is missing")
@@ -710,6 +723,7 @@ def run_checks() -> None:
     check_admin_browser()
     check_env_template()
     check_pilot_inputs_doc()
+    check_playbook_html()
     check_project_log()
     check_readiness_actions()
     check_sanitize_output()
